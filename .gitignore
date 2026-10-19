@@ -1,0 +1,5 @@
+# MediaForge stores all runtime-created data beneath this app-local folder.
+/MediaForge_Data/
+/.venv/
+/__pycache__/
+*.py[cod]

@@ -1,62 +1,174 @@
-# Windows launcher: starts the GUI without a console and offers Python installation if missing.
+# Windows launcher for MediaForge. App data, its virtual environment, and package cache
+# are kept under the application folder. The OS Python runtime is installed separately.
+param(
+    [switch]$UpdatePackages,
+    [switch]$InstallLatestPython,
+    [int]$WaitForPid = 0,
+    [string]$OpenPath = ''
+)
+
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
-$logDir = Join-Path $env:USERPROFILE '.fotoverktyg_studio\logs'
-try { New-Item -ItemType Directory -Path $logDir -Force | Out-Null } catch { }
-$startupLog = Join-Path $logDir 'startare.log'
+$script = Join-Path $PSScriptRoot 'fotoverktyg.pyw'
+$dataDir = Join-Path $PSScriptRoot 'MediaForge_Data'
+$settingsDir = Join-Path $dataDir 'Settings'
+$logDir = Join-Path $dataDir 'Logs'
+$cacheDir = Join-Path $dataDir 'PipCache'
+$tempDir = Join-Path $dataDir 'Temp'
+$pythonEnvDir = Join-Path $dataDir 'PythonEnv'
+$startupLog = Join-Path $logDir 'launcher.log'
+
+foreach ($directory in @($settingsDir, $logDir, $cacheDir, $tempDir, $pythonEnvDir)) {
+    New-Item -ItemType Directory -Path $directory -Force | Out-Null
+}
+$env:PIP_CACHE_DIR = $cacheDir
+$env:TEMP = $tempDir
+$env:TMP = $tempDir
+$env:PYTHONNOUSERSITE = '1'
+
 function Write-StartupLog([string]$text) {
     try { Add-Content -LiteralPath $startupLog -Value ("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $text") -Encoding UTF8 } catch { }
 }
-Write-StartupLog 'Startaren öppnad'
-
-function Notice([string]$text, [string]$title = 'Fotoverktyg') {
+function Notice([string]$text, [string]$title = 'MediaForge') {
     [System.Windows.Forms.MessageBox]::Show($text, $title, 'OK', 'Information') | Out-Null
 }
-function Find-Pythonw {
-    # Try the official Python launcher first; then pythonw.exe on PATH.
-    foreach ($name in @('pyw.exe', 'pythonw.exe')) {
-        $cmd = Get-Command $name -ErrorAction SilentlyContinue
-        if (-not $cmd) { continue }
+function Ask([string]$text, [string]$title = 'MediaForge') {
+    return [System.Windows.Forms.MessageBox]::Show($text, $title, 'YesNo', 'Question') -eq 'Yes'
+}
+function Wait-ForParent([int]$pidToWaitFor) {
+    if ($pidToWaitFor -le 0) { return }
+    while ($true) {
+        try { Get-Process -Id $pidToWaitFor -ErrorAction Stop | Out-Null; Start-Sleep -Milliseconds 400 }
+        catch { break }
+    }
+}
+function Find-LatestWingetPythonId {
+    $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+    if (-not $winget) { return $null }
+    $searchText = (& $winget.Source search --query 'Python.Python.3.' --source winget --accept-source-agreements 2>$null | Out-String)
+    $matches = [regex]::Matches($searchText, 'Python\.Python\.(\d+\.\d+)')
+    $versions = @{}
+    foreach ($match in $matches) {
+        $versionText = $match.Groups[1].Value
+        try { $versions[$versionText] = [version]$versionText } catch { }
+    }
+    $latest = $versions.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1
+    if ($latest) { return "Python.Python.$($latest.Key)" }
+    return $null
+}
+function Install-LatestPython {
+    $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+    if (-not $winget) {
+        Start-Process 'https://www.python.org/downloads/windows/'
+        throw 'winget is not available. The official Python download page was opened; install Python 3.10 or later and run the launcher again.'
+    }
+    $packageId = Find-LatestWingetPythonId
+    if (-not $packageId) { throw 'Could not find the latest stable Python package in winget.' }
+    Write-StartupLog "Installing latest Python package $packageId"
+    $installArgs = @('install', '--id', $packageId, '--exact', '--scope', 'user', '--accept-package-agreements', '--accept-source-agreements')
+    & $winget.Source @installArgs >> $startupLog 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $upgradeArgs = @('upgrade', '--id', $packageId, '--exact', '--scope', 'user', '--accept-package-agreements', '--accept-source-agreements')
+        & $winget.Source @upgradeArgs >> $startupLog 2>&1
+    }
+    if ($LASTEXITCODE -ne 0) { throw "winget could not install/update $packageId (exit code $LASTEXITCODE). See $startupLog" }
+    return ($packageId -replace '^Python\.Python\.', '')
+}
+function Find-BasePython([string]$preferredVersion = '') {
+    $candidates = @()
+    $py = Get-Command 'py.exe' -ErrorAction SilentlyContinue
+    if ($py) {
+        if ($preferredVersion) { $candidates += ,@{ File = $py.Source; Args = @("-$preferredVersion") } }
+        $candidates += ,@{ File = $py.Source; Args = @('-3') }
+    }
+    foreach ($name in @('python.exe', 'python3.exe')) {
+        $candidate = Get-Command $name -ErrorAction SilentlyContinue
+        if ($candidate) { $candidates += ,@{ File = $candidate.Source; Args = @() } }
+    }
+    $versionCode = 'import sys; print("%d.%d" % sys.version_info[:2]); raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'
+    foreach ($candidate in $candidates) {
         try {
-            $args = if ($name -eq 'pyw.exe') { @('-3', '-c', 'import sys; print(sys.version_info.major)') } else { @('-c', 'import sys; print(sys.version_info.major)') }
-            $proc = Start-Process -FilePath $cmd.Source -ArgumentList $args -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop
-            if ($proc.ExitCode -eq 0) { return @{ File = $cmd.Source; Args = $(if ($name -eq 'pyw.exe') { @('-3') } else { @() }) } }
+            $commandArgs = @($candidate.Args) + @('-c', $versionCode)
+            $version = & $candidate.File @commandArgs 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                return @{ File = $candidate.File; Args = @($candidate.Args); Version = ($version | Select-Object -Last 1).ToString().Trim() }
+            }
         } catch { }
     }
     return $null
 }
+function Invoke-Python([string]$executable, [string[]]$prefixArgs, [string[]]$arguments) {
+    $allArgs = @($prefixArgs) + @($arguments)
+    & $executable @allArgs
+    return $LASTEXITCODE
+}
 
 try {
-    $script = Join-Path $PSScriptRoot 'fotoverktyg.pyw'
-    if (-not (Test-Path -LiteralPath $script)) {
-        throw 'fotoverktyg.pyw saknas. Lägg startfilerna i samma mapp som appen.'
-    }
-    $python = Find-Pythonw
-    if (-not $python) {
-        Write-StartupLog 'Python saknas'
-        $answer = [System.Windows.Forms.MessageBox]::Show(
-            'Python 3 hittades inte. Vill du installera Python via Windows pakethanterare (winget)? Ingen installation startas utan ditt godkännande.',
-            'Python saknas', 'YesNo', 'Question')
-        if ($answer -ne 'Yes') { Write-StartupLog 'Pythoninstallation nekades'; exit }
-        if (Get-Command winget.exe -ErrorAction SilentlyContinue) {
-            # Explicit consent above. Installer is separate from this app.
-            $install = Start-Process -FilePath 'winget.exe' -ArgumentList @('install', '--id', 'Python.Python.3.13', '-e', '--scope', 'user', '--accept-package-agreements', '--accept-source-agreements') -Wait -PassThru -ErrorAction Stop
-            Write-StartupLog "Winget installationskod: $($install.ExitCode)"
-            if ($install.ExitCode -eq 0) {
-                Notice 'Python har installerats. Starta Starta_Fotoverktyg.vbs igen. Om Windows inte hittar Python direkt kan du behöva logga ut och in.'
-            } else {
-                Notice "Installationen kunde inte slutföras (kod $($install.ExitCode)). Installera Python manuellt från https://www.python.org/downloads/windows/"
-            }
-        } else {
-            $answer = [System.Windows.Forms.MessageBox]::Show('Winget finns inte. Vill du öppna den officiella Python-nedladdningssidan?', 'Installera Python', 'YesNo', 'Question')
-            if ($answer -eq 'Yes') { Start-Process 'https://www.python.org/downloads/windows/' }
+    if (-not (Test-Path -LiteralPath $script)) { throw 'fotoverktyg.pyw is missing from the application folder.' }
+    Write-StartupLog 'Launcher started'
+    Wait-ForParent $WaitForPid
+
+    $basePython = Find-BasePython
+    if ($InstallLatestPython) {
+        if (-not (Ask 'Install or update the latest stable Python available in winget? MediaForge will then rebuild its private Python environment.' 'Python runtime')) {
+            Write-StartupLog 'Latest Python installation cancelled by user'
+            exit
         }
-        exit
+        $preferredVersion = Install-LatestPython
+        $basePython = Find-BasePython $preferredVersion
+        if (-not $basePython) {
+            Notice 'Python was installed. Windows has not refreshed its PATH in this launcher yet. Run the launcher again after signing out and back in if needed.' 'Python runtime'
+            exit
+        }
+    } elseif (-not $basePython) {
+        if (-not (Ask 'Python 3.10 or later is required. Install the latest stable Python available through winget?' 'Install Python')) {
+            Write-StartupLog 'Python installation declined'
+            exit
+        }
+        $preferredVersion = Install-LatestPython
+        $basePython = Find-BasePython $preferredVersion
+        if (-not $basePython) {
+            Notice 'Python was installed. Run this launcher again; Windows may need a new sign-in to refresh PATH.' 'Python runtime'
+            exit
+        }
     }
-    # Start-Process does not show a console with pythonw/pyw.
-    Write-StartupLog "Appstart: $script med $($python.File)"
-    Start-Process -FilePath $python.File -ArgumentList ($python.Args + @('"' + $script + '"')) -WorkingDirectory $PSScriptRoot -ErrorAction Stop
+
+    $venvPath = Join-Path $pythonEnvDir ("py" + $basePython.Version)
+    $venvPython = Join-Path $venvPath 'Scripts\python.exe'
+    $venvPythonw = Join-Path $venvPath 'Scripts\pythonw.exe'
+    if (-not (Test-Path -LiteralPath $venvPython)) {
+        New-Item -ItemType Directory -Path $pythonEnvDir -Force | Out-Null
+        $venvArgs = @($basePython.Args) + @('-m', 'venv', $venvPath)
+        & $basePython.File @venvArgs >> $startupLog 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Could not create the app-local Python environment (code $LASTEXITCODE). See $startupLog" }
+    }
+    if (-not (Test-Path -LiteralPath $venvPythonw)) { throw 'The private Python environment has no pythonw.exe.' }
+
+    $probeCode = 'import PyQt6, PIL, pillow_heif, piexif'
+    $missing = $false
+    & $venvPython -c $probeCode 2>$null
+    if ($LASTEXITCODE -ne 0) { $missing = $true }
+    if ($missing -and -not $UpdatePackages) {
+        if (-not (Ask 'MediaForge needs PyQt6, Pillow, pillow-heif and piexif. Install the missing packages in its private app folder?' 'Python packages')) {
+            Write-StartupLog 'Package installation declined'
+            exit
+        }
+    }
+    if ($missing -or $UpdatePackages) {
+        Write-StartupLog 'Installing/updating app-local Python packages'
+        $pipArgs = @('-m', 'pip', 'install', '--upgrade', 'PyQt6', 'Pillow', 'pillow-heif', 'piexif')
+        & $venvPython @pipArgs >> $startupLog 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Python package installation failed (pip exit code $LASTEXITCODE). See $startupLog" }
+    }
+    & $venvPython -c $probeCode 2>$null
+    if ($LASTEXITCODE -ne 0) { throw 'Required Python packages could not be verified after installation.' }
+    Write-StartupLog "Starting MediaForge using Python $($basePython.Version)"
+    $appArguments = '"' + $script + '"'
+    if (-not [string]::IsNullOrWhiteSpace($OpenPath)) {
+        $appArguments += ' "' + $OpenPath + '"'
+    }
+    Start-Process -FilePath $venvPythonw -ArgumentList $appArguments -WorkingDirectory $PSScriptRoot -ErrorAction Stop
 } catch {
-    Write-StartupLog "Startfel: $($_.Exception.Message)"
-    [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Fotoverktyg - startfel', 'OK', 'Error') | Out-Null
+    Write-StartupLog "Startup failure: $($_.Exception.Message)"
+    [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, 'MediaForge - startup error', 'OK', 'Error') | Out-Null
 }
