@@ -688,6 +688,21 @@ UI_TRANSLATIONS.update({
     'Bildformat som stöds: JPEG, PNG, WEBP, TIFF, BMP, GIF och (med pillow-heif) HEIC/HEIF/AVIF.': 'Supported formats: JPEG, PNG, WEBP, TIFF, BMP, GIF, and (with pillow-heif) HEIC/HEIF/AVIF.',
 })
 
+UI_TRANSLATIONS.update({
+    'Jämför vald grupp…': 'Compare selected group…',
+    'Jämför dubbletter': 'Compare duplicates',
+    'Dubblettgrupp {group} · {count} filer': 'Duplicate group {group} · {count} files',
+    'Jämför filerna; bildgrupper visas sida vid sida. Markera vilka filer du vill behålla. Omarkerade flyttas till karantän först efter separat bekräftelse.': 'Compare files; image groups are shown side by side. Mark which files to keep. Unchecked files are moved to quarantine only after a separate confirmation.',
+    'Behåll den här filen': 'Keep this file',
+    'Behåll bara denna': 'Keep only this one',
+    'Behåll alla i gruppen': 'Keep all in this group',
+    'Klar': 'Done',
+    'Ingen bildförhandsvisning för den här filtypen.': 'No image preview is available for this file type.',
+    'Förhandsvisning kunde inte läsas:': 'Could not load preview:',
+    '{size} byte · ändrad {date}': '{size} bytes · modified {date}',
+    '{width} × {height} · {size} byte · ändrad {date}': '{width} × {height} · {size} bytes · modified {date}',
+})
+
 def exiftool(args, timeout=60):
     exe = shutil.which('exiftool')
     if not exe:
@@ -2668,6 +2683,10 @@ class Window(QtWidgets.QMainWindow):
         self.duplicate_cancel_button.setEnabled(False)
         self.duplicate_cancel_button.clicked.connect(self.cancel_duplicate_scan)
         row.addWidget(self.duplicate_cancel_button)
+        self.duplicate_compare_button = QtWidgets.QPushButton('Jämför vald grupp…')
+        self.duplicate_compare_button.setEnabled(False)
+        self.duplicate_compare_button.clicked.connect(self.show_duplicate_comparison)
+        row.addWidget(self.duplicate_compare_button)
         self.duplicate_move_button = QtWidgets.QPushButton('Flytta omarkerade till karantän…')
         self.duplicate_move_button.setEnabled(False)
         self.duplicate_move_button.clicked.connect(self.move_unselected_duplicates)
@@ -2685,6 +2704,8 @@ class Window(QtWidgets.QMainWindow):
         self.duplicate_table.setHorizontalHeaderLabels([self.translated(label) for label in ('Grupp', 'Behåll', 'Fil', 'Matchning')])
         self.duplicate_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.duplicate_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.duplicate_table.currentCellChanged.connect(self.duplicate_selection_changed)
+        self.duplicate_table.itemDoubleClicked.connect(lambda _item: self.show_duplicate_comparison())
         self.duplicate_table.horizontalHeader().setStretchLastSection(True)
         self.duplicate_table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.duplicate_table, 1)
@@ -2706,6 +2727,7 @@ class Window(QtWidgets.QMainWindow):
             return
         self.duplicate_groups = []
         self.duplicate_table.setRowCount(0)
+        self.duplicate_compare_button.setEnabled(False)
         self.duplicate_move_button.setEnabled(False)
         self.duplicate_scan_button.setEnabled(False)
         self.duplicate_cancel_button.setEnabled(True)
@@ -2731,6 +2753,7 @@ class Window(QtWidgets.QMainWindow):
         self.duplicate_table.setRowCount(0)
         if cancelled:
             self.duplicate_groups = []
+            self.duplicate_compare_button.setEnabled(False)
             self.duplicate_status.setText(self.translated('Skanningen avbröts.'))
             self.duplicate_log.appendPlainText(self.translated('Skanningen avbröts.'))
             return
@@ -2754,10 +2777,113 @@ class Window(QtWidgets.QMainWindow):
         file_count = sum(len(group['paths']) for group in groups)
         self.duplicate_status.setText(self.translated('Hittade {groups} grupper med {files} filer.').format(groups=len(groups), files=file_count))
         self.duplicate_move_button.setEnabled(bool(groups))
+        self.duplicate_compare_button.setEnabled(bool(groups))
         if groups:
+            self.duplicate_table.setCurrentCell(0, 2)
             self.duplicate_log.appendPlainText(self.duplicate_status.text())
         else:
             self.duplicate_log.appendPlainText(self.translated('Inga dubbletter hittades.'))
+
+    def duplicate_selection_changed(self, current_row, *_args):
+        self.duplicate_compare_button.setEnabled(0 <= current_row < self.duplicate_table.rowCount())
+
+    def show_duplicate_comparison(self):
+        row = self.duplicate_table.currentRow()
+        if row < 0 or not self.duplicate_groups:
+            return
+        group_index = int(self.duplicate_table.item(row, 0).text()) - 1
+        group = self.duplicate_groups[group_index]
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(self.translated('Jämför dubbletter'))
+        dialog.resize(980, 620)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        heading = QtWidgets.QLabel(self.translated('Dubblettgrupp {group} · {count} filer').format(group=group_index + 1, count=len(group['paths'])))
+        layout.addWidget(heading)
+        layout.addWidget(QtWidgets.QLabel(self.translated('Jämför filerna; bildgrupper visas sida vid sida. Markera vilka filer du vill behålla. Omarkerade flyttas till karantän först efter separat bekräftelse.')))
+
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        cards_panel = QtWidgets.QWidget()
+        cards_layout = QtWidgets.QHBoxLayout(cards_panel)
+        cards_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop)
+        cards = []
+        for member_index, path in enumerate(group['paths']):
+            table_row = next((candidate for candidate in range(self.duplicate_table.rowCount())
+                if int(self.duplicate_table.item(candidate, 0).text()) == group_index + 1
+                and Path(self.duplicate_table.item(candidate, 2).data(QtCore.Qt.ItemDataRole.UserRole)) == path), None)
+            if table_row is None:
+                continue
+            card = QtWidgets.QFrame()
+            card.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
+            card.setMinimumWidth(250)
+            card_layout = QtWidgets.QVBoxLayout(card)
+            preview = FitImageLabel()
+            preview.setFixedSize(224, 158)
+            preview.setStyleSheet('background: #0b1220; border-radius: 6px;')
+            dimensions = None
+            try:
+                if path.suffix.lower() in DuplicateScanWorker.IMAGE_EXTENSIONS:
+                    qimage, dimensions = image_file_to_qimage(path, (448, 316))
+                    preview.set_image(qimage)
+                else:
+                    preview.setText(self.translated('Ingen bildförhandsvisning för den här filtypen.'))
+            except Exception as exc:
+                preview.setText(f"{self.translated('Förhandsvisning kunde inte läsas:')} {exc}")
+            card_layout.addWidget(preview, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+            name = QtWidgets.QLabel(path.name)
+            name.setWordWrap(True)
+            name.setToolTip(str(path))
+            card_layout.addWidget(name)
+            try:
+                info = path.stat()
+                date = datetime.fromtimestamp(info.st_mtime).strftime('%Y-%m-%d %H:%M')
+                if dimensions:
+                    details = self.translated('{width} × {height} · {size} byte · ändrad {date}').format(width=dimensions[0], height=dimensions[1], size=f'{info.st_size:,}', date=date)
+                else:
+                    details = self.translated('{size} byte · ändrad {date}').format(size=f'{info.st_size:,}', date=date)
+            except OSError:
+                details = str(path.parent)
+            detail_label = QtWidgets.QLabel(details)
+            detail_label.setWordWrap(True)
+            detail_label.setToolTip(str(path))
+            card_layout.addWidget(detail_label)
+            keep = QtWidgets.QCheckBox(self.translated('Behåll den här filen'))
+            keep.setChecked(self.duplicate_table.item(table_row, 1).checkState() == QtCore.Qt.CheckState.Checked)
+            keep.toggled.connect(lambda checked, target=table_row: self.duplicate_table.item(target, 1).setCheckState(QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked))
+            card_layout.addWidget(keep)
+            keep_only = QtWidgets.QPushButton(self.translated('Behåll bara denna'))
+            card_layout.addWidget(keep_only)
+            cards_layout.addWidget(card)
+            cards.append((table_row, keep))
+
+        def set_kept_members(member_indices):
+            for member_index, (table_row, checkbox) in enumerate(cards):
+                keep = member_index in member_indices
+                blocker = QtCore.QSignalBlocker(checkbox)
+                checkbox.setChecked(keep)
+                del blocker
+                item = self.duplicate_table.item(table_row, 1)
+                item.setCheckState(QtCore.Qt.CheckState.Checked if keep else QtCore.Qt.CheckState.Unchecked)
+
+        for member_index, (_, _checkbox) in enumerate(cards):
+            card = cards_layout.itemAt(member_index).widget()
+            keep_only = card.findChild(QtWidgets.QPushButton)
+            keep_only.clicked.connect(lambda _checked=False, selected=member_index: set_kept_members({selected}))
+
+        scroll.setWidget(cards_panel)
+        layout.addWidget(scroll, 1)
+        actions = QtWidgets.QHBoxLayout()
+        keep_all = QtWidgets.QPushButton(self.translated('Behåll alla i gruppen'))
+        keep_all.clicked.connect(lambda: set_kept_members(set(range(len(cards)))))
+        actions.addWidget(keep_all)
+        actions.addStretch()
+        close = QtWidgets.QPushButton(self.translated('Klar'))
+        close.clicked.connect(dialog.accept)
+        actions.addWidget(close)
+        layout.addLayout(actions)
+        dialog.exec()
 
     def move_unselected_duplicates(self):
         keep_by_group = {}

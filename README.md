@@ -53,7 +53,7 @@ For a source-code checkout on branch `main`, **Check for GitHub main updates** f
 - **Image optimization** — import a folder, include subfolders, create optimized copies, and optionally remove EXIF/metadata. JPEG image data is copied without re-encoding; PNG/TIFF optimization and WEBP lossless encoding preserve image quality. File-size reductions depend on the source.
 - **Photo editor** — rotate, crop, undo, and save a copy.
 - **Color profiles** — convert between sRGB, Display P3, and Adobe RGB (1998); embedded profiles are honored and untagged images can be assigned an assumed source profile. Image metadata may not be retained by Qt when saving converted copies.
-- **Duplicate finder** — finds exact duplicates by SHA-256 and visually similar images by perceptual hash. Review groups and choose files to keep; unchecked files are moved—not permanently deleted—to an app-local quarantine folder.
+- **Duplicate finder** — finds exact duplicates by SHA-256 and visually similar images by perceptual hash. Compare a group side by side, then keep one image, keep all, or mark individual files. Unchecked files are moved—not permanently deleted—to an app-local quarantine folder after confirmation.
 - **AVIF/HEIC → JPEG** — add one or more AVIF, HEIC, or HEIF files, select a destination and JPEG quality, and convert. Original files remain untouched. HEIC/AVIF support requires `pillow-heif`.
 - **Web images / Blocket → JPEG** — download supported direct image links or public Blocket gallery images. Only download images you have permission to use.
 
@@ -127,7 +127,7 @@ All lokalt skapad appdata och standardutdata sparas i `MediaForge_Data/` under a
 - **Bildoptimering** — importera en mapp, ta med undermappar, skapa optimerade kopior och välj om EXIF/metadata ska rensas. JPEG-bilddata kopieras utan omkodning; PNG/TIFF optimeras och WEBP sparas förlustfritt. Hur mycket filstorleken minskar beror på originalet.
 - **Fotoredigerare** — rotera, beskära, ångra och spara en kopia.
 - **Färgprofiler** — konvertera mellan sRGB, Display P3 och Adobe RGB (1998). Inbäddade profiler används; för omärkta bilder kan en antagen källprofil väljas. Qt kan utelämna metadata i konverterade kopior.
-- **Dubblettfinnare** — hittar identiska filer med SHA-256 och visuellt liknande bilder med perceptuell hash. Granska grupperna och välj filer att behålla; omarkerade kopior flyttas, inte raderas permanent, till appens karantänmapp.
+- **Dubblettfinnare** — hittar identiska filer med SHA-256 och visuellt liknande bilder med perceptuell hash. Jämför bilder i en grupp sida vid sida och välj enkelt att behålla en bild, alla eller markera enskilda. Omarkerade kopior flyttas efter bekräftelse, inte raderas permanent, till appens karantänmapp.
 - **AVIF/HEIC → JPEG** — lägg till en eller flera AVIF-, HEIC- eller HEIF-filer, välj målmapp och JPEG-kvalitet och konvertera. Originalfilerna ändras inte. HEIC/AVIF kräver `pillow-heif`.
 - **Webbbilder / Blocket → JPEG** — hämta stödda direkta bildlänkar eller offentliga Blocket-galleribilder. Hämta bara bilder du har rätt att använda.
 
