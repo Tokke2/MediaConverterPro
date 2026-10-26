@@ -44,7 +44,7 @@ These are system programs, not Python packages, and are not installed by MediaFo
 
 MediaForge creates a `MediaForge_Data/` folder alongside the app. Settings and the Ko-fi link are in `Settings/`, app and launcher logs in `Logs/`, the private Python virtual environment in `PythonEnv/`, pip downloads in `PipCache/`, temporary package files in `Temp/`, and default exports in `Output/`. All chosen output destinations must remain inside the application folder; external source folders can still be selected and read. Keep the app folder writable and do not delete `MediaForge_Data/` if you want to retain settings or exports. OS autostart registration remains in the normal per-user OS location.
 
-For a source-code checkout on branch `main`, **Check for GitHub main updates** fetches the configured GitHub repository. It refuses to update a dirty worktree or a checkout that is not the expected `main` branch/repository, shows the available revision, and requires confirmation. Updates are fast-forward-only; commit, stash, or back up work before checking. Restart the app after an update. Packaged/non-Git copies cannot self-update through Git.
+For a source-code checkout on branch `main`, **Check for GitHub main updates** fetches the configured GitHub repository. It refuses to update a dirty worktree or a checkout that is not the expected `main` branch/repository, shows the available revision, and requires confirmation. Updates are fast-forward-only. The enabled-by-default **Silently check for updates twice a day** option checks at most every 12 hours while MediaForge is open; it stays quiet if nothing is available and still asks before applying an update. After approval, it fast-forwards and silently restarts the app. Checks do not run while the app is closed. Packaged/non-Git copies cannot self-update through Git.
 
 ## Photo tools
 
@@ -118,7 +118,7 @@ Detta är systemprogram, inte Python-paket, och MediaForge installerar dem inte.
 
 All lokalt skapad appdata och standardutdata sparas i `MediaForge_Data/` under appmappen. Utdata får inte sparas utanför appmappen; källmappar utanför appen kan fortfarande läsas. Håll appmappen skrivbar. OS-autostart ligger kvar på operativsystemets normala användarplats.
 
-**Kontrollera GitHub main-uppdatering** fungerar bara i en ren Git-arbetskopia från rätt repository på grenen `main`. Appen hämtar från GitHub, frågar innan snabbspolning och avbryter om det finns ändringar eller grenen avviker. Starta om efter uppdatering.
+**Kontrollera GitHub main-uppdatering** fungerar bara i en ren Git-arbetskopia från rätt repository på grenen `main`. Inställningen **Sök tyst efter nya versioner (2 ggr/dygn)** är på som standard och kontrollerar högst var tolfte timme när MediaForge är öppet. Inget meddelande visas om appen redan är uppdaterad; om en ny version hittas ber appen fortfarande om godkännande. Efter godkännande snabbspolas `main` och appen startas om tyst. Kontroller görs inte när appen är stängd.
 
 ## Fotofunktioner
 

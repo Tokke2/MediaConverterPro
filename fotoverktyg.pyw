@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import csv
 import json
 import hashlib
@@ -88,7 +89,13 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Fotoredigerare': 'Photo editor',
  'Kontrollera/installera Python-tillägg…': 'Check/install Python packages…',
  'Installera/uppdatera senaste Python…': 'Install/update latest Python…',
- 'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
+    'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
+    'Sök tyst efter nya versioner (2 ggr/dygn)': 'Silently check for updates twice a day',
+    'Uppdaterar GitHub-version…': 'Updating MediaForge…',
+    'Ny version finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efter uppdateringen.': 'A new version is available ({local} → {remote}). Update now? The app will restart automatically when the update is complete.',
+    'Uppdateringen misslyckades. MediaForge startas inte om.': 'The update failed. MediaForge will not restart.',
+    'Uppdateringskontrollen kunde inte genomföras.': 'The update check could not be completed.',
+    'Den tysta versionssökningen körs bara på en ren Git-arbetskopia av main.': 'Silent version checks run only on a clean Git checkout of main.',
  'Detta stänger MediaForge och uppdaterar paketen i appens privata Python-miljö. Fortsätta?': 'This closes MediaForge and updates packages in its private Python environment. Continue?',
  'Kontrollera GitHub main-uppdatering…': 'Check for GitHub main updates…',
  'Detta stänger MediaForge och startar Python-uppdateringen. Fortsätta?': 'This will close MediaForge and start the Python update flow. Continue?',
@@ -950,6 +957,101 @@ class ImageLibraryScanWorker(QtCore.QThread):
             return
         files.sort(key=lambda path: (path.name.casefold(), str(path.parent).casefold()))
         self.scan_completed.emit(files, self.cancelled)
+
+
+class GitUpdateWorker(QtCore.QThread):
+    result_ready = QtCore.pyqtSignal(object)
+
+    def __init__(self, apply_update=False):
+        super().__init__()
+        self.apply_update = apply_update
+        self.cancelled = False
+        self.process = None
+
+    def cancel(self):
+        self.cancelled = True
+        process = self.process
+        if process is not None and process.poll() is None:
+            try:
+                process.terminate()
+            except OSError:
+                pass
+
+    def git(self, *args, allow_failure=False, timeout=45):
+        if self.cancelled:
+            raise InterruptedError('Update check was cancelled.')
+        process = subprocess.Popen(
+            ['git', '-C', str(APP_DIR), *args], stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace',
+        )
+        self.process = process
+        deadline = time.monotonic() + timeout
+        while process.poll() is None:
+            if self.cancelled or time.monotonic() >= deadline:
+                was_cancelled = self.cancelled
+                if process.poll() is None:
+                    process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                stdout, stderr = process.communicate()
+                self.process = None
+                if was_cancelled:
+                    raise InterruptedError('Update check was cancelled.')
+                raise TimeoutError(f'git {args[0]} timed out: {stderr.strip()}')
+            time.sleep(0.1)
+        stdout, stderr = process.communicate()
+        self.process = None
+        result = subprocess.CompletedProcess(process.args, process.returncode, stdout.strip(), stderr.strip())
+        if result.returncode and not allow_failure:
+            raise RuntimeError(result.stderr or result.stdout or f'git {args[0]} failed')
+        return result
+
+    def check_worktree(self):
+        root = Path(self.git('rev-parse', '--show-toplevel').stdout).resolve()
+        if root != APP_DIR.resolve():
+            return None, 'wrong_repository'
+        branch = self.git('branch', '--show-current').stdout
+        if branch != UPDATE_BRANCH:
+            return None, 'wrong_branch'
+        origin = self.git('remote', 'get-url', 'origin').stdout.rstrip('/').removesuffix('.git')
+        expected = UPDATE_REMOTE_URL.removesuffix('.git')
+        if origin not in {expected, 'git@github.com:Tokke2/MediaConverterPro'}:
+            return None, 'wrong_repository'
+        if self.git('status', '--porcelain', '--untracked-files=all').stdout:
+            return None, 'dirty_worktree'
+        return self.git('rev-parse', 'HEAD').stdout, None
+
+    def run(self):
+        try:
+            local, reason = self.check_worktree()
+            if reason:
+                self.result_ready.emit({'status': 'skipped', 'reason': reason})
+                return
+            self.git('fetch', '--quiet', UPDATE_REMOTE_URL, UPDATE_BRANCH, timeout=90)
+            local_after_fetch, reason = self.check_worktree()
+            if reason:
+                self.result_ready.emit({'status': 'skipped', 'reason': reason})
+                return
+            local = local_after_fetch
+            remote = self.git('rev-parse', 'FETCH_HEAD').stdout
+            if local == remote:
+                self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote})
+                return
+            ancestry = self.git('merge-base', '--is-ancestor', 'HEAD', 'FETCH_HEAD', allow_failure=True)
+            if ancestry.returncode:
+                self.result_ready.emit({'status': 'skipped', 'reason': 'not_fast_forward', 'local': local, 'remote': remote})
+                return
+            if not self.apply_update:
+                self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote})
+                return
+            self.git('merge', '--ff-only', 'FETCH_HEAD')
+            self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote})
+        except InterruptedError:
+            self.result_ready.emit({'status': 'cancelled'})
+        except Exception as exc:
+            self.result_ready.emit({'status': 'error', 'message': str(exc)})
 
 
 class FitImageLabel(QtWidgets.QLabel):
@@ -2580,6 +2682,10 @@ class Window(QtWidgets.QMainWindow):
             self.autostart.setToolTip(self.translated('Autostart is supported on Windows, macOS and Linux only.'))
         self.autostart.toggled.connect(self.change_autostart)
         main.addWidget(self.autostart)
+        self.auto_update_check = QtWidgets.QCheckBox('Sök tyst efter nya versioner (2 ggr/dygn)')
+        self.auto_update_check.setChecked(self.ui_settings.value('autoUpdateCheck', True, type=bool))
+        self.auto_update_check.toggled.connect(self.change_auto_update_check)
+        main.addWidget(self.auto_update_check)
         self.restore_preferences()
         self.apply_language()
         for button in self.findChildren(QtWidgets.QPushButton):
@@ -2587,6 +2693,13 @@ class Window(QtWidgets.QMainWindow):
             button.setIconSize(QtCore.QSize(16, 16))
             button.clicked.connect(lambda checked=False, b=button: LOGGER.info('Knapp: %s', b.text()))
         self.toggle_theme()
+        self.auto_update_timer = QtCore.QTimer(self)
+        self.auto_update_timer.setSingleShot(True)
+        self.auto_update_timer.timeout.connect(self.run_scheduled_update_check)
+        self.git_update_worker = None
+        self._git_update_worker_active = False
+        self._git_update_restart_pending = False
+        self.schedule_auto_update_check(initial=True)
         LOGGER.info('Fönstret öppnat; loggfil: %s', LOG_FILE)
 
     def require_app_output(self, path):
@@ -3879,62 +3992,157 @@ class Window(QtWidgets.QMainWindow):
             LOGGER.exception('Could not start Python package update')
             self.show_message('critical', 'Python-uppdatering', str(exc))
 
-    def check_git_update(self):
-        self.git_update_button.setEnabled(False)
-        self.git_update_button.setText(self.translated('Kontrollerar GitHub main efter uppdateringar…'))
-        QtWidgets.QApplication.processEvents()
-        try:
-            def git(*args):
-                return subprocess.run(
-                    ['git', '-C', str(APP_DIR), *args], capture_output=True, text=True,
-                    encoding='utf-8', errors='replace', timeout=180, check=True,
-                ).stdout.strip()
+    def change_auto_update_check(self, enabled):
+        self.ui_settings.setValue('autoUpdateCheck', bool(enabled))
+        self.ui_settings.sync()
+        if enabled:
+            self.schedule_auto_update_check(initial=True)
+            LOGGER.info('Tyst versionssökning aktiverad (högst två gånger per dygn)')
+        else:
+            if hasattr(self, 'auto_update_timer'):
+                self.auto_update_timer.stop()
+            LOGGER.info('Tyst versionssökning avstängd')
 
-            root = Path(git('rev-parse', '--show-toplevel')).resolve()
-            if root != APP_DIR.resolve():
-                raise RuntimeError(self.translated('Endast en Git-arbetskopia på grenen main kan uppdateras.'))
-            branch = git('branch', '--show-current')
-            if branch != UPDATE_BRANCH:
-                raise RuntimeError(self.translated('Endast en Git-arbetskopia på grenen main kan uppdateras.'))
-            origin = git('remote', 'get-url', 'origin').rstrip('/').removesuffix('.git')
-            expected = UPDATE_REMOTE_URL.removesuffix('.git')
-            if origin not in {expected, 'git@github.com:Tokke2/MediaConverterPro'}:
-                raise RuntimeError(self.translated('Endast en Git-arbetskopia på grenen main kan uppdateras.'))
-            if git('status', '--porcelain', '--untracked-files=all'):
-                raise RuntimeError(self.translated('Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.'))
-            local = git('rev-parse', 'HEAD')
-            git('fetch', '--quiet', UPDATE_REMOTE_URL, UPDATE_BRANCH)
-            remote = git('rev-parse', 'FETCH_HEAD')
-            if git('status', '--porcelain', '--untracked-files=all'):
-                raise RuntimeError(self.translated('Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.'))
-            if local == remote:
+    def schedule_auto_update_check(self, initial=False):
+        if not hasattr(self, 'auto_update_timer') or not self.auto_update_check.isChecked():
+            if hasattr(self, 'auto_update_timer'):
+                self.auto_update_timer.stop()
+            return
+        try:
+            last_check = float(self.ui_settings.value('lastAutoUpdateCheck', 0))
+        except (TypeError, ValueError):
+            last_check = 0
+        interval = 12 * 60 * 60
+        seconds_until_due = interval - (time.time() - last_check)
+        delay_ms = 30_000 if last_check <= 0 or seconds_until_due <= 0 else int(seconds_until_due * 1000)
+        self.auto_update_timer.start(max(1000, delay_ms))
+
+    def run_scheduled_update_check(self):
+        if not self.auto_update_check.isChecked():
+            return
+        self.ui_settings.setValue('lastAutoUpdateCheck', time.time())
+        self.ui_settings.sync()
+        self.schedule_auto_update_check()
+        if self._git_update_worker_active:
+            LOGGER.info('Tyst versionssökning hoppas över eftersom en Git-kontroll redan körs')
+            return
+        self.start_git_update_check(silent=True)
+
+    def start_git_update_check(self, silent):
+        if self._git_update_worker_active:
+            return
+        self._git_update_worker_active = True
+        if not silent:
+            self.git_update_button.setEnabled(False)
+            self.git_update_button.setText(self.translated('Kontrollerar GitHub main efter uppdateringar…'))
+        self.git_update_worker = GitUpdateWorker(apply_update=False)
+        self._git_update_worker_mode = ('check', silent)
+        self._git_update_worker_result = None
+        self.git_update_worker.result_ready.connect(self.store_git_update_worker_result)
+        self.git_update_worker.finished.connect(self.git_update_worker_finished)
+        self.git_update_worker.start()
+
+    def check_git_update(self):
+        self.start_git_update_check(silent=False)
+
+    @QtCore.pyqtSlot(object)
+    def store_git_update_worker_result(self, result):
+        self._git_update_worker_result = result
+
+    @QtCore.pyqtSlot()
+    def git_update_worker_finished(self):
+        mode = getattr(self, '_git_update_worker_mode', ('check', False))
+        result = self._git_update_worker_result or {'status': 'error', 'message': self.translated('Uppdateringskontrollen kunde inte genomföras.')}
+        self.git_update_worker = None
+        self._git_update_worker_result = None
+        self._git_update_worker_active = False
+        if mode[0] == 'check':
+            self.finish_git_update_check(result, mode[1])
+        else:
+            self.finish_git_update(result)
+
+    def finish_git_update_check(self, result, silent):
+        self.git_update_button.setEnabled(True)
+        self.git_update_button.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+        status = result.get('status')
+        if status == 'current':
+            LOGGER.info('GitHub main är redan uppdaterad')
+            if not silent:
                 self.show_message('information', 'GitHub-uppdatering', 'MediaForge är redan uppdaterat.')
-                return
-            ancestry = subprocess.run(
-                ['git', '-C', str(APP_DIR), 'merge-base', '--is-ancestor', 'HEAD', 'FETCH_HEAD'],
-                capture_output=True, text=True, timeout=30,
-            )
-            if ancestry.returncode != 0:
-                raise RuntimeError(self.translated('Endast en Git-arbetskopia på grenen main kan uppdateras.'))
-            text = self.translated('Uppdatering tillgänglig: {local} → {remote}. Uppdatera nu? Endast snabbspolning tillåts.').format(local=local[:10], remote=remote[:10])
+            return
+        if status == 'available':
+            local, remote = result['local'], result['remote']
+            LOGGER.info('Ny GitHub-version upptäckt: %s -> %s', local, remote)
+            prompt = self.translated('Ny version finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efter uppdateringen.').format(local=local[:10], remote=remote[:10])
             reply = QtWidgets.QMessageBox.question(
-                self, self.translated('GitHub-uppdatering'), text,
+                self, self.translated('GitHub-uppdatering'), prompt,
                 QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
                 QtWidgets.QMessageBox.StandardButton.No,
             )
-            if reply != QtWidgets.QMessageBox.StandardButton.Yes:
-                return
-            if git('status', '--porcelain', '--untracked-files=all'):
-                raise RuntimeError(self.translated('Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.'))
-            git('merge', '--ff-only', 'FETCH_HEAD')
-            LOGGER.info('GitHub main update completed: %s -> %s', local, remote)
-            self.show_message('information', 'GitHub-uppdatering', 'Uppdateringen är klar. Starta om MediaForge för att använda den nya versionen.')
+            if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+                self.apply_git_update()
+            else:
+                LOGGER.info('Användaren avböjde GitHub-uppdateringen')
+            return
+        if status == 'skipped':
+            reason = result.get('reason', '')
+            if reason in {'wrong_branch', 'wrong_repository'}:
+                message = self.translated('Den tysta versionssökningen körs bara på en ren Git-arbetskopia av main.')
+            elif reason == 'dirty_worktree':
+                message = self.translated('Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.')
+            elif reason == 'not_fast_forward':
+                message = self.translated('Endast en Git-arbetskopia på grenen main kan uppdateras.')
+            else:
+                message = self.translated('Uppdateringskontrollen kunde inte genomföras.')
+            LOGGER.info('GitHub-uppdatering hoppas över: %s', reason)
+            if not silent:
+                self.show_message('information', 'GitHub-uppdatering', message)
+            return
+        if status == 'cancelled':
+            LOGGER.info('GitHub-versionskontroll avbröts')
+            return
+        message = result.get('message', self.translated('Uppdateringskontrollen kunde inte genomföras.'))
+        LOGGER.warning('GitHub-versionskontroll misslyckades: %s', message)
+        if not silent:
+            self.show_message('warning', 'GitHub-uppdatering', self.translated('Git-uppdateringen misslyckades:') + '\n' + message)
+
+    def apply_git_update(self):
+        if self._git_update_worker_active:
+            return
+        self._git_update_worker_active = True
+        self.git_update_button.setEnabled(False)
+        self.git_update_button.setText(self.translated('Uppdaterar GitHub-version…'))
+        self.git_update_worker = GitUpdateWorker(apply_update=True)
+        self._git_update_worker_mode = ('apply', False)
+        self._git_update_worker_result = None
+        self.git_update_worker.result_ready.connect(self.store_git_update_worker_result)
+        self.git_update_worker.finished.connect(self.git_update_worker_finished)
+        self.git_update_worker.start()
+
+    def finish_git_update(self, result):
+        self.git_update_button.setEnabled(True)
+        self.git_update_button.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+        if result.get('status') == 'updated':
+            LOGGER.info('GitHub main uppdaterad: %s -> %s', result.get('local'), result.get('remote'))
+            self.restart_after_git_update()
+            return
+        if result.get('status') == 'current':
+            self.show_message('information', 'GitHub-uppdatering', 'MediaForge är redan uppdaterat.')
+            return
+        message = result.get('message') or result.get('reason') or self.translated('Uppdateringen misslyckades. MediaForge startas inte om.')
+        LOGGER.error('GitHub-uppdateringen slutfördes inte: %s', message)
+        self.show_message('warning', 'GitHub-uppdatering', self.translated('Uppdateringen misslyckades. MediaForge startas inte om.') + '\n' + message)
+
+    def restart_after_git_update(self):
+        try:
+            command = [sys.executable, str(APP_DIR / 'fotoverktyg.pyw'), *sys.argv[1:]]
+            subprocess.Popen(command, cwd=APP_DIR, env=os.environ.copy(), close_fds=True)
+            self._git_update_restart_pending = True
+            LOGGER.info('MediaForge startas om tyst efter GitHub-uppdatering')
+            self.close()
         except Exception as exc:
-            LOGGER.exception('GitHub update check failed')
-            self.show_message('warning', 'GitHub-uppdatering', self.translated('Git-uppdateringen misslyckades:') + '\\n' + str(exc))
-        finally:
-            self.git_update_button.setEnabled(True)
-            self.git_update_button.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+            LOGGER.exception('Kunde inte starta om MediaForge efter uppdatering')
+            self.show_message('warning', 'GitHub-uppdatering', self.translated('Uppdateringen misslyckades. MediaForge startas inte om.') + '\n' + str(exc))
 
     def offer_missing_dependencies(self):
         import importlib.util
@@ -4738,7 +4946,7 @@ class Window(QtWidgets.QMainWindow):
             'preserveFolderStructure': 'structure', 'overwriteArchive': 'overwrite',
             'imageRecursive': 'image_recursive', 'imageStripMetadata': 'image_strip', 'libraryRecursive': 'library_recursive',
             'videoRecursive': 'video_recursive', 'audioRecursive': 'audio_recursive', 'duplicateRecursive': 'duplicate_recursive', 'colorRecursive': 'color_recursive', 'stabilizeRecursive': 'stabilize_recursive', 'cleanupRecursive': 'cleanup_recursive', 'codecRecursive': 'codec_recursive', 'musicRecursive': 'music_recursive',
-            'conversionKeepMetadata': 'conversion_metadata',
+            'conversionKeepMetadata': 'conversion_metadata', 'autoUpdateCheck': 'auto_update_check',
         }
         for key, attribute in checkbox_keys.items():
             widget = getattr(self, attribute, None)
@@ -4798,7 +5006,7 @@ class Window(QtWidgets.QMainWindow):
             'preserveFolderStructure': 'structure', 'overwriteArchive': 'overwrite',
             'imageRecursive': 'image_recursive', 'imageStripMetadata': 'image_strip', 'libraryRecursive': 'library_recursive',
             'videoRecursive': 'video_recursive', 'audioRecursive': 'audio_recursive', 'duplicateRecursive': 'duplicate_recursive', 'colorRecursive': 'color_recursive', 'stabilizeRecursive': 'stabilize_recursive', 'cleanupRecursive': 'cleanup_recursive', 'codecRecursive': 'codec_recursive', 'musicRecursive': 'music_recursive',
-            'conversionKeepMetadata': 'conversion_metadata',
+            'conversionKeepMetadata': 'conversion_metadata', 'autoUpdateCheck': 'auto_update_check',
         }
         for key, attribute in checkbox_keys.items():
             widget = getattr(self, attribute, None)
@@ -4817,6 +5025,19 @@ class Window(QtWidgets.QMainWindow):
         self.ui_settings.sync()
 
     def closeEvent(self, event):
+        git_worker = getattr(self, 'git_update_worker', None)
+        if git_worker and git_worker.isRunning():
+            if getattr(git_worker, 'apply_update', False) and not getattr(self, '_git_update_restart_pending', False):
+                event.ignore()
+                LOGGER.info('Stänger inte appen medan en GitHub-uppdatering skrivs till arbetskopian')
+                return
+            if not getattr(git_worker, 'apply_update', False):
+                git_worker.cancel()
+                if not git_worker.wait(5000):
+                    event.ignore()
+                    return
+        if hasattr(self, 'auto_update_timer'):
+            self.auto_update_timer.stop()
         if self.worker and self.worker.isRunning():
             self.cancel()
             self.worker.wait()
