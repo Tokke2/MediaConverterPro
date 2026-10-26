@@ -35,7 +35,7 @@ The launcher uses Python 3.10+ and stores the virtual environment, pip cache, te
 ### Optional system tools
 
 - **ExifTool**: recommended for broad metadata handling, including video, HEIC, RAW, PNG, and WEBP.
-- **FFmpeg** (including `ffprobe`): required for video conversion, stabilization, audio processing, and codec reports.
+- **FFmpeg** (including `ffprobe`): required for slideshow export, video conversion, stabilization, audio processing, and codec reports.
 - **xorriso**, **genisoimage**, or **mkisofs**: enables creating an ISO image for the music data-DVD.
 
 These are system programs, not Python packages, and are not installed by MediaForge.
@@ -59,6 +59,7 @@ For a source-code checkout on branch `main`, **Check for GitHub main updates** f
 
 ## Video and media tools
 
+- **Slideshow → MP4** — select and reorder images, set the display duration, choose no transition/fade/wipe/slide, optionally add music, and export H.264/AAC video. Images are not cropped; black bars pad mismatched aspect ratios. Requires FFmpeg; HEIC/HEIF/AVIF also require `pillow-heif`.
 - **Video conversion** — convert a folder of videos to MP4/H.264/AAC with optional 1080p/720p size limits and a quality setting. Re-encoding may reduce quality; originals are preserved. Requires FFmpeg.
 - **Audio from video** — batch-extract the first audio track to MP3, WAV, or FLAC, or create a silent video copy by removing audio streams. The silent-copy operation stream-copies video without re-encoding. Originals remain untouched; requires FFmpeg.
 - **Video stabilization** — stabilize clips with FFmpeg deshake and export H.264 copies; re-encoding can affect quality.
@@ -111,7 +112,7 @@ Startaren kräver Python 3.10+ och sparar virtuell miljö, paketcache, temporär
 ### Valfria systemverktyg
 
 - **ExifTool**: rekommenderas för bred metadatahantering, bland annat för video, HEIC, RAW, PNG och WEBP.
-- **FFmpeg** (inklusive `ffprobe`): krävs för videokonvertering, stabilisering, ljudbearbetning och codec-rapporter.
+- **FFmpeg** (inklusive `ffprobe`): krävs för bildspel, videokonvertering, stabilisering, ljudbearbetning och codec-rapporter.
 - **xorriso**, **genisoimage** eller **mkisofs**: möjliggör skapande av ISO-avbild för musik-data-DVD.
 
 Detta är systemprogram, inte Python-paket, och MediaForge installerar dem inte.
@@ -133,6 +134,7 @@ All lokalt skapad appdata och standardutdata sparas i `MediaForge_Data/` under a
 
 ## Video- och mediafunktioner
 
+- **Bildspel → MP4** — välj och sortera bilder, ställ in visningstid, välj ingen övergång/toning/svep/skjutning, lägg till valfri musik och exportera H.264/AAC-video. Bilder beskärs inte; svarta kanter fyller ut olika bildformat. Kräver FFmpeg.
 - **Videokonvertering** — konvertera en mapp med videor till MP4/H.264/AAC, med valfri maxstorlek 1080p/720p och kvalitetsinställning. Omkodning kan försämra kvaliteten; originalen bevaras. Kräver FFmpeg.
 - **Ljud från video** — extrahera första ljudspåret till MP3, WAV eller FLAC, eller skapa en ljudlös videokopia genom att ta bort ljudspåren. Ljudborttagning kopierar videoströmmen utan omkodning. Originalen ändras inte; kräver FFmpeg.
 - **Videostabilisering** — stabilisera klipp med FFmpeg deshake och exportera H.264-kopior; omkodning kan påverka kvaliteten.

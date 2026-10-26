@@ -1,6 +1,6 @@
 # MediaForge — Photo & Video Toolkit
 
-En gemensam skrivbordsapp för foton och video. Flikarna omfattar **Bildförbättring**, **Bildoptimering**, **Bildbibliotek**, **Fotoredigerare**, **Dubblettfinnare**, **Färgprofiler**, **Videokonvertering**, **Videostabilisering**, **Ljudförbättring**, **Codec-rapport**, **Ljud från video**, **Skapa musik-DVD**, **AVIF/HEIC → JPEG**, **Annonsbilder → JPEG**, **Webbbilder → JPEG**, **Blocket → JPEG**, **Datum & EXIF** och **Aktivitetslogg**. Originalen lämnas orörda; batchjobb sparar kopior i en separat målmapp. Programmet stöder bildbearbetning, metadata-/datumhantering och videokonvertering via FFmpeg.
+En gemensam skrivbordsapp för foton och video. Flikarna omfattar **Bildförbättring**, **Bildoptimering**, **Bildbibliotek**, **Fotoredigerare**, **Bildspel → MP4**, **Dubblettfinnare**, **Färgprofiler**, **Videokonvertering**, **Videostabilisering**, **Ljudförbättring**, **Codec-rapport**, **Ljud från video**, **Skapa musik-DVD**, **AVIF/HEIC → JPEG**, **Annonsbilder → JPEG**, **Webbbilder → JPEG**, **Blocket → JPEG**, **Datum & EXIF** och **Aktivitetslogg**. Originalen lämnas orörda; batchjobb sparar kopior i en separat målmapp. Programmet stöder bildbearbetning, metadata-/datumhantering och videokonvertering via FFmpeg.
 
 ## Installera och starta
 
@@ -19,6 +19,8 @@ Allt som MediaForge skapar eller använder lokalt sparas i `MediaForge_Data/` br
 **Sök tyst efter nya versioner (2 ggr/dygn)** är aktiverat som standard och kontrollerar högst var tolfte timme medan appen är öppen. Inget visas om ingen uppdatering finns. Om en ny version hittas får du fortfarande bekräfta innan ändringen görs. Då uppdateras en ren Git-arbetskopia på `main` med snabbspolning och appen startas om tyst. Funktionen kör inte när appen är stängd och fungerar inte i kopior utan Git.
 
 ## Användning
+
+**Bildspel → MP4:** välj **Välj bilder…** för att lägga till foton och dra sedan raderna till önskad ordning. Ställ in visningstid och övergång (ingen, tona, svep eller skjut), välj Full HD/HD/kvadrat och lägg eventuellt till en musikfil. Välj en MP4-utdatafil under appmappen och klicka **Skapa bildspel**. Musik loopas om den är kortare än videon. Bilderna skalas så att hela bilden ryms; svarta kanter fyller ut bildformat som inte matchar videon. FFmpeg krävs; HEIC/HEIF/AVIF kräver även `pillow-heif`. Originalbilder och musikfil lämnas orörda.
 
 **Bildbibliotek:** välj **Öppna bildmapp…** och bläddra bland miniatyrerna i mappen. Välj en bild för stor förhandsvisning, använd **Föregående/Nästa** eller öppna **Helskärm** (piltangenter, Esc för att stänga), och klicka **Skriv ut…** för att välja skrivare och utskriftsinställningar. Markera **Inkludera undermappar** vid behov. Mappen läses på plats; MediaForge kopierar eller ändrar inte bilderna. HEIC/HEIF/AVIF-förhandsvisning kräver `pillow-heif`. Startas MediaForge med en bildfil som argument öppnas dess mapp och fotot markeras. Välj MediaForge manuellt som standardapp för bildformat i operativsystemets inställningar; programmet ändrar inte filassociationer automatiskt.
 

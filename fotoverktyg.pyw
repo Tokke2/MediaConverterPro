@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tempfile
 import csv
 import json
 import hashlib
@@ -710,6 +711,46 @@ UI_TRANSLATIONS.update({
     '{width} × {height} · {size} byte · ändrad {date}': '{width} × {height} · {size} bytes · modified {date}',
 })
 
+UI_TRANSLATIONS.update({
+    'Bildspel → MP4': 'Slideshow → MP4',
+    'Välj bilder, dra dem till önskad ordning och skapa ett MP4-bildspel med valfri övergång och musik. Bilder beskärs inte; olika bildformat får svarta kanter.': 'Select images, drag them into the desired order, and create an MP4 slideshow with an optional transition and music. Images are not cropped; different aspect ratios get black bars.',
+    'Valda bilder (dra för att ändra ordning)': 'Selected images (drag to reorder)',
+    'Välj bilder…': 'Choose images…',
+    'Ta bort valda': 'Remove selected',
+    'Rensa lista': 'Clear list',
+    'Bildlängd (sekunder)': 'Duration per image (seconds)',
+    'Övergång': 'Transition',
+    'Ingen övergång': 'None',
+    'Tona': 'Fade',
+    'Svep vänster': 'Wipe left',
+    'Skjut vänster': 'Slide left',
+    'Övergångstid (sekunder)': 'Transition duration (seconds)',
+    'Videostorlek': 'Video size',
+    'Full HD · 1920 × 1080': 'Full HD · 1920 × 1080',
+    'HD · 1280 × 720': 'HD · 1280 × 720',
+    'Kvadrat · 1080 × 1080': 'Square · 1080 × 1080',
+    'Musik (valfritt)': 'Music (optional)',
+    'Välj en ljudfil…': 'Choose an audio file…',
+    'Välj musik…': 'Choose music…',
+    'Utdatafil (MP4)': 'Output file (MP4)',
+    'Spara som…': 'Save as…',
+    'Spara bildspel': 'Save slideshow',
+    'Kräver FFmpeg. HEIC/HEIF/AVIF kräver pillow-heif. Musik loopas vid behov och kapas till videons längd. Exporten kodas som H.264/AAC; originalbilder och musik ändras inte.': 'Requires FFmpeg. HEIC/HEIF/AVIF need pillow-heif. Music loops if needed and is trimmed to the video duration. The export uses H.264/AAC; original images and music are unchanged.',
+    'Skapa bildspel': 'Create slideshow',
+    'Inga bilder valda': 'No images selected',
+    'Välj minst en bild till bildspelet.': 'Choose at least one image for the slideshow.',
+    'Ogiltig bildfil': 'Invalid image file',
+    'En eller flera valda bildfiler kan inte hittas.': 'One or more selected image files could not be found.',
+    'Ogiltig utdatafil': 'Invalid output file',
+    'Välj ett filnamn som slutar på .mp4.': 'Choose a filename ending in .mp4.',
+    'Ogiltig musikfil': 'Invalid music file',
+    'Välj en giltig ljudfil eller rensa musikfältet.': 'Choose a valid audio file or clear the music field.',
+    'Bekräfta ersättning': 'Confirm replacement',
+    'Filen finns redan. Vill du ersätta den när det nya bildspelet är klart?': 'The file already exists. Replace it when the new slideshow is complete?',
+    'Bilderna är klara; FFmpeg skapar MP4-filen…': 'Images are ready; FFmpeg is creating the MP4…',
+    'Bildspel avbrutet.': 'Slideshow cancelled.',
+})
+
 def exiftool(args, timeout=60):
     exe = shutil.which('exiftool')
     if not exe:
@@ -1279,6 +1320,147 @@ class VideoConvertWorker(QtCore.QThread):
         self.cancelled = True
         if self.process and self.process.poll() is None:
             self.process.terminate()
+
+
+class SlideshowWorker(QtCore.QThread):
+    message = QtCore.pyqtSignal(str)
+    progress = QtCore.pyqtSignal(int, int)
+    completed = QtCore.pyqtSignal()
+
+    def __init__(self, images, output, music, slide_seconds, transition, transition_seconds, size):
+        super().__init__()
+        self.images = [Path(path) for path in images]
+        self.output = Path(output)
+        self.music = Path(music) if music else None
+        self.slide_seconds = float(slide_seconds)
+        self.transition = transition
+        self.transition_seconds = float(transition_seconds)
+        self.size = tuple(size)
+        self.cancelled = False
+        self.process = None
+
+    def cancel(self):
+        self.cancelled = True
+        if self.process is not None and self.process.poll() is None:
+            try:
+                self.process.terminate()
+            except OSError:
+                pass
+
+    def run(self):
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg och se till att kommandot ffmpeg finns i PATH.')
+            self.completed.emit()
+            return
+        if not self.images:
+            self.message.emit('FEL: Välj minst en bild till bildspelet.')
+            self.completed.emit()
+            return
+        temporary_output = None
+        try:
+            register_modern_formats()
+            self.output.parent.mkdir(parents=True, exist_ok=True)
+            temporary_root = APP_DATA_DIR / 'Temp'
+            temporary_root.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix='slideshow-', dir=temporary_root) as work_dir:
+                frames_dir = Path(work_dir)
+                total = len(self.images)
+                self.progress.emit(0, total)
+                for index, source in enumerate(self.images, 1):
+                    if self.cancelled:
+                        raise InterruptedError('Bildspel avbrutet.')
+                    with Image.open(source) as opened:
+                        image = ImageOps.exif_transpose(opened)
+                        rgba = image.convert('RGBA')
+                        canvas = Image.new('RGB', rgba.size, (0, 0, 0))
+                        canvas.paste(rgba, mask=rgba.getchannel('A'))
+                        frame = ImageOps.contain(canvas, self.size, method=Image.Resampling.LANCZOS)
+                        output_frame = Image.new('RGB', self.size, (0, 0, 0))
+                        output_frame.paste(frame, ((self.size[0] - frame.width) // 2, (self.size[1] - frame.height) // 2))
+                        output_frame.save(frames_dir / f'frame_{index:05d}.jpg', 'JPEG', quality=95, optimize=True)
+                    self.progress.emit(index, total)
+                if self.cancelled:
+                    raise InterruptedError('Bildspel avbrutet.')
+
+                fd, temporary_output = tempfile.mkstemp(prefix='.mediaforge-slideshow-', suffix='.mp4', dir=self.output.parent)
+                os.close(fd)
+                args = [ffmpeg, '-hide_banner', '-loglevel', 'error', '-nostdin', '-filter_complex_threads', '1']
+                frame_paths = [frames_dir / f'frame_{index:05d}.jpg' for index in range(1, total + 1)]
+                for frame in frame_paths:
+                    args += ['-loop', '1', '-framerate', '30', '-t', f'{self.slide_seconds:.3f}', '-i', str(frame)]
+                if self.music:
+                    args += ['-stream_loop', '-1', '-i', str(self.music)]
+
+                filters = []
+                for index in range(total):
+                    filters.append(f'[{index}:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[v{index}]')
+                if total == 1:
+                    filters.append('[v0]format=yuv420p[vout]')
+                    video_seconds = self.slide_seconds
+                elif self.transition == 'none':
+                    filters.append(''.join(f'[v{index}]' for index in range(total)) + f'concat=n={total}:v=1:a=0[vout]')
+                    video_seconds = total * self.slide_seconds
+                else:
+                    previous = 'v0'
+                    overlap = min(self.transition_seconds, self.slide_seconds - 0.1)
+                    for index in range(1, total):
+                        current = f'x{index}'
+                        offset = index * (self.slide_seconds - overlap)
+                        filters.append(
+                            f'[{previous}][v{index}]xfade=transition={self.transition}:'
+                            f'duration={overlap:.3f}:offset={offset:.3f}[{current}]'
+                        )
+                        previous = current
+                    filters.append(f'[{previous}]format=yuv420p[vout]')
+                    video_seconds = total * self.slide_seconds - (total - 1) * overlap
+                args += ['-filter_complex', ';'.join(filters), '-map', '[vout]']
+                if self.music:
+                    args += ['-map', f'{total}:a:0', '-c:a', 'aac', '-b:a', '192k', '-shortest']
+                else:
+                    args += ['-an']
+                args += [
+                    '-t', f'{video_seconds:.3f}', '-r', '30', '-c:v', 'libx264',
+                    '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
+                    '-movflags', '+faststart', '-y', temporary_output,
+                ]
+                self.message.emit('Bilderna är klara; FFmpeg skapar MP4-filen…')
+                self.progress.emit(-1, 0)
+                error_log = frames_dir / 'ffmpeg-error.log'
+                with error_log.open('wb') as stderr_file:
+                    self.process = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=stderr_file)
+                    while self.process.poll() is None:
+                        if self.cancelled:
+                            self.process.terminate()
+                            try:
+                                self.process.wait(timeout=5)
+                            except subprocess.TimeoutExpired:
+                                self.process.kill()
+                            break
+                        self.msleep(100)
+                    return_code = self.process.wait()
+                self.process = None
+                if self.cancelled:
+                    raise InterruptedError('Bildspel avbrutet.')
+                if return_code:
+                    error = error_log.read_bytes()[-4000:].decode('utf-8', errors='replace').strip()
+                    raise RuntimeError(error or f'FFmpeg avslutades med kod {return_code}.')
+                os.replace(temporary_output, self.output)
+                temporary_output = None
+                self.progress.emit(1, 1)
+                self.message.emit(f'KLAR: Bildspel sparat: {self.output}')
+        except InterruptedError:
+            self.message.emit('Bildspel avbrutet.')
+        except Exception as exc:
+            self.message.emit(f'FEL: Bildspel kunde inte skapas: {exc}')
+        finally:
+            self.process = None
+            if temporary_output and os.path.exists(temporary_output):
+                try:
+                    os.unlink(temporary_output)
+                except OSError:
+                    pass
+            self.completed.emit()
 
 
 class VideoAudioWorker(QtCore.QThread):
@@ -2550,6 +2732,7 @@ class Window(QtWidgets.QMainWindow):
         self.build_duplicate_tab()
         self.build_color_profile_tab()
         self.build_video_tab()
+        self.build_slideshow_tab()
         self.build_video_audio_tab()
         self.build_video_stabilize_tab()
         self.build_audio_cleanup_tab()
@@ -3102,6 +3285,222 @@ class Window(QtWidgets.QMainWindow):
         self.video_log = QtWidgets.QPlainTextEdit()
         self.video_log.setReadOnly(True)
         layout.addWidget(self.video_log, 1)
+
+    def build_slideshow_tab(self):
+        tab = QtWidgets.QWidget()
+        tab.setProperty('mediaMode', 'photo')
+        self.tabs.addTab(tab, 'Bildspel → MP4')
+        layout = QtWidgets.QVBoxLayout(tab)
+        layout.addWidget(QtWidgets.QLabel('Välj bilder, dra dem till önskad ordning och skapa ett MP4-bildspel med valfri övergång och musik. Bilder beskärs inte; olika bildformat får svarta kanter.'))
+
+        list_heading = QtWidgets.QLabel('Valda bilder (dra för att ändra ordning)')
+        layout.addWidget(list_heading)
+        self.slideshow_image_list = QtWidgets.QListWidget()
+        self.slideshow_image_list.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.slideshow_image_list.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
+        self.slideshow_image_list.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
+        self.slideshow_image_list.setMinimumHeight(150)
+        layout.addWidget(self.slideshow_image_list)
+        image_buttons = QtWidgets.QHBoxLayout()
+        self.slideshow_add_button = QtWidgets.QPushButton('Välj bilder…')
+        self.slideshow_add_button.clicked.connect(self.add_slideshow_images)
+        image_buttons.addWidget(self.slideshow_add_button)
+        self.slideshow_remove_button = QtWidgets.QPushButton('Ta bort valda')
+        self.slideshow_remove_button.clicked.connect(self.remove_slideshow_images)
+        image_buttons.addWidget(self.slideshow_remove_button)
+        self.slideshow_clear_button = QtWidgets.QPushButton('Rensa lista')
+        self.slideshow_clear_button.clicked.connect(self.slideshow_image_list.clear)
+        image_buttons.addWidget(self.slideshow_clear_button)
+        image_buttons.addStretch()
+        layout.addLayout(image_buttons)
+
+        options = QtWidgets.QHBoxLayout()
+        options.addWidget(QtWidgets.QLabel('Bildlängd (sekunder)'))
+        self.slideshow_duration = QtWidgets.QSpinBox()
+        self.slideshow_duration.setRange(2, 30)
+        self.slideshow_duration.setValue(int(self.ui_settings.value('slideshowDuration', 5)))
+        self.slideshow_duration.setSuffix(' s')
+        options.addWidget(self.slideshow_duration)
+        options.addWidget(QtWidgets.QLabel('Övergång'))
+        self.slideshow_transition = QtWidgets.QComboBox()
+        self.slideshow_transition.addItem('Ingen övergång', 'none')
+        self.slideshow_transition.addItem('Tona', 'fade')
+        self.slideshow_transition.addItem('Svep vänster', 'wipeleft')
+        self.slideshow_transition.addItem('Skjut vänster', 'slideleft')
+        self.slideshow_transition.setCurrentIndex(max(0, min(int(self.ui_settings.value('slideshowTransition', 1)), self.slideshow_transition.count() - 1)))
+        options.addWidget(self.slideshow_transition)
+        options.addWidget(QtWidgets.QLabel('Övergångstid (sekunder)'))
+        self.slideshow_transition_duration = QtWidgets.QDoubleSpinBox()
+        self.slideshow_transition_duration.setRange(0.1, 1.5)
+        self.slideshow_transition_duration.setSingleStep(0.1)
+        self.slideshow_transition_duration.setDecimals(1)
+        self.slideshow_transition_duration.setValue(float(self.ui_settings.value('slideshowTransitionDuration', 0.7)))
+        self.slideshow_transition_duration.setSuffix(' s')
+        options.addWidget(self.slideshow_transition_duration)
+        options.addWidget(QtWidgets.QLabel('Videostorlek'))
+        self.slideshow_size = QtWidgets.QComboBox()
+        self.slideshow_size.addItem('Full HD · 1920 × 1080', (1920, 1080))
+        self.slideshow_size.addItem('HD · 1280 × 720', (1280, 720))
+        self.slideshow_size.addItem('Kvadrat · 1080 × 1080', (1080, 1080))
+        self.slideshow_size.setCurrentIndex(max(0, min(int(self.ui_settings.value('slideshowSize', 0)), self.slideshow_size.count() - 1)))
+        options.addWidget(self.slideshow_size)
+        options.addStretch()
+        layout.addLayout(options)
+
+        music_row = QtWidgets.QHBoxLayout()
+        music_row.addWidget(QtWidgets.QLabel('Musik (valfritt)'))
+        self.slideshow_music = QtWidgets.QLineEdit(str(self.ui_settings.value('slideshowMusic', '')))
+        self.slideshow_music.setPlaceholderText('Välj en ljudfil…')
+        music_row.addWidget(self.slideshow_music, 1)
+        music_button = QtWidgets.QPushButton('Välj musik…')
+        music_button.clicked.connect(self.choose_slideshow_music)
+        music_row.addWidget(music_button)
+        clear_music = QtWidgets.QPushButton('Rensa')
+        clear_music.clicked.connect(self.slideshow_music.clear)
+        music_row.addWidget(clear_music)
+        layout.addLayout(music_row)
+
+        output_row = QtWidgets.QHBoxLayout()
+        output_row.addWidget(QtWidgets.QLabel('Utdatafil (MP4)'))
+        default_output = OUTPUT_DIR / 'Slideshows' / 'slideshow.mp4'
+        self.slideshow_output = QtWidgets.QLineEdit(str(self.ui_settings.value('slideshowOutput', default_output)))
+        output_row.addWidget(self.slideshow_output, 1)
+        output_button = QtWidgets.QPushButton('Spara som…')
+        output_button.clicked.connect(self.choose_slideshow_output)
+        output_row.addWidget(output_button)
+        layout.addLayout(output_row)
+        layout.addWidget(QtWidgets.QLabel('Kräver FFmpeg. HEIC/HEIF/AVIF kräver pillow-heif. Musik loopas vid behov och kapas till videons längd. Exporten kodas som H.264/AAC; originalbilder och musik ändras inte.'))
+
+        action_row = QtWidgets.QHBoxLayout()
+        self.slideshow_go = QtWidgets.QPushButton('Skapa bildspel')
+        self.slideshow_go.clicked.connect(self.start_slideshow)
+        action_row.addWidget(self.slideshow_go)
+        self.slideshow_cancel_button = QtWidgets.QPushButton('Avbryt')
+        self.slideshow_cancel_button.setEnabled(False)
+        self.slideshow_cancel_button.clicked.connect(self.cancel_slideshow)
+        action_row.addWidget(self.slideshow_cancel_button)
+        action_row.addStretch()
+        layout.addLayout(action_row)
+        self.slideshow_progress = QtWidgets.QProgressBar()
+        layout.addWidget(self.slideshow_progress)
+        self.slideshow_log = QtWidgets.QPlainTextEdit()
+        self.slideshow_log.setReadOnly(True)
+        layout.addWidget(self.slideshow_log, 1)
+        self.slideshow_worker = None
+        saved_images = self.ui_settings.value('slideshowImages', [])
+        if isinstance(saved_images, str):
+            saved_images = [saved_images]
+        for image_path in saved_images or []:
+            if Path(str(image_path)).is_file():
+                self._append_slideshow_image(str(image_path))
+
+    def _append_slideshow_image(self, path):
+        path = str(Path(path).expanduser().resolve())
+        if any(self.slideshow_image_list.item(index).data(QtCore.Qt.ItemDataRole.UserRole) == path for index in range(self.slideshow_image_list.count())):
+            return
+        item = QtWidgets.QListWidgetItem(Path(path).name)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, path)
+        item.setToolTip(path)
+        self.slideshow_image_list.addItem(item)
+
+    def add_slideshow_images(self):
+        image_filter = 'Images (*.jpg *.jpeg *.png *.webp *.tif *.tiff *.bmp *.gif *.heic *.heif *.avif)'
+        paths, _ = QtWidgets.QFileDialog.getOpenFileNames(self, self.translated('Välj bilder…'), str(Path.home()), image_filter)
+        for path in paths:
+            self._append_slideshow_image(path)
+
+    def remove_slideshow_images(self):
+        for item in self.slideshow_image_list.selectedItems():
+            self.slideshow_image_list.takeItem(self.slideshow_image_list.row(item))
+
+    def choose_slideshow_music(self):
+        audio_filter = 'Audio files (' + ' '.join('*' + extension for extension in sorted(AUDIO_FILE_EXTENSIONS)) + ')'
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, self.translated('Välj musik…'), self.slideshow_music.text() or str(Path.home()), audio_filter)
+        if path:
+            self.slideshow_music.setText(path)
+
+    def choose_slideshow_output(self):
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(self, self.translated('Spara bildspel'), self.slideshow_output.text(), 'MP4 video (*.mp4)')
+        if path:
+            output = Path(path)
+            if output.suffix.lower() != '.mp4':
+                output = output.with_suffix('.mp4')
+            self.slideshow_output.setText(str(output))
+
+    def update_slideshow_progress(self, done, total):
+        if total <= 0:
+            self.slideshow_progress.setRange(0, 0)
+        else:
+            self.slideshow_progress.setRange(0, total)
+            self.slideshow_progress.setValue(done)
+
+    def start_slideshow(self):
+        images = [self.slideshow_image_list.item(index).data(QtCore.Qt.ItemDataRole.UserRole) for index in range(self.slideshow_image_list.count())]
+        if not images:
+            self.show_message('warning', 'Inga bilder valda', 'Välj minst en bild till bildspelet.')
+            return
+        if any(not Path(path).is_file() for path in images):
+            self.show_message('warning', 'Ogiltig bildfil', 'En eller flera valda bildfiler kan inte hittas.')
+            return
+        raw_output = Path(self.slideshow_output.text()).expanduser()
+        if raw_output.suffix.lower() != '.mp4':
+            self.show_message('warning', 'Ogiltig utdatafil', 'Välj ett filnamn som slutar på .mp4.')
+            return
+        output = self.require_app_output(raw_output)
+        if output is None:
+            return
+        music_text = self.slideshow_music.text().strip()
+        music = Path(music_text).expanduser().resolve() if music_text else None
+        if music and (not music.is_file() or music.suffix.lower() not in AUDIO_FILE_EXTENSIONS):
+            self.show_message('warning', 'Ogiltig musikfil', 'Välj en giltig ljudfil eller rensa musikfältet.')
+            return
+        if output.exists():
+            reply = QtWidgets.QMessageBox.question(
+                self, self.translated('Bekräfta ersättning'), self.translated('Filen finns redan. Vill du ersätta den när det nya bildspelet är klart?'),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No,
+            )
+            if reply != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
+        if self.slideshow_worker and self.slideshow_worker.isRunning():
+            return
+        size = self.slideshow_size.currentData()
+        transition = self.slideshow_transition.currentData()
+        self.ui_settings.setValue('slideshowImages', images)
+        self.ui_settings.setValue('slideshowMusic', music_text)
+        self.ui_settings.setValue('slideshowOutput', str(output))
+        self.ui_settings.setValue('slideshowDuration', self.slideshow_duration.value())
+        self.ui_settings.setValue('slideshowTransition', self.slideshow_transition.currentIndex())
+        self.ui_settings.setValue('slideshowTransitionDuration', self.slideshow_transition_duration.value())
+        self.ui_settings.setValue('slideshowSize', self.slideshow_size.currentIndex())
+        self.ui_settings.sync()
+        self.slideshow_worker = SlideshowWorker(
+            images, output, music, self.slideshow_duration.value(), transition,
+            self.slideshow_transition_duration.value(), size,
+        )
+        self.slideshow_worker.message.connect(self.append_slideshow_message)
+        self.slideshow_worker.message.connect(self.record)
+        self.slideshow_worker.progress.connect(self.update_slideshow_progress)
+        self.slideshow_worker.completed.connect(self.slideshow_finished)
+        self.slideshow_go.setEnabled(False)
+        self.slideshow_cancel_button.setEnabled(True)
+        self.slideshow_progress.setRange(0, len(images))
+        self.slideshow_progress.setValue(0)
+        self.slideshow_log.appendPlainText(f'Skapa bildspel med {len(images)} bilder → {output}')
+        self.slideshow_worker.start()
+
+    def cancel_slideshow(self):
+        worker = getattr(self, 'slideshow_worker', None)
+        if worker:
+            worker.cancel()
+        self.slideshow_cancel_button.setEnabled(False)
+
+    def slideshow_finished(self):
+        self.slideshow_go.setEnabled(True)
+        self.slideshow_cancel_button.setEnabled(False)
+        if self.slideshow_progress.maximum() == 0:
+            self.slideshow_progress.setRange(0, 1)
+            self.slideshow_progress.setValue(1)
 
     def build_video_audio_tab(self):
         tab = QtWidgets.QWidget()
@@ -3690,6 +4089,10 @@ class Window(QtWidgets.QMainWindow):
         self.append_worker_message(self.audio_log, text)
 
     @QtCore.pyqtSlot(str)
+    def append_slideshow_message(self, text):
+        self.append_worker_message(self.slideshow_log, text)
+
+    @QtCore.pyqtSlot(str)
     def append_duplicate_message(self, text):
         self.append_worker_message(self.duplicate_log, text)
 
@@ -3740,6 +4143,8 @@ class Window(QtWidgets.QMainWindow):
             'Avbrutet.': 'Cancelled.',
             'Bildoptimering avbruten.': 'Image optimization cancelled.',
             'Videokonvertering avbruten.': 'Video conversion cancelled.',
+            'Bildspel avbrutet.': 'Slideshow cancelled.',
+            'Bilderna är klara; FFmpeg skapar MP4-filen…': 'Images are ready; FFmpeg is creating the MP4…',
             'Konvertering avbruten.': 'Conversion cancelled.',
             'Inga videofiler hittades.': 'No video files found.',
             'Ljud/videojobb avbrutet.': 'Audio/video job cancelled.',
@@ -3759,7 +4164,7 @@ class Window(QtWidgets.QMainWindow):
         if text in exact:
             return exact[text]
         replacements = (
-            ('KONVERTERINGSFEL:', 'CONVERSION ERROR:'), ('Ljudspår borttaget; video kopierad utan omkodning', 'Audio removed; video copied without re-encoding'), ('Ljudspår extraherat', 'Audio track extracted'), ('Flyttad till karantän:', 'Moved to quarantine:'), ('Kunde inte flytta', 'Could not move'), ('Skanningen klar.', 'Scan complete.'), ('dubblettgrupper hittades.', 'duplicate groups found.'), ('Stabiliserad kopia:', 'Stabilized copy:'), ('Normaliserad:', 'Normalized:'), ('Brusreducerad:', 'Noise reduced:'), ('Färgprofilkonvertering avbruten', 'Color profile conversion cancelled'), ('Videostabilisering avbruten', 'Video stabilization cancelled'), ('Ljudbearbetning avbruten', 'Audio processing cancelled'), ('Codec-rapport klar.', 'Codec report complete.'), ('filer analyserades.', 'files analyzed.'), ('ANNONSFEL', 'AD ERROR'), ('BILDFEL', 'IMAGE ERROR'),
+            ('KONVERTERINGSFEL:', 'CONVERSION ERROR:'), ('Bildspel kunde inte skapas:', 'Could not create slideshow:'), ('Bildspel sparat:', 'Slideshow saved:'), ('Välj minst en bild till bildspelet.', 'Choose at least one image for the slideshow.'), ('FFmpeg saknas. Installera FFmpeg och se till att kommandot ffmpeg finns i PATH.', 'FFmpeg is missing. Install it and ensure the ffmpeg command is on PATH.'), ('Ljudspår borttaget; video kopierad utan omkodning', 'Audio removed; video copied without re-encoding'), ('Ljudspår extraherat', 'Audio track extracted'), ('Flyttad till karantän:', 'Moved to quarantine:'), ('Kunde inte flytta', 'Could not move'), ('Skanningen klar.', 'Scan complete.'), ('dubblettgrupper hittades.', 'duplicate groups found.'), ('Stabiliserad kopia:', 'Stabilized copy:'), ('Normaliserad:', 'Normalized:'), ('Brusreducerad:', 'Noise reduced:'), ('Färgprofilkonvertering avbruten', 'Color profile conversion cancelled'), ('Videostabilisering avbruten', 'Video stabilization cancelled'), ('Ljudbearbetning avbruten', 'Audio processing cancelled'), ('Codec-rapport klar.', 'Codec report complete.'), ('filer analyserades.', 'files analyzed.'), ('ANNONSFEL', 'AD ERROR'), ('BILDFEL', 'IMAGE ERROR'),
             ('HOPPADES ÖVER:', 'SKIPPED:'), ('KLART:', 'DONE:'), ('KLAR:', 'DONE:'), ('FEL:', 'ERROR:'), ('INFO:', 'INFO:'),
             ('Kopierad:', 'Copied:'), ('Sparad:', 'Saved:'), ('Sparad ', 'Saved '), ('Annons ', 'Ad '),
             (' bilder sparade', ' images saved'), (' hittade ', ' found '), (' unika galleribilder (hämtar samtliga)', ' unique gallery images (downloading all)'),
@@ -4990,11 +5395,12 @@ class Window(QtWidgets.QMainWindow):
             'musicSourceFolder': 'music_source', 'musicOutputFolder': 'music_destination',
             'webOutputFolder': 'web_destination', 'adOutputFolder': 'ad_destination',
             'conversionOutputFolder': 'conversion_destination',
+            'slideshowOutput': 'slideshow_output', 'slideshowMusic': 'slideshow_music',
         }
         for key, attribute in fields.items():
             field = getattr(self, attribute, None)
             if field is not None:
-                if key in {'sourceFolder', 'imageSourceFolder', 'libraryFolder', 'videoSourceFolder', 'audioSourceFolder', 'duplicateSourceFolder', 'colorSourceFolder', 'stabilizeSourceFolder', 'cleanupSourceFolder', 'codecSourceFolder', 'musicSourceFolder'} or is_app_owned_path(field.text()):
+                if key in {'sourceFolder', 'imageSourceFolder', 'libraryFolder', 'videoSourceFolder', 'audioSourceFolder', 'duplicateSourceFolder', 'colorSourceFolder', 'stabilizeSourceFolder', 'cleanupSourceFolder', 'codecSourceFolder', 'musicSourceFolder', 'slideshowMusic'} or is_app_owned_path(field.text()):
                     self.ui_settings.setValue(key, field.text())
         current = self.tabs.currentWidget()
         if current is not None:
@@ -5022,6 +5428,12 @@ class Window(QtWidgets.QMainWindow):
         self.ui_settings.setValue('dateMode', 'offset' if self.offset.isChecked() else 'absolute')
         self.ui_settings.setValue('dateOffsetSign', self.sign.currentIndex())
         self.ui_settings.setValue('dateOffsetParts', [spin.value() for spin in self.offset_spins])
+        if hasattr(self, 'slideshow_duration'):
+            self.ui_settings.setValue('slideshowImages', [self.slideshow_image_list.item(index).data(QtCore.Qt.ItemDataRole.UserRole) for index in range(self.slideshow_image_list.count())])
+            self.ui_settings.setValue('slideshowDuration', self.slideshow_duration.value())
+            self.ui_settings.setValue('slideshowTransition', self.slideshow_transition.currentIndex())
+            self.ui_settings.setValue('slideshowTransitionDuration', self.slideshow_transition_duration.value())
+            self.ui_settings.setValue('slideshowSize', self.slideshow_size.currentIndex())
         self.ui_settings.sync()
 
     def closeEvent(self, event):
@@ -5055,7 +5467,7 @@ class Window(QtWidgets.QMainWindow):
         if getattr(self, 'library_scan_worker', None) and self.library_scan_worker.isRunning():
             self.library_scan_worker.cancelled = True
             self.library_scan_worker.wait()
-        for worker_name, cancel_method in (('image_worker', self.cancel_image_optimization), ('video_worker', self.cancel_video_conversion), ('audio_worker', self.cancel_video_audio), ('color_worker', self.cancel_color_conversion), ('stabilize_worker', self.cancel_video_stabilization), ('cleanup_worker', self.cancel_audio_cleanup), ('codec_worker', self.cancel_codec_report), ('duplicate_scan_worker', self.cancel_duplicate_scan), ('duplicate_move_worker', self.cancel_duplicate_move), ('music_worker', self.cancel_music_dvd)):
+        for worker_name, cancel_method in (('image_worker', self.cancel_image_optimization), ('video_worker', self.cancel_video_conversion), ('audio_worker', self.cancel_video_audio), ('color_worker', self.cancel_color_conversion), ('stabilize_worker', self.cancel_video_stabilization), ('cleanup_worker', self.cancel_audio_cleanup), ('codec_worker', self.cancel_codec_report), ('duplicate_scan_worker', self.cancel_duplicate_scan), ('duplicate_move_worker', self.cancel_duplicate_move), ('music_worker', self.cancel_music_dvd), ('slideshow_worker', self.cancel_slideshow)):
             worker = getattr(self, worker_name, None)
             if worker and worker.isRunning():
                 cancel_method()
