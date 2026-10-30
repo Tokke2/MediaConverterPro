@@ -16,7 +16,7 @@ Installera även **ExifTool** separat för bred metadatahantering, **FFmpeg** f�
 
 Allt som MediaForge skapar eller använder lokalt sparas i `MediaForge_Data/` bredvid appen: inställningar och Ko-fi-länk i `Settings/`, app- och launcherloggar i `Logs/`, virtuell Python-miljö i `PythonEnv/`, paketcache i `PipCache/`, temporära paketfiler i `Temp/` och standardutdata i `Output/`. Målmappar för utdata måste ligga under appmappen; externa källmappar kan väljas och läsas. Se till att appmappen är skrivbar. OS-autostartregistreringen sparas som vanligt på operativsystemets plats.
 
-**Sök tyst efter nya versioner (2 ggr/dygn)** är aktiverat som standard och kontrollerar högst var tolfte timme medan appen är öppen. Inget visas om ingen uppdatering finns. Om en ny version hittas får du fortfarande bekräfta innan ändringen görs. Då uppdateras en ren Git-arbetskopia på `main` med snabbspolning och appen startas om tyst. Funktionen kör inte när appen är stängd och fungerar inte i kopior utan Git.
+**Sök tyst efter nya versioner (2 ggr/dygn)** är aktiverat som standard och kontrollerar högst var tolfte timme medan appen är öppen. Uppdateraren jämför GitHub-commits och ändrade filer på `main`, inte versionsnumret eller GitHub Release-filer; en ny commit erbjuds även om versionsnumret är samma. Ändrade filer visas och du får bekräfta före snabbspolning. Efter godkännande startas appen om tyst. Ingen dialog visas när ingen ny commit finns. Funktionen kör inte när appen är stängd och fungerar inte i kopior utan Git.
 
 ## Användning
 

@@ -93,7 +93,10 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
     'Sök tyst efter nya versioner (2 ggr/dygn)': 'Silently check for updates twice a day',
     'Uppdaterar GitHub-version…': 'Updating MediaForge…',
-    'Ny version finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efter uppdateringen.': 'A new version is available ({local} → {remote}). Update now? The app will restart automatically when the update is complete.',
+    'Ny commit finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efter uppdateringen.': 'A new commit is available ({local} → {remote}). Update now? The app will restart automatically when the update is complete.',
+    'Filer som ändrats:': 'Changed files:',
+    '… och {count} till': '… and {count} more',
+    'Commit-ID:t skiljer sig, men inga filer innehåller ändringar.': 'The commit ID differs, but the file contents are unchanged.',
     'Uppdateringen misslyckades. MediaForge startas inte om.': 'The update failed. MediaForge will not restart.',
     'Uppdateringskontrollen kunde inte genomföras.': 'The update check could not be completed.',
     'Den tysta versionssökningen körs bara på en ren Git-arbetskopia av main.': 'Silent version checks run only on a clean Git checkout of main.',
@@ -1086,8 +1089,9 @@ class GitUpdateWorker(QtCore.QThread):
             if ancestry.returncode:
                 self.result_ready.emit({'status': 'skipped', 'reason': 'not_fast_forward', 'local': local, 'remote': remote})
                 return
+            changed_files = self.git('diff', '--name-only', local, remote).stdout.splitlines()
             if not self.apply_update:
-                self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote})
+                self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'changed_files': changed_files})
                 return
             self.git('merge', '--ff-only', 'FETCH_HEAD')
             self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote})
@@ -4528,8 +4532,17 @@ class Window(QtWidgets.QMainWindow):
             return
         if status == 'available':
             local, remote = result['local'], result['remote']
-            LOGGER.info('Ny GitHub-version upptäckt: %s -> %s', local, remote)
-            prompt = self.translated('Ny version finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efter uppdateringen.').format(local=local[:10], remote=remote[:10])
+            changed_files = result.get('changed_files', [])
+            LOGGER.info('Ny GitHub-main-commit upptäckt: %s -> %s (%d ändrade filer)', local, remote, len(changed_files))
+            prompt = self.translated('Ny commit finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efter uppdateringen.').format(local=local[:10], remote=remote[:10])
+            if changed_files:
+                shown_files = changed_files[:8]
+                file_list = '\n'.join('• ' + path for path in shown_files)
+                if len(changed_files) > len(shown_files):
+                    file_list += '\n' + self.translated('… och {count} till').format(count=len(changed_files) - len(shown_files))
+                prompt += '\n\n' + self.translated('Filer som ändrats:') + '\n' + file_list
+            else:
+                prompt += '\n\n' + self.translated('Commit-ID:t skiljer sig, men inga filer innehåller ändringar.')
             reply = QtWidgets.QMessageBox.question(
                 self, self.translated('GitHub-uppdatering'), prompt,
                 QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
