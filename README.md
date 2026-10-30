@@ -7,11 +7,11 @@ A desktop toolkit for photo and video workflows. MediaForge can enhance and opti
 - Choose **English** or **Svenska** from the language selector in the app. The choice is saved for the next launch.
 - Choose **All**, **Photo**, or **Video** in the workspace selector. **Photo** shows the photo-related tabs; **Video** shows video and music-DVD tabs. Shared date/metadata and activity-log tabs remain available in either mode.
 - Language, workspace, theme, recent folders, and common processing settings are saved locally.
-- The MediaForge logo is shown in the app header, window/taskbar, tabs, buttons, and Linux autostart. Keep `fotoverktyg_icon.png` and its matching multi-size `fotoverktyg_icon.ico` beside the app; the ICO can also be used for Windows shortcuts or EXE packaging.
+- The MediaForge icon is used in the app header, window/taskbar, tabs, buttons, Linux autostart, and the Windows autostart shortcut. Keep `fotoverktyg_icon.png` and its matching multi-size `fotoverktyg_icon.ico` beside the app; the ICO can also be used for other Windows shortcuts or EXE packaging.
 
 ## Autostart
 
-Use **Start automatically at sign-in** in the app to turn autostart on or off for the current user. MediaForge uses the Windows per-user Run key, a macOS LaunchAgent, or the Linux XDG autostart directory. Autostart opens the app window only; it does not start a conversion or download job.
+Use **Start automatically at sign-in** in the app to turn autostart on or off for the current user. MediaForge uses a Windows Startup-folder shortcut with the MediaForge ICO, a macOS LaunchAgent, or the Linux XDG autostart entry with the PNG icon. It launches through the platform launcher rather than registering the `.pyw` file directly, avoiding Python's file-association icon. Autostart opens the app window only; it does not start a conversion or download job.
 
 ## Install and run
 
@@ -84,11 +84,11 @@ MediaForge är ett skrivbordsprogram för foto- och videoflöden. Programmet kan
 - Välj **English** eller **Svenska** i språklistan i appen. Valet sparas till nästa start.
 - Välj **Alla**, **Foto** eller **Video** i arbetsläget. **Foto** visar fotorelaterade flikar; **Video** visar video- och musik-DVD-flikar. Gemensamma flikar för datum/metadata och aktivitetslogg visas i båda lägena.
 - Språk, arbetsläge, tema, senaste mappar och vanliga bearbetningsinställningar sparas lokalt.
-- MediaForge-logotypen visas i apphuvudet, fönstret/aktivitetsfältet, flikarna, knapparna och Linux-autostart. Behåll `fotoverktyg_icon.png` och matchande ICO i flera storlekar bredvid appen; ICO-filen kan även användas för Windows-genvägar och EXE-paketering.
+- MediaForge-ikonen används i apphuvudet, fönstret/aktivitetsfältet, flikarna, knapparna, Linux-autostart och Windows-autostartgenvägen. Behåll `fotoverktyg_icon.png` och matchande flerupplöst ICO bredvid appen; ICO-filen kan även användas för andra Windows-genvägar och EXE-paketering.
 
 ## Autostart
 
-Kryssa i **Starta automatiskt vid inloggning** i appen för att aktivera autostart för ditt användarkonto, eller avmarkera för att stänga av. MediaForge använder Windows Run-nyckeln för användaren, en LaunchAgent på macOS eller Linux XDG-autostart. Autostart öppnar bara appfönstret – den startar inte konvertering eller nedladdning.
+Kryssa i **Starta automatiskt vid inloggning** i appen för att aktivera autostart för ditt användarkonto, eller avmarkera för att stänga av. MediaForge använder en genväg i Windows Start-mappen med MediaForge-ICO, en LaunchAgent på macOS eller Linux XDG-autostart med PNG-ikonen. Appen startas via plattformsstartaren, inte genom direktregistrering av `.pyw`, så Python-filassociationens ikon används inte. Autostart öppnar bara appfönstret – den startar inte konvertering eller nedladdning.
 
 ## Installera och starta
 

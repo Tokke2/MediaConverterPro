@@ -749,6 +749,8 @@ UI_TRANSLATIONS.update({
     'Filen finns redan. Vill du ersätta den när det nya bildspelet är klart?': 'The file already exists. Replace it when the new slideshow is complete?',
     'Bilderna är klara; FFmpeg skapar MP4-filen…': 'Images are ready; FFmpeg is creating the MP4…',
     'Bildspel avbrutet.': 'Slideshow cancelled.',
+    'MediaForge-startaren saknas. Autostart använder inte .pyw-filen eftersom den kan visa Python-ikonen.': 'The MediaForge launcher is missing. Autostart will not use the .pyw file because it may show a Python icon.',
+    'MediaForge-startaren start_mediaforge.sh saknas. Autostart använder inte .pyw-filen.': 'The MediaForge start_mediaforge.sh launcher is missing. Autostart will not use the .pyw file.',
 })
 
 def exiftool(args, timeout=60):
@@ -2491,7 +2493,13 @@ class PhotoCanvas(QtWidgets.QWidget):
 
 
 def brand_icon():
-    """Draw a compact fallback mark matching the MediaForge photo/video logo."""
+    """Load the installed MediaForge icon, then draw a compact fallback if missing."""
+    for icon_name in ('fotoverktyg_icon.png', 'fotoverktyg_icon.ico'):
+        icon_path = Path(__file__).resolve().with_name(icon_name)
+        if icon_path.is_file():
+            icon = QtGui.QIcon(str(icon_path))
+            if not icon.isNull():
+                return icon
     pix = QtGui.QPixmap(96, 96)
     pix.fill(QtCore.Qt.GlobalColor.transparent)
     p = QtGui.QPainter(pix)
@@ -2519,6 +2527,9 @@ def autostart_supported():
 
 
 def startup_file():
+    if sys.platform == 'win32':
+        appdata = Path(os.environ.get('APPDATA', str(Path.home() / 'AppData/Roaming'))).expanduser()
+        return appdata / 'Microsoft/Windows/Start Menu/Programs/Startup/MediaForge.lnk'
     if sys.platform == 'darwin':
         return Path.home() / 'Library/LaunchAgents/se.fotoverktyg.studio.plist'
     if sys.platform.startswith('linux'):
@@ -2529,18 +2540,33 @@ def startup_file():
 
 def autostart_enabled():
     if sys.platform == 'win32':
+        shortcut_exists = startup_file().is_file()
+        legacy_entry = False
         try:
             import winreg
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run') as key:
                 for value_name in ('MediaForge', 'Fotoverktyg'):
                     try:
                         winreg.QueryValueEx(key, value_name)
-                        return True
+                        legacy_entry = True
+                        break
                     except FileNotFoundError:
                         continue
-            return False
         except OSError:
-            return False
+            pass
+        if legacy_entry:
+            try:
+                set_autostart(True)
+                LOGGER.info('Legacy autostart migrated to the MediaForge startup shortcut and icon')
+                return True
+            except Exception:
+                LOGGER.exception('Could not migrate legacy Windows autostart')
+                try:
+                    set_autostart(False)
+                except Exception:
+                    LOGGER.exception('Could not remove an obsolete Windows autostart entry')
+                return False
+        return shortcut_exists
     if not autostart_supported():
         return False
     return startup_file().exists()
@@ -2550,34 +2576,59 @@ def set_autostart(enabled):
     if not autostart_supported():
         raise RuntimeError(f'Autostart is not supported on platform: {sys.platform}')
     app_dir = Path(__file__).resolve().parent
-    if getattr(sys, 'frozen', False):
-        command = [sys.executable]
-    elif sys.platform == 'win32' and (app_dir / 'Starta_Fotoverktyg.vbs').is_file():
-        command = ['wscript.exe', str(app_dir / 'Starta_Fotoverktyg.vbs')]
-    elif sys.platform in {'darwin', 'linux'} and (app_dir / 'start_mediaforge.sh').is_file():
-        command = ['/bin/bash', str(app_dir / 'start_mediaforge.sh')]
-    else:
-        interpreter = Path(sys.executable)
-        if sys.platform == 'win32' and interpreter.name.lower() == 'python.exe':
-            gui_interpreter = interpreter.with_name('pythonw.exe')
-            if gui_interpreter.exists():
-                interpreter = gui_interpreter
-        command = [str(interpreter), str(Path(__file__).resolve())]
+    if enabled:
+        if getattr(sys, 'frozen', False):
+            command = [sys.executable]
+        elif sys.platform == 'win32':
+            vbs_launcher = app_dir / 'Starta_Fotoverktyg.vbs'
+            powershell_launcher = app_dir / 'Starta_Fotoverktyg.ps1'
+            if vbs_launcher.is_file():
+                command = ['wscript.exe', str(vbs_launcher)]
+            elif powershell_launcher.is_file():
+                command = ['powershell.exe', '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', str(powershell_launcher)]
+            else:
+                raise RuntimeError('MediaForge-startaren saknas. Autostart använder inte .pyw-filen eftersom den kan visa Python-ikonen.')
+        else:
+            launcher = app_dir / 'start_mediaforge.sh'
+            if not launcher.is_file():
+                raise RuntimeError('MediaForge-startaren start_mediaforge.sh saknas. Autostart använder inte .pyw-filen.')
+            command = ['/bin/bash', str(launcher)]
     if sys.platform == 'win32':
         import winreg
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run') as key:
-            if enabled:
-                winreg.SetValueEx(key, 'MediaForge', 0, winreg.REG_SZ, subprocess.list2cmdline(command))
-                try:
-                    winreg.DeleteValue(key, 'Fotoverktyg')
-                except FileNotFoundError:
-                    pass
-            else:
+        shortcut = startup_file()
+        if enabled:
+            shortcut.parent.mkdir(parents=True, exist_ok=True)
+            icon = Path(__file__).resolve().with_name('fotoverktyg_icon.ico')
+            if not icon.is_file():
+                raise FileNotFoundError(icon)
+
+            def ps_quote(value):
+                return "'" + str(value).replace("'", "''") + "'"
+            arguments = subprocess.list2cmdline(command[1:])
+            script = (
+                '$s=(New-Object -ComObject WScript.Shell).CreateShortcut(' + ps_quote(shortcut) + ');'
+                '$s.TargetPath=' + ps_quote(command[0]) + ';'
+                '$s.Arguments=' + ps_quote(arguments) + ';'
+                '$s.WorkingDirectory=' + ps_quote(app_dir) + ';'
+                '$s.IconLocation=' + ps_quote(str(icon) + ',0') + ';'
+                '$s.Save()'
+            )
+            subprocess.run(
+                ['powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-Command', script],
+                check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+            )
+        else:
+            shortcut.unlink(missing_ok=True)
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run', 0, winreg.KEY_SET_VALUE) as key:
                 for value_name in ('MediaForge', 'Fotoverktyg'):
                     try:
                         winreg.DeleteValue(key, value_name)
                     except FileNotFoundError:
                         pass
+        except FileNotFoundError:
+            pass
     elif sys.platform == 'darwin':
         import plistlib
         path = startup_file()
