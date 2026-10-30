@@ -17,6 +17,7 @@ $cacheDir = Join-Path $dataDir 'PipCache'
 $tempDir = Join-Path $dataDir 'Temp'
 $pythonEnvDir = Join-Path $dataDir 'PythonEnv'
 $startupLog = Join-Path $logDir 'launcher.log'
+$errorLog = Join-Path $logDir 'errors.log'
 
 foreach ($directory in @($settingsDir, $logDir, $cacheDir, $tempDir, $pythonEnvDir)) {
     New-Item -ItemType Directory -Path $directory -Force | Out-Null
@@ -28,6 +29,9 @@ $env:PYTHONNOUSERSITE = '1'
 
 function Write-StartupLog([string]$text) {
     try { Add-Content -LiteralPath $startupLog -Value ("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $text") -Encoding UTF8 } catch { }
+}
+function Write-ErrorLog([string]$text) {
+    try { Add-Content -LiteralPath $errorLog -Value ("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | ERROR | $text") -Encoding UTF8 } catch { }
 }
 function Notice([string]$text, [string]$title = 'MediaForge') {
     [System.Windows.Forms.MessageBox]::Show($text, $title, 'OK', 'Information') | Out-Null
@@ -169,6 +173,8 @@ try {
     }
     Start-Process -FilePath $venvPythonw -ArgumentList $appArguments -WorkingDirectory $PSScriptRoot -ErrorAction Stop
 } catch {
-    Write-StartupLog "Startup failure: $($_.Exception.Message)"
-    [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, 'MediaForge - startup error', 'OK', 'Error') | Out-Null
+    $failure = $_.Exception.Message
+    Write-StartupLog "Startup failure: $failure"
+    Write-ErrorLog "Startup failure: $failure"
+    [System.Windows.Forms.MessageBox]::Show($failure, 'MediaForge - startup error', 'OK', 'Error') | Out-Null
 }

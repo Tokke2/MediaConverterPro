@@ -23,6 +23,7 @@ OUTPUT_DIR = APP_DATA_DIR / 'Output'
 SETTINGS_DIR = APP_DATA_DIR / 'Settings'
 LOG_DIR = APP_DATA_DIR / 'Logs'
 LOG_FILE = LOG_DIR / 'mediaforge.log'
+ERROR_LOG_FILE = LOG_DIR / 'errors.log'
 SETTINGS_FILE = SETTINGS_DIR / 'preferences.ini'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
 UPDATE_BRANCH = 'main'
@@ -41,8 +42,13 @@ LOGGER.setLevel(logging.INFO)
 try:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     handler = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=3, encoding='utf-8')
-    handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)-7s | %(threadName)s | %(message)s'))
+    formatter = logging.Formatter('%(asctime)s | %(levelname)-7s | %(threadName)s | %(message)s')
+    handler.setFormatter(formatter)
     LOGGER.addHandler(handler)
+    error_handler = RotatingFileHandler(ERROR_LOG_FILE, maxBytes=2_000_000, backupCount=3, encoding='utf-8')
+    error_handler.setLevel(logging.WARNING)
+    error_handler.setFormatter(formatter)
+    LOGGER.addHandler(error_handler)
 except OSError:
     LOGGER.addHandler(logging.NullHandler())
 LOGGER.info('Applikationen startar')
@@ -754,6 +760,10 @@ UI_TRANSLATIONS.update({
     'Bildspel avbrutet.': 'Slideshow cancelled.',
     'MediaForge-startaren saknas. Autostart använder inte .pyw-filen eftersom den kan visa Python-ikonen.': 'The MediaForge launcher is missing. Autostart will not use the .pyw file because it may show a Python icon.',
     'MediaForge-startaren start_mediaforge.sh saknas. Autostart använder inte .pyw-filen.': 'The MediaForge start_mediaforge.sh launcher is missing. Autostart will not use the .pyw file.',
+    'Loggfil:': 'Log file:',
+    'Fellogg:': 'Error log:',
+    'Öppna fellogg': 'Open error log',
+    'Felloggen kunde inte öppnas:': 'Could not open the error log:',
 })
 
 def exiftool(args, timeout=60):
@@ -4124,6 +4134,10 @@ class Window(QtWidgets.QMainWindow):
         self.activity_log.document().setMaximumBlockCount(3000)
         layout.addWidget(self.activity_log)
         layout.addWidget(QtWidgets.QLabel(f'Loggfil: {LOG_FILE}'))
+        layout.addWidget(QtWidgets.QLabel(f'Fellogg: {ERROR_LOG_FILE}'))
+        open_errors = QtWidgets.QPushButton('Öppna fellogg')
+        open_errors.clicked.connect(self.open_error_log)
+        layout.addWidget(open_errors)
         export = QtWidgets.QPushButton('Exportera hela loggen…')
         export.clicked.connect(self.export_log)
         layout.addWidget(export)
@@ -5342,6 +5356,16 @@ class Window(QtWidgets.QMainWindow):
         if path:
             self.archive.setText(path)
 
+    def open_error_log(self):
+        try:
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
+            ERROR_LOG_FILE.touch(exist_ok=True)
+            if not QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(ERROR_LOG_FILE))):
+                self.show_message('warning', 'Loggfel', 'Felloggen kunde inte öppnas:')
+        except OSError as exc:
+            LOGGER.exception('Could not open the error log')
+            self.show_message('warning', 'Loggfel', f'Felloggen kunde inte öppnas: {exc}')
+
     def export_log(self):
         path, _ = QtWidgets.QFileDialog.getSaveFileName(self, self.translated('Spara logg'), str(LOG_DIR / 'MediaForge-log.txt'), 'Text (*.txt)')
         if path:
@@ -5545,7 +5569,7 @@ class Window(QtWidgets.QMainWindow):
 if __name__ == '__main__':
     def log_uncaught(exc_type, exc_value, exc_tb):
         LOGGER.critical('Ohanterat fel', exc_info=(exc_type, exc_value, exc_tb))
-        QtWidgets.QMessageBox.critical(None, 'MediaForge - error', f'{exc_value}\n\nLog: {LOG_FILE}')
+        QtWidgets.QMessageBox.critical(None, 'MediaForge - error', f'{exc_value}\n\nError log: {ERROR_LOG_FILE}\nFull log: {LOG_FILE}')
     sys.excepthook = log_uncaught
     app = QtWidgets.QApplication(sys.argv)
     icon_file = Path(__file__).resolve().with_name('fotoverktyg_icon.png')

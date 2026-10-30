@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Cross-platform launcher for macOS and Linux. All MediaForge-managed state lives
 # alongside the application; the operating-system Python runtime is not copied here.
-set -euo pipefail
+set -Eeuo pipefail
 
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_FILE="$APP_DIR/fotoverktyg.pyw"
@@ -11,10 +11,22 @@ LOG_DIR="$DATA_DIR/Logs"
 CACHE_DIR="$DATA_DIR/PipCache"
 TEMP_DIR="$DATA_DIR/Temp"
 STARTUP_LOG="$LOG_DIR/launcher.log"
+ERROR_LOG="$LOG_DIR/errors.log"
 mkdir -p "$VENV_ROOT" "$LOG_DIR" "$CACHE_DIR" "$TEMP_DIR" "$DATA_DIR/Settings"
 export PIP_CACHE_DIR="$CACHE_DIR" TMPDIR="$TEMP_DIR" TEMP="$TEMP_DIR" TMP="$TEMP_DIR" PYTHONNOUSERSITE=1
 
 log() { printf '%s | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$STARTUP_LOG" 2>/dev/null || true; }
+write_error() {
+  local message="$*"
+  printf '%s | ERROR | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$message" >> "$ERROR_LOG" 2>/dev/null || true
+  log "ERROR: $message"
+}
+on_error() {
+  local status=$?
+  write_error "Launcher command failed (exit $status) at line $1: $2"
+  exit "$status"
+}
+trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
 UPDATE_PACKAGES=0
 INSTALL_LATEST_PYTHON=0
@@ -25,15 +37,16 @@ while (($#)); do
     --install-latest-python) INSTALL_LATEST_PYTHON=1 ;;
     --wait-for-pid)
       shift
-      [[ $# -gt 0 ]] || { printf '%s\n' 'Missing PID after --wait-for-pid.' >&2; exit 2; }
+      [[ $# -gt 0 ]] || { write_error 'Missing PID after --wait-for-pid'; printf '%s\n' 'Missing PID after --wait-for-pid.' >&2; exit 2; }
       WAIT_FOR_PID="$1"
       ;;
-    *) printf 'Unknown option: %s\n' "$1" >&2; exit 2 ;;
+    *) write_error "Unknown launcher option: $1"; printf 'Unknown option: %s\n' "$1" >&2; exit 2 ;;
   esac
   shift
 done
 
 if [[ ! -f "$APP_FILE" ]]; then
+  write_error "MediaForge could not find $APP_FILE"
   printf 'MediaForge could not find %s\n' "$APP_FILE" >&2
   exit 1
 fi
@@ -84,6 +97,7 @@ if ((INSTALL_LATEST_PYTHON)); then
 fi
 
 python_info="$(find_python)" || {
+  write_error 'Python 3.10+ was not found'
   printf '%s\n' 'Python 3.10+ was not found. Install it with your OS package manager, then run this launcher again.' >&2
   if [[ "$(uname -s)" == Darwin ]] && command -v open >/dev/null 2>&1; then open 'https://www.python.org/downloads/' >/dev/null 2>&1 || true; fi
   exit 1
@@ -95,6 +109,7 @@ VENV_PYTHON="$VENV_DIR/bin/python"
 
 if [[ ! -x "$VENV_PYTHON" ]]; then
   "$PYTHON" -m venv "$VENV_DIR" >> "$STARTUP_LOG" 2>&1 || {
+    write_error "Could not create private Python environment for Python $PYTHON_VERSION"
     printf 'Could not create a private Python environment. Install venv support for Python %s and retry.\n' "$PYTHON_VERSION" >&2
     exit 1
   }
@@ -112,12 +127,14 @@ if ! "$VENV_PYTHON" -c "$PROBE" >/dev/null 2>&1 || ((UPDATE_PACKAGES)); then
   fi
   log 'Installing/updating app-local Python packages'
   "$VENV_PYTHON" -m pip install --upgrade pip PyQt6 Pillow pillow-heif piexif >> "$STARTUP_LOG" 2>&1 || {
+    write_error 'Python package installation failed'
     printf 'Package installation failed. See %s\n' "$STARTUP_LOG" >&2
     exit 1
   }
 fi
 
 "$VENV_PYTHON" -c "$PROBE" >/dev/null || {
+  write_error 'Required Python packages could not be verified after installation'
   printf 'Required Python packages could not be verified. See %s\n' "$STARTUP_LOG" >&2
   exit 1
 }
