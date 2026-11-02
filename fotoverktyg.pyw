@@ -764,6 +764,8 @@ UI_TRANSLATIONS.update({
     'Fellogg:': 'Error log:',
     'Öppna fellogg': 'Open error log',
     'Felloggen kunde inte öppnas:': 'Could not open the error log:',
+    'Öppna MediaForge': 'Open MediaForge',
+    'Avsluta MediaForge': 'Quit MediaForge',
 })
 
 def exiftool(args, timeout=60):
@@ -2947,8 +2949,42 @@ class Window(QtWidgets.QMainWindow):
         self.git_update_worker = None
         self._git_update_worker_active = False
         self._git_update_restart_pending = False
+        self.setup_system_tray()
         self.schedule_auto_update_check(initial=True)
         LOGGER.info('Fönstret öppnat; loggfil: %s', LOG_FILE)
+
+    def setup_system_tray(self):
+        if not QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
+            LOGGER.info('Systemfältsikon är inte tillgänglig i den här skrivbordsmiljön')
+            self.tray_icon = None
+            return
+        self.tray_menu = QtWidgets.QMenu(self)
+        self.tray_open_action = self.tray_menu.addAction(self.translated('Öppna MediaForge'))
+        self.tray_open_action.triggered.connect(self.show_from_system_tray)
+        self.tray_update_action = self.tray_menu.addAction(self.translated('Kontrollera GitHub main-uppdatering…'))
+        self.tray_update_action.triggered.connect(self.check_git_update_from_tray)
+        self.tray_menu.addSeparator()
+        self.tray_quit_action = self.tray_menu.addAction(self.translated('Avsluta MediaForge'))
+        self.tray_quit_action.triggered.connect(self.close)
+        self.tray_icon = QtWidgets.QSystemTrayIcon(self.brand, self)
+        self.tray_icon.setToolTip('MediaForge')
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.activated.connect(self.system_tray_activated)
+        self.tray_icon.show()
+
+    def show_from_system_tray(self):
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def check_git_update_from_tray(self):
+        self.show_from_system_tray()
+        self.check_git_update()
+
+    def system_tray_activated(self, reason):
+        if reason in (QtWidgets.QSystemTrayIcon.ActivationReason.Trigger,
+                      QtWidgets.QSystemTrayIcon.ActivationReason.DoubleClick):
+            self.show_from_system_tray()
 
     def require_app_output(self, path):
         candidate = Path(path).expanduser().resolve(strict=False)
@@ -4310,6 +4346,10 @@ class Window(QtWidgets.QMainWindow):
         if hasattr(self, 'codec_table'):
             headers = ('Fil', 'Container', 'Längd', 'Video-codec', 'Upplösning', 'Bildfrekvens', 'Video-bitrate', 'Ljud-codec', 'Ljudformat', 'Ljud-bitrate', 'Fel')
             self.codec_table.setHorizontalHeaderLabels([self.translated(header) for header in headers])
+        if getattr(self, 'tray_icon', None):
+            self.tray_open_action.setText(self.translated('Öppna MediaForge'))
+            self.tray_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+            self.tray_quit_action.setText(self.translated('Avsluta MediaForge'))
 
     def change_ui_language(self, index):
         language = self.language_combo.itemData(index)
