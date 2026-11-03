@@ -34,6 +34,7 @@ SETTINGS_FILE = SETTINGS_DIR / 'preferences.ini'
 APP_VERSION = '0.0.2'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
 UPDATE_RELEASE_API = 'https://api.github.com/repos/Tokke2/MediaConverterPro/releases/latest'
+KOFI_URL = ''  # Fixed app destination; configured by the maintainer, never by the user.
 UPDATEABLE_RELEASE_FILES = {
     '.gitignore', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
     'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs',
@@ -150,7 +151,8 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'MediaForge har redan senaste releasen ({tag}).': 'MediaForge already has the latest release ({tag}).',
  'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
  'Stöd utvecklingen · Ko-fi': 'Support development · Ko-fi',
- 'Ange/ändra Ko-fi-länk': 'Set/change Ko-fi link',
+ 'Ko-fi-länk saknas': 'Ko-fi link not set',
+ 'Ko-fi-adressen är inte konfigurerad i appen ännu. Be utvecklaren lägga till den fasta länken.': 'The app does not have a Ko-fi destination configured yet. Ask the developer to add the fixed link.',
  'Förstora, förbättra färger och skärp foton. Video kopieras utan bildförbättring.': 'Enlarge, enhance '
                                                                                      'colors and sharpen '
                                                                                      'photos. Videos are '
@@ -3337,9 +3339,6 @@ class Window(QtWidgets.QMainWindow):
         self.donate_action = QtGui.QAction('', self)
         self.donate_action.triggered.connect(self.open_donation)
         self.tools_menu.addAction(self.donate_action)
-        self.donation_settings_action = QtGui.QAction('', self)
-        self.donation_settings_action.triggered.connect(self.configure_donation)
-        self.tools_menu.addAction(self.donation_settings_action)
 
         self.help_menu = bar.addMenu('')
         self.support_action = QtGui.QAction('', self)
@@ -3373,7 +3372,6 @@ class Window(QtWidgets.QMainWindow):
         self.autostart_action.setText(self.translated('Starta automatiskt vid inloggning'))
         self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
         self.donate_action.setText(self.translated('Stöd utvecklingen · Ko-fi'))
-        self.donation_settings_action.setText(self.translated('Ange/ändra Ko-fi-länk'))
         self.help_menu.setTitle(self.translated('Hjälp'))
         self.support_action.setText(self.translated('Hjälp och support'))
         self.error_log_action.setText(self.translated('Öppna fellogg'))
@@ -4902,48 +4900,22 @@ class Window(QtWidgets.QMainWindow):
             preferred = next((i for i in visible if self.tabs.widget(i).property('mediaMode') == self.media_mode), None)
             self.tabs.setCurrentIndex(preferred if preferred is not None else visible[0])
 
-    def donation_url(self):
-        return SETTINGS_DIR / 'donation_url.txt'
-
-    def configure_donation(self):
-        from urllib.parse import urlparse
-        current = ''
-        try:
-            current = self.donation_url().read_text(encoding='utf-8').strip()
-        except OSError:
-            pass
-        value, ok = QtWidgets.QInputDialog.getText(self, self.translated('Ko-fi-donationslänk'), self.translated('Klistra in din personliga Ko-fi-länk (https://ko-fi.com/dittnamn):'), text=current)
-        if not ok:
-            return
-        parsed = urlparse(value.strip())
-        if parsed.scheme != 'https' or parsed.hostname not in {'ko-fi.com', 'www.ko-fi.com'} or not parsed.path.strip('/'):
-            self.show_message('warning', 'Ogiltig länk', 'Ange en personlig Ko-fi-länk på domänen ko-fi.com, till exempel https://ko-fi.com/dittnamn.')
-            return
-        try:
-            LOG_DIR.mkdir(parents=True, exist_ok=True)
-            self.donation_url().write_text(value.strip(), encoding='utf-8')
-            LOGGER.info('Ko-fi-länk sparad lokalt')
-            self.show_message('information', 'Sparat', 'Din Ko-fi-länk sparades lokalt i appens inställningsmapp.')
-        except OSError as exc:
-            self.show_message('warning', 'Kunde inte spara', str(exc))
-
     def open_donation(self):
         from urllib.parse import urlparse
         from PyQt6.QtGui import QDesktopServices
-        try:
-            value = self.donation_url().read_text(encoding='utf-8').strip()
-        except OSError:
-            value = ''
+        value = KOFI_URL.strip()
         parsed = urlparse(value)
-        if parsed.scheme != 'https' or parsed.hostname not in {'ko-fi.com', 'www.ko-fi.com'}:
-            self.configure_donation()
-            try:
-                value = self.donation_url().read_text(encoding='utf-8').strip()
-            except OSError:
-                return
-        if value:
-            QDesktopServices.openUrl(QtCore.QUrl(value))
-            LOGGER.info('Ko-fi-donationslänk öppnad')
+        if parsed.scheme != 'https' or parsed.hostname not in {'ko-fi.com', 'www.ko-fi.com'} or not parsed.path.strip('/'):
+            LOGGER.warning('Ko-fi-länk saknas eller är ogiltig; användaren kan inte ändra den i appen')
+            self.show_message(
+                'information', 'Ko-fi-länk saknas',
+                'Ko-fi-adressen är inte konfigurerad i appen ännu. Be utvecklaren lägga till den fasta länken.',
+            )
+            return
+        if not QDesktopServices.openUrl(QtCore.QUrl(value)):
+            self.show_message('warning', 'Ko-fi-länk saknas', 'Ko-fi-adressen kunde inte öppnas.')
+            return
+        LOGGER.info('Fast Ko-fi-donationslänk öppnad')
 
     def change_autostart(self, enabled):
         try:
