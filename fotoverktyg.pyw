@@ -11,6 +11,7 @@ import tempfile
 import csv
 import json
 import hashlib
+import urllib.request
 from fractions import Fraction
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -28,7 +29,7 @@ ERROR_LOG_FILE = LOG_DIR / 'errors.log'
 SETTINGS_FILE = SETTINGS_DIR / 'preferences.ini'
 APP_VERSION = '0.0.2'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
-UPDATE_BRANCH = 'main'
+UPDATE_RELEASE_API = 'https://api.github.com/repos/Tokke2/MediaConverterPro/releases/latest'
 
 
 
@@ -101,26 +102,28 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Installera/uppdatera senaste Python…': 'Install/update latest Python…',
     'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
     'Sök tyst efter nya versioner (2 ggr/dygn)': 'Silently check for updates twice a day',
-    'Uppdaterar GitHub-version…': 'Updating MediaForge…',
-    'Ny commit finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efter uppdateringen.': 'A new commit is available ({local} → {remote}). Update now? The app will restart automatically when the update is complete.',
+    'Installerar release…': 'Installing release…',
+    'Ny GitHub-release {tag} finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efteråt.': 'A new GitHub release {tag} is available ({local} → {remote}). Update now? The app will restart automatically afterwards.',
     'Filer som ändrats:': 'Changed files:',
     '… och {count} till': '… and {count} more',
     'Commit-ID:t skiljer sig, men inga filer innehåller ändringar.': 'The commit ID differs, but the file contents are unchanged.',
     'Uppdateringen misslyckades. MediaForge startas inte om.': 'The update failed. MediaForge will not restart.',
     'Uppdateringskontrollen kunde inte genomföras.': 'The update check could not be completed.',
-    'Den tysta versionssökningen körs bara på en ren Git-arbetskopia av main.': 'Silent version checks run only on a clean Git checkout of main.',
+    'Uppdatering kräver en ren Git-kopia av MediaForge på en vanlig gren.': 'Updating requires a clean Git checkout of MediaForge on a branch.',
  'Detta stänger MediaForge och uppdaterar paketen i appens privata Python-miljö. Fortsätta?': 'This closes MediaForge and updates packages in its private Python environment. Continue?',
- 'Kontrollera GitHub main-uppdatering…': 'Check for GitHub main updates…',
+ 'Sök efter uppdatering…': 'Check for updates…',
  'Detta stänger MediaForge och startar Python-uppdateringen. Fortsätta?': 'This will close MediaForge and start the Python update flow. Continue?',
- 'Kontrollerar GitHub main efter uppdateringar…': 'Checking GitHub main for updates…',
+ 'Söker efter senaste release…': 'Checking for the latest release…',
  'MediaForge är redan uppdaterat.': 'MediaForge is already up to date.',
- 'Endast en Git-arbetskopia på grenen main kan uppdateras.': 'Only a Git checkout on the main branch can be updated.',
+ 'Kan inte uppdatera säkert eftersom den lokala grenen inte kan snabbspolas till releasen.': 'Cannot update safely because the local branch cannot fast-forward to the release.',
  'Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.': 'The Git worktree is not clean. Commit, stash, or discard changes before updating.',
  'Uppdatering tillgänglig: {local} → {remote}. Uppdatera nu? Endast snabbspolning tillåts.': 'Update available: {local} → {remote}. Update now? Only a fast-forward update is allowed.',
  'Uppdateringen är klar. Starta om MediaForge för att använda den nya versionen.': 'Update complete. Restart MediaForge to use the updated code.',
  'Git-uppdateringen misslyckades:': 'Git update failed:',
  'Python-uppdatering' : 'Python update',
  'GitHub-uppdatering': 'GitHub update',
+    'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
+    'MediaForge har redan senaste releasen ({tag}).': 'MediaForge already has the latest release ({tag}).',
  'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
  'Stöd utvecklingen · Ko-fi': 'Support development · Ko-fi',
  'Ange/ändra Ko-fi-länk': 'Set/change Ko-fi link',
@@ -1115,7 +1118,7 @@ class ImageLibraryScanWorker(QtCore.QThread):
         self.scan_completed.emit(files, self.cancelled)
 
 
-class GitUpdateWorker(QtCore.QThread):
+class ReleaseUpdateWorker(QtCore.QThread):
     result_ready = QtCore.pyqtSignal(object)
 
     def __init__(self, apply_update=False):
@@ -1169,8 +1172,8 @@ class GitUpdateWorker(QtCore.QThread):
         if root != APP_DIR.resolve():
             return None, 'wrong_repository'
         branch = self.git('branch', '--show-current').stdout
-        if branch != UPDATE_BRANCH:
-            return None, 'wrong_branch'
+        if not branch:
+            return None, 'detached_head'
         origin = self.git('remote', 'get-url', 'origin').stdout.rstrip('/').removesuffix('.git')
         expected = UPDATE_REMOTE_URL.removesuffix('.git')
         if origin not in {expected, 'git@github.com:Tokke2/MediaConverterPro'}:
@@ -1179,13 +1182,29 @@ class GitUpdateWorker(QtCore.QThread):
             return None, 'dirty_worktree'
         return self.git('rev-parse', 'HEAD').stdout, None
 
+    def latest_release_tag(self):
+        request = urllib.request.Request(
+            UPDATE_RELEASE_API,
+            headers={'Accept': 'application/vnd.github+json', 'User-Agent': 'MediaForge'},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            release = json.load(response)
+        tag = release.get('tag_name')
+        if not isinstance(tag, str) or not tag.strip():
+            raise RuntimeError('GitHub returned a release without a tag name.')
+        tag = tag.strip()
+        if self.git('check-ref-format', f'refs/tags/{tag}', allow_failure=True).returncode:
+            raise RuntimeError(f'GitHub returned an invalid release tag: {tag}')
+        return tag
+
     def run(self):
         try:
             local, reason = self.check_worktree()
             if reason:
                 self.result_ready.emit({'status': 'skipped', 'reason': reason})
                 return
-            self.git('fetch', '--quiet', UPDATE_REMOTE_URL, UPDATE_BRANCH, timeout=90)
+            tag = self.latest_release_tag()
+            self.git('fetch', '--quiet', '--no-tags', UPDATE_REMOTE_URL, f'refs/tags/{tag}', timeout=90)
             local_after_fetch, reason = self.check_worktree()
             if reason:
                 self.result_ready.emit({'status': 'skipped', 'reason': reason})
@@ -1193,18 +1212,22 @@ class GitUpdateWorker(QtCore.QThread):
             local = local_after_fetch
             remote = self.git('rev-parse', 'FETCH_HEAD').stdout
             if local == remote:
-                self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote})
+                self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote, 'tag': tag})
                 return
-            ancestry = self.git('merge-base', '--is-ancestor', 'HEAD', 'FETCH_HEAD', allow_failure=True)
-            if ancestry.returncode:
-                self.result_ready.emit({'status': 'skipped', 'reason': 'not_fast_forward', 'local': local, 'remote': remote})
+            release_is_ancestor = self.git('merge-base', '--is-ancestor', 'FETCH_HEAD', 'HEAD', allow_failure=True)
+            if release_is_ancestor.returncode == 0:
+                self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote, 'tag': tag, 'local_ahead': True})
+                return
+            local_is_ancestor = self.git('merge-base', '--is-ancestor', 'HEAD', 'FETCH_HEAD', allow_failure=True)
+            if local_is_ancestor.returncode:
+                self.result_ready.emit({'status': 'skipped', 'reason': 'not_fast_forward', 'local': local, 'remote': remote, 'tag': tag})
                 return
             changed_files = self.git('diff', '--name-only', local, remote).stdout.splitlines()
             if not self.apply_update:
-                self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'changed_files': changed_files})
+                self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'tag': tag, 'changed_files': changed_files})
                 return
             self.git('merge', '--ff-only', 'FETCH_HEAD')
-            self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote})
+            self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote, 'tag': tag})
         except InterruptedError:
             self.result_ready.emit({'status': 'cancelled'})
         except Exception as exc:
@@ -3096,9 +3119,6 @@ class Window(QtWidgets.QMainWindow):
         self.packages_update_action = QtGui.QAction(self.brand, '', self)
         self.packages_update_action.triggered.connect(self.update_all_python_packages)
         self.tools_menu.addAction(self.packages_update_action)
-        self.git_update_action = QtGui.QAction(self.brand, '', self)
-        self.git_update_action.triggered.connect(self.check_git_update)
-        self.tools_menu.addAction(self.git_update_action)
         self.tools_menu.addSeparator()
         self.autostart_action = QtGui.QAction(self.brand, '', self)
         self.autostart_action.setCheckable(True)
@@ -3125,6 +3145,9 @@ class Window(QtWidgets.QMainWindow):
         self.support_action = QtGui.QAction(self.brand, '', self)
         self.support_action.triggered.connect(self.open_support_page)
         self.help_menu.addAction(self.support_action)
+        self.release_update_action = QtGui.QAction(self.brand, '', self)
+        self.release_update_action.triggered.connect(self.check_release_update)
+        self.help_menu.addAction(self.release_update_action)
         self.error_log_action = QtGui.QAction(self.brand, '', self)
         self.error_log_action.triggered.connect(self.open_error_log)
         self.help_menu.addAction(self.error_log_action)
@@ -3146,7 +3169,7 @@ class Window(QtWidgets.QMainWindow):
         self.deps_action.setText(self.translated('Kontrollera/installera Python-tillägg…'))
         self.python_update_action.setText(self.translated('Installera/uppdatera senaste Python…'))
         self.packages_update_action.setText(self.translated('Uppdatera alla Python-paket (starta om)…'))
-        self.git_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+        self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         self.autostart_action.setText(self.translated('Starta automatiskt vid inloggning'))
         self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
         self.donate_action.setText(self.translated('Stöd utvecklingen · Ko-fi'))
@@ -3238,8 +3261,8 @@ class Window(QtWidgets.QMainWindow):
         self.tray_menu = QtWidgets.QMenu(self)
         self.tray_open_action = self.tray_menu.addAction(self.translated('Öppna MediaForge'))
         self.tray_open_action.triggered.connect(self.show_from_system_tray)
-        self.tray_update_action = self.tray_menu.addAction(self.translated('Kontrollera GitHub main-uppdatering…'))
-        self.tray_update_action.triggered.connect(self.check_git_update_from_tray)
+        self.tray_update_action = self.tray_menu.addAction(self.translated('Sök efter uppdatering…'))
+        self.tray_update_action.triggered.connect(self.check_release_update_from_tray)
         self.tray_menu.addSeparator()
         self.tray_quit_action = self.tray_menu.addAction(self.translated('Avsluta MediaForge'))
         self.tray_quit_action.triggered.connect(self.close)
@@ -3254,9 +3277,9 @@ class Window(QtWidgets.QMainWindow):
         self.raise_()
         self.activateWindow()
 
-    def check_git_update_from_tray(self):
+    def check_release_update_from_tray(self):
         self.show_from_system_tray()
-        self.check_git_update()
+        self.check_release_update()
 
     def system_tray_activated(self, reason):
         if reason in (QtWidgets.QSystemTrayIcon.ActivationReason.Trigger,
@@ -4631,7 +4654,7 @@ class Window(QtWidgets.QMainWindow):
             self.codec_table.setHorizontalHeaderLabels([self.translated(header) for header in headers])
         if getattr(self, 'tray_icon', None):
             self.tray_open_action.setText(self.translated('Öppna MediaForge'))
-            self.tray_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+            self.tray_update_action.setText(self.translated('Sök efter uppdatering…'))
             self.tray_quit_action.setText(self.translated('Avsluta MediaForge'))
         if hasattr(self, 'output_mode'):
             self.update_processing_output_mode()
@@ -4841,24 +4864,24 @@ class Window(QtWidgets.QMainWindow):
         if self._git_update_worker_active:
             LOGGER.info('Tyst versionssökning hoppas över eftersom en Git-kontroll redan körs')
             return
-        self.start_git_update_check(silent=True)
+        self.start_release_update_check(silent=True)
 
-    def start_git_update_check(self, silent):
+    def start_release_update_check(self, silent):
         if self._git_update_worker_active:
             return
         self._git_update_worker_active = True
         if not silent:
-            self.git_update_action.setEnabled(False)
-            self.git_update_action.setText(self.translated('Kontrollerar GitHub main efter uppdateringar…'))
-        self.git_update_worker = GitUpdateWorker(apply_update=False)
+            self.release_update_action.setEnabled(False)
+            self.release_update_action.setText(self.translated('Söker efter senaste release…'))
+        self.git_update_worker = ReleaseUpdateWorker(apply_update=False)
         self._git_update_worker_mode = ('check', silent)
         self._git_update_worker_result = None
         self.git_update_worker.result_ready.connect(self.store_git_update_worker_result)
         self.git_update_worker.finished.connect(self.git_update_worker_finished)
         self.git_update_worker.start()
 
-    def check_git_update(self):
-        self.start_git_update_check(silent=False)
+    def check_release_update(self):
+        self.start_release_update_check(silent=False)
 
     @QtCore.pyqtSlot(object)
     def store_git_update_worker_result(self, result):
@@ -4872,24 +4895,30 @@ class Window(QtWidgets.QMainWindow):
         self._git_update_worker_result = None
         self._git_update_worker_active = False
         if mode[0] == 'check':
-            self.finish_git_update_check(result, mode[1])
+            self.finish_release_update_check(result, mode[1])
         else:
-            self.finish_git_update(result)
+            self.finish_release_update(result)
 
-    def finish_git_update_check(self, result, silent):
-        self.git_update_action.setEnabled(True)
-        self.git_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+    def finish_release_update_check(self, result, silent):
+        self.release_update_action.setEnabled(True)
+        self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         status = result.get('status')
+        tag = result.get('tag', '')
         if status == 'current':
-            LOGGER.info('GitHub main är redan uppdaterad')
+            if result.get('local_ahead'):
+                LOGGER.info('Den lokala kopian är nyare än senaste GitHub-releasen %s', tag)
+                message = self.translated('Den här kopian är redan nyare än senaste releasen ({tag}).').format(tag=tag)
+            else:
+                LOGGER.info('Senaste GitHub-releasen %s finns redan lokalt', tag)
+                message = self.translated('MediaForge har redan senaste releasen ({tag}).').format(tag=tag)
             if not silent:
-                self.show_message('information', 'GitHub-uppdatering', 'MediaForge är redan uppdaterat.')
+                self.show_message('information', 'GitHub-uppdatering', message)
             return
         if status == 'available':
             local, remote = result['local'], result['remote']
             changed_files = result.get('changed_files', [])
-            LOGGER.info('Ny GitHub-main-commit upptäckt: %s -> %s (%d ändrade filer)', local, remote, len(changed_files))
-            prompt = self.translated('Ny commit finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efter uppdateringen.').format(local=local[:10], remote=remote[:10])
+            LOGGER.info('Ny GitHub-release %s upptäckt: %s -> %s (%d ändrade filer)', tag, local, remote, len(changed_files))
+            prompt = self.translated('Ny GitHub-release {tag} finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efteråt.').format(tag=tag, local=local[:10], remote=remote[:10])
             if changed_files:
                 shown_files = changed_files[:8]
                 file_list = '\n'.join('• ' + path for path in shown_files)
@@ -4904,60 +4933,62 @@ class Window(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.StandardButton.No,
             )
             if reply == QtWidgets.QMessageBox.StandardButton.Yes:
-                self.apply_git_update()
+                self.apply_release_update()
             else:
-                LOGGER.info('Användaren avböjde GitHub-uppdateringen')
+                LOGGER.info('Användaren avböjde GitHub-releaseuppdateringen')
             return
         if status == 'skipped':
             reason = result.get('reason', '')
-            if reason in {'wrong_branch', 'wrong_repository'}:
-                message = self.translated('Den tysta versionssökningen körs bara på en ren Git-arbetskopia av main.')
+            if reason in {'wrong_repository', 'detached_head'}:
+                message = self.translated('Uppdatering kräver en ren Git-kopia av MediaForge på en vanlig gren.')
             elif reason == 'dirty_worktree':
                 message = self.translated('Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.')
             elif reason == 'not_fast_forward':
-                message = self.translated('Endast en Git-arbetskopia på grenen main kan uppdateras.')
+                message = self.translated('Kan inte uppdatera säkert eftersom den lokala grenen inte kan snabbspolas till releasen.')
             else:
                 message = self.translated('Uppdateringskontrollen kunde inte genomföras.')
-            LOGGER.info('GitHub-uppdatering hoppas över: %s', reason)
+            LOGGER.info('GitHub-releaseuppdatering hoppas över: %s', reason)
             if not silent:
                 self.show_message('information', 'GitHub-uppdatering', message)
             return
         if status == 'cancelled':
-            LOGGER.info('GitHub-versionskontroll avbröts')
+            LOGGER.info('GitHub-releasekontroll avbröts')
             return
         message = result.get('message', self.translated('Uppdateringskontrollen kunde inte genomföras.'))
-        LOGGER.warning('GitHub-versionskontroll misslyckades: %s', message)
+        LOGGER.warning('GitHub-releasekontroll misslyckades: %s', message)
         if not silent:
             self.show_message('warning', 'GitHub-uppdatering', self.translated('Git-uppdateringen misslyckades:') + '\n' + message)
 
-    def apply_git_update(self):
+    def apply_release_update(self):
         if self._git_update_worker_active:
             return
         self._git_update_worker_active = True
-        self.git_update_action.setEnabled(False)
-        self.git_update_action.setText(self.translated('Uppdaterar GitHub-version…'))
-        self.git_update_worker = GitUpdateWorker(apply_update=True)
+        self.release_update_action.setEnabled(False)
+        self.release_update_action.setText(self.translated('Installerar release…'))
+        self.git_update_worker = ReleaseUpdateWorker(apply_update=True)
         self._git_update_worker_mode = ('apply', False)
         self._git_update_worker_result = None
         self.git_update_worker.result_ready.connect(self.store_git_update_worker_result)
         self.git_update_worker.finished.connect(self.git_update_worker_finished)
         self.git_update_worker.start()
 
-    def finish_git_update(self, result):
-        self.git_update_action.setEnabled(True)
-        self.git_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+    def finish_release_update(self, result):
+        self.release_update_action.setEnabled(True)
+        self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         if result.get('status') == 'updated':
-            LOGGER.info('GitHub main uppdaterad: %s -> %s', result.get('local'), result.get('remote'))
-            self.restart_after_git_update()
+            LOGGER.info('GitHub-release %s installerad: %s -> %s', result.get('tag'), result.get('local'), result.get('remote'))
+            self.restart_after_release_update()
             return
         if result.get('status') == 'current':
-            self.show_message('information', 'GitHub-uppdatering', 'MediaForge är redan uppdaterat.')
+            tag = result.get('tag', '')
+            message = self.translated('Den här kopian är redan nyare än senaste releasen ({tag}).').format(tag=tag) if result.get('local_ahead') else self.translated('MediaForge har redan senaste releasen ({tag}).').format(tag=tag)
+            self.show_message('information', 'GitHub-uppdatering', message)
             return
         message = result.get('message') or result.get('reason') or self.translated('Uppdateringen misslyckades. MediaForge startas inte om.')
-        LOGGER.error('GitHub-uppdateringen slutfördes inte: %s', message)
+        LOGGER.error('GitHub-releaseuppdateringen slutfördes inte: %s', message)
         self.show_message('warning', 'GitHub-uppdatering', self.translated('Uppdateringen misslyckades. MediaForge startas inte om.') + '\n' + message)
 
-    def restart_after_git_update(self):
+    def restart_after_release_update(self):
         try:
             command = [sys.executable, str(APP_DIR / 'fotoverktyg.pyw'), *sys.argv[1:]]
             subprocess.Popen(command, cwd=APP_DIR, env=os.environ.copy(), close_fds=True)
