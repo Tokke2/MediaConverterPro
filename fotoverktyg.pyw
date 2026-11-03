@@ -123,7 +123,8 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'Commit-ID:t skiljer sig, men inga filer innehåller ändringar.': 'The commit ID differs, but the file contents are unchanged.',
     'Uppdateringen misslyckades. MediaForge startas inte om.': 'The update failed. MediaForge will not restart.',
     'Uppdateringskontrollen kunde inte genomföras.': 'The update check could not be completed.',
-    'Uppdatering kräver en ren Git-kopia av MediaForge på en vanlig gren.': 'Updating requires a clean Git checkout of MediaForge on a branch.',
+ 'Uppdatering kräver en ren Git-kopia av MediaForge.': 'Updating requires a clean Git checkout of MediaForge.',
+ 'Den lokala grenen skiljer sig från releasen. Uppdateringen växlar arbetskopian till releasetaggen i frikopplat läge. Din nuvarande gren och dess commits behålls.': 'This branch differs from the release. Updating switches this working copy to the release tag in detached-HEAD mode. Your current branch and its commits are preserved.',
  'Detta stänger MediaForge och uppdaterar paketen i appens privata Python-miljö. Fortsätta?': 'This closes MediaForge and updates packages in its private Python environment. Continue?',
  'Sök efter uppdatering…': 'Check for updates…',
  'Detta stänger MediaForge och startar Python-uppdateringen. Fortsätta?': 'This will close MediaForge and start the Python update flow. Continue?',
@@ -1199,9 +1200,6 @@ class ReleaseUpdateWorker(QtCore.QThread):
         root = Path(self.git('rev-parse', '--show-toplevel').stdout).resolve()
         if root != APP_DIR.resolve():
             return None, 'wrong_repository'
-        branch = self.git('branch', '--show-current').stdout
-        if not branch:
-            return None, 'detached_head'
         origin = self.git('remote', 'get-url', 'origin').stdout.rstrip('/').removesuffix('.git')
         expected = UPDATE_REMOTE_URL.removesuffix('.git')
         if origin not in {expected, 'git@github.com:Tokke2/MediaConverterPro'}:
@@ -1383,15 +1381,25 @@ class ReleaseUpdateWorker(QtCore.QThread):
                 self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote, 'tag': tag, 'local_ahead': True})
                 return
             local_is_ancestor = self.git('merge-base', '--is-ancestor', 'HEAD', 'FETCH_HEAD', allow_failure=True)
-            if local_is_ancestor.returncode:
-                self.result_ready.emit({'status': 'skipped', 'reason': 'not_fast_forward', 'local': local, 'remote': remote, 'tag': tag})
-                return
             changed_files = self.git('diff', '--name-only', local, remote).stdout.splitlines()
-            if not self.apply_update:
-                self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'tag': tag, 'changed_files': changed_files})
+            if local_is_ancestor.returncode == 0:
+                if not self.apply_update:
+                    self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'tag': tag,
+                                            'changed_files': changed_files, 'method': 'git-fast-forward'})
+                    return
+                self.git('merge', '--ff-only', 'FETCH_HEAD')
+                self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote, 'tag': tag,
+                                        'method': 'git-fast-forward'})
                 return
-            self.git('merge', '--ff-only', 'FETCH_HEAD')
-            self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote, 'tag': tag})
+            if not self.apply_update:
+                self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'tag': tag,
+                                        'changed_files': changed_files, 'method': 'git-detach'})
+                return
+            # A clean but diverged branch must not be merged or rewritten. Move only
+            # this working copy to the release commit; the user's branch ref survives.
+            self.git('checkout', '--detach', 'FETCH_HEAD')
+            self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote, 'tag': tag,
+                                    'method': 'git-detach'})
         except InterruptedError:
             self.result_ready.emit({'status': 'cancelled'})
         except Exception as exc:
@@ -5099,6 +5107,8 @@ class Window(QtWidgets.QMainWindow):
             prompt = self.translated('Ny GitHub-release {tag} finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efteråt.').format(tag=tag, local=local[:10], remote=remote[:10])
             if result.get('method') == 'archive':
                 prompt += '\n\n' + self.translated('Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En säkerhetskopia sparas i MediaForge_Data/Backups.')
+            elif result.get('method') == 'git-detach':
+                prompt += '\n\n' + self.translated('Den lokala grenen skiljer sig från releasen. Uppdateringen växlar arbetskopian till releasetaggen i frikopplat läge. Din nuvarande gren och dess commits behålls.')
             if changed_files:
                 shown_files = changed_files[:8]
                 file_list = '\n'.join('• ' + path for path in shown_files)
@@ -5119,8 +5129,8 @@ class Window(QtWidgets.QMainWindow):
             return
         if status == 'skipped':
             reason = result.get('reason', '')
-            if reason in {'wrong_repository', 'detached_head'}:
-                message = self.translated('Uppdatering kräver en ren Git-kopia av MediaForge på en vanlig gren.')
+            if reason == 'wrong_repository':
+                message = self.translated('Uppdatering kräver en ren Git-kopia av MediaForge.')
             elif reason == 'dirty_worktree':
                 message = self.translated('Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.')
             elif reason == 'not_fast_forward':
