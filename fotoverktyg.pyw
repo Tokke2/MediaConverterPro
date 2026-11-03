@@ -156,6 +156,14 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
                                                                                               'piexif is '
                                                                                               'required for '
                                                                                               'JPEG/TIFF.',
+ 'Mappjobb — kopior i arkivmappen': 'Folder job — copies in archive folder',
+ 'Mappjobb — rensade kopior i källmappen': 'Folder job — cleaned copies in source folder',
+ 'Mappjobb — skriv över originalen': 'Folder job — overwrite originals',
+ 'Alla stödda bild- och videofiler i källmappen bearbetas. Originalen lämnas orörda; kopior sparas i arkivmappen.': 'All supported image and video files in the source folder are processed. Originals are untouched; copies are saved in the archive folder.',
+ 'Alla stödda bild- och videofiler i källmappen bearbetas. Rensade kopior sparas bredvid källfilerna med suffixet _rensad.': 'All supported image and video files in the source folder are processed. Cleaned copies are saved beside the sources with the _rensad suffix.',
+ 'Alla stödda bild- och videofiler i källmappen bearbetas. Original ersätts först när en tillfällig kopia har rensats klart.': 'All supported image and video files in the source folder are processed. Originals are replaced only after a temporary copy has been cleaned successfully.',
+ 'Bearbeta alla filer i mappen': 'Process all files in folder',
+ 'Rensa metadata och skriv över alla filer…': 'Clean metadata and overwrite all files…',
  'Filer och arkiv (originalen ändras aldrig)': 'Files and archive (originals are never changed)',
  'Källmapp': 'Source folder',
  'Arkivmapp': 'Archive folder',
@@ -3004,7 +3012,7 @@ class Window(QtWidgets.QMainWindow):
         processing_layout = QtWidgets.QVBoxLayout(self.processing_panel)
         processing_layout.setContentsMargins(0, 0, 0, 0)
         processing_layout.setSpacing(8)
-        common = QtWidgets.QGroupBox('Filer och arkiv (originalen ändras aldrig)')
+        common = QtWidgets.QGroupBox('Mappjobb — kopior i arkivmappen')
         self.files_group = common
         processing_layout.addWidget(common)
         form = QtWidgets.QGridLayout(common)
@@ -3023,7 +3031,7 @@ class Window(QtWidgets.QMainWindow):
         dest.clicked.connect(self.browse_archive)
         form.addWidget(dest, 1, 2)
         self.archive_browse_button = dest
-        self.recursive = QtWidgets.QCheckBox('Undermappar')
+        self.recursive = QtWidgets.QCheckBox('Inkludera undermappar')
         self.recursive.setChecked(True)
         self.structure = QtWidgets.QCheckBox('Bevara mappstruktur')
         self.structure.setChecked(True)
@@ -3047,7 +3055,7 @@ class Window(QtWidgets.QMainWindow):
         export.clicked.connect(self.export_log)
         buttons.addWidget(export)
         buttons.addStretch()
-        self.go = QtWidgets.QPushButton('Bearbeta kopior')
+        self.go = QtWidgets.QPushButton('Bearbeta alla filer i mappen')
         self.go.clicked.connect(self.start)
         buttons.addWidget(self.go)
         self.stop = QtWidgets.QPushButton('Avbryt')
@@ -5862,23 +5870,23 @@ class Window(QtWidgets.QMainWindow):
         self.structure.setEnabled(not in_source)
         self.enhance_box.setEnabled(not in_source)
         if mode == 'same_folder':
-            title = 'Filer och resultat (nya kopior i källmappen)'
+            title = 'Mappjobb — rensade kopior i källmappen'
             self.overwrite.setText(self.translated('Ersätt tidigare _rensad-kopior'))
-            hint = 'Nya rensade kopior får suffixet _rensad och sparas bredvid källfilerna.'
+            hint = 'Alla stödda bild- och videofiler i källmappen bearbetas. Rensade kopior sparas bredvid källfilerna med suffixet _rensad.'
         elif mode == 'overwrite':
-            title = 'Filer och resultat (originalen skrivs över)'
+            title = 'Mappjobb — skriv över originalen'
             self.overwrite.setText(self.translated('Originalfiler skrivs över'))
-            hint = 'Original ersätts först när en tillfällig kopia har rensats klart.'
+            hint = 'Alla stödda bild- och videofiler i källmappen bearbetas. Original ersätts först när en tillfällig kopia har rensats klart.'
         else:
-            title = 'Filer och arkiv (originalen ändras aldrig)'
+            title = 'Mappjobb — kopior i arkivmappen'
             self.overwrite.setText(self.translated('Skriv över arkivfiler'))
-            hint = 'Originalen lämnas orörda; resultat sparas i den valda arkivmappen.'
+            hint = 'Alla stödda bild- och videofiler i källmappen bearbetas. Originalen lämnas orörda; kopior sparas i arkivmappen.'
         self.overwrite.setEnabled(mode != 'overwrite')
         self.files_group.setTitle(self.translated(title))
         self.output_mode_hint.setText(self.translated(hint))
         self.enhance_box.setToolTip(self.translated('Bildförbättring används bara när resultatet sparas i arkivmappen.'))
         if hasattr(self, 'go'):
-            button_text = 'Rensa metadata och skriv över…' if mode == 'overwrite' else 'Bearbeta kopior'
+            button_text = 'Rensa metadata och skriv över alla filer…' if mode == 'overwrite' else 'Bearbeta alla filer i mappen'
             self.go.setText(self.translated(button_text))
 
     def start(self):
