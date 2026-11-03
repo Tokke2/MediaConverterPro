@@ -80,6 +80,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
                                                                                                      'stay '
                                                                                                      'untouched.',
  'Visa flikar:': 'Show tabs:',
+ 'Verktyg': 'Tools',
  'Alla': 'All',
  'Foto': 'Photo',
  'Video': 'Video',
@@ -2797,12 +2798,12 @@ class Window(QtWidgets.QMainWindow):
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
         main = QtWidgets.QVBoxLayout(central)
-        main.setContentsMargins(22, 18, 22, 18)
-        main.setSpacing(12)
+        main.setContentsMargins(14, 12, 14, 12)
+        main.setSpacing(8)
         brand_header = QtWidgets.QHBoxLayout()
         brand_image = QtWidgets.QLabel()
-        brand_image.setPixmap(self.brand.pixmap(QtCore.QSize(56, 56)))
-        brand_image.setFixedSize(60, 60)
+        brand_image.setPixmap(self.brand.pixmap(QtCore.QSize(40, 40)))
+        brand_image.setFixedSize(44, 44)
         brand_image.setToolTip('MediaForge')
         brand_image.setAccessibleName('MediaForge logo')
         brand_header.addWidget(brand_image, 0, QtCore.Qt.AlignmentFlag.AlignVCenter)
@@ -2870,28 +2871,6 @@ class Window(QtWidgets.QMainWindow):
         self.tabs.setMovable(True)
         self.tabs.tabBar().setUsesScrollButtons(True)
         main.addWidget(self.tabs)
-        action_row = QtWidgets.QHBoxLayout()
-        self.deps_button = QtWidgets.QPushButton('Kontrollera/installera Python-tillägg…')
-        self.deps_button.clicked.connect(self.manage_dependencies)
-        action_row.addWidget(self.deps_button)
-        self.donate_button = QtWidgets.QPushButton('Stöd utvecklingen · Ko-fi')
-        self.donate_button.clicked.connect(self.open_donation)
-        action_row.addWidget(self.donate_button)
-        self.donation_settings_button = QtWidgets.QPushButton('Ange/ändra Ko-fi-länk')
-        self.donation_settings_button.clicked.connect(self.configure_donation)
-        action_row.addWidget(self.donation_settings_button)
-        main.addLayout(action_row)
-        maintenance_row = QtWidgets.QHBoxLayout()
-        self.python_update_button = QtWidgets.QPushButton('Installera/uppdatera senaste Python…')
-        self.python_update_button.clicked.connect(self.update_python_runtime)
-        maintenance_row.addWidget(self.python_update_button)
-        self.packages_update_button = QtWidgets.QPushButton('Uppdatera alla Python-paket (starta om)…')
-        self.packages_update_button.clicked.connect(self.update_all_python_packages)
-        maintenance_row.addWidget(self.packages_update_button)
-        self.git_update_button = QtWidgets.QPushButton('Kontrollera GitHub main-uppdatering…')
-        self.git_update_button.clicked.connect(self.check_git_update)
-        maintenance_row.addWidget(self.git_update_button)
-        main.addLayout(maintenance_row)
         QtCore.QTimer.singleShot(200, self.offer_missing_dependencies)
         image_tab = QtWidgets.QWidget()
         image_tab.setProperty('mediaMode', 'photo')
@@ -3037,10 +3016,15 @@ class Window(QtWidgets.QMainWindow):
         self.stop.clicked.connect(self.cancel)
         buttons.addWidget(self.stop)
         self.progress = QtWidgets.QProgressBar()
+        self.progress.setMaximumHeight(18)
+        self.progress.hide()
         main.addWidget(self.progress)
         self.log = QtWidgets.QPlainTextEdit()
         self.log.setReadOnly(True)
-        main.addWidget(self.log, 1)
+        self.log.document().setMaximumBlockCount(1000)
+        self.log.setMaximumHeight(120)
+        self.log.hide()
+        main.addWidget(self.log)
         for index in range(self.tabs.count()):
             widget = self.tabs.widget(index)
             widget.setProperty('tabVisibilityKey', self.tabs.tabText(index))
@@ -3059,17 +3043,6 @@ class Window(QtWidgets.QMainWindow):
             last_tab = int(self.ui_settings.value('lastTab', 0))
             if 0 <= last_tab < self.tabs.count() and self.tabs.isTabVisible(last_tab):
                 self.tabs.setCurrentIndex(last_tab)
-        self.autostart = QtWidgets.QCheckBox('Starta automatiskt vid inloggning')
-        self.autostart.setChecked(autostart_enabled())
-        self.autostart.setEnabled(autostart_supported())
-        if not autostart_supported():
-            self.autostart.setToolTip(self.translated('Autostart is supported on Windows, macOS and Linux only.'))
-        self.autostart.toggled.connect(self.change_autostart)
-        main.addWidget(self.autostart)
-        self.auto_update_check = QtWidgets.QCheckBox('Sök tyst efter nya versioner (2 ggr/dygn)')
-        self.auto_update_check.setChecked(self.ui_settings.value('autoUpdateCheck', True, type=bool))
-        self.auto_update_check.toggled.connect(self.change_auto_update_check)
-        main.addWidget(self.auto_update_check)
         self.restore_preferences()
         self.apply_language()
         for button in self.findChildren(QtWidgets.QPushButton):
@@ -3113,6 +3086,41 @@ class Window(QtWidgets.QMainWindow):
             self.font_size_actions[size] = action
         self.tab_visibility_menu = self.view_menu.addMenu('')
 
+        self.tools_menu = bar.addMenu('')
+        self.deps_action = QtGui.QAction(self.brand, '', self)
+        self.deps_action.triggered.connect(self.manage_dependencies)
+        self.tools_menu.addAction(self.deps_action)
+        self.python_update_action = QtGui.QAction(self.brand, '', self)
+        self.python_update_action.triggered.connect(self.update_python_runtime)
+        self.tools_menu.addAction(self.python_update_action)
+        self.packages_update_action = QtGui.QAction(self.brand, '', self)
+        self.packages_update_action.triggered.connect(self.update_all_python_packages)
+        self.tools_menu.addAction(self.packages_update_action)
+        self.git_update_action = QtGui.QAction(self.brand, '', self)
+        self.git_update_action.triggered.connect(self.check_git_update)
+        self.tools_menu.addAction(self.git_update_action)
+        self.tools_menu.addSeparator()
+        self.autostart_action = QtGui.QAction(self.brand, '', self)
+        self.autostart_action.setCheckable(True)
+        self.autostart_action.setChecked(autostart_enabled())
+        self.autostart_action.setEnabled(autostart_supported())
+        if not autostart_supported():
+            self.autostart_action.setToolTip(self.translated('Autostart is supported on Windows, macOS and Linux only.'))
+        self.autostart_action.toggled.connect(self.change_autostart)
+        self.tools_menu.addAction(self.autostart_action)
+        self.auto_update_action = QtGui.QAction(self.brand, '', self)
+        self.auto_update_action.setCheckable(True)
+        self.auto_update_action.setChecked(self.ui_settings.value('autoUpdateCheck', True, type=bool))
+        self.auto_update_action.toggled.connect(self.change_auto_update_check)
+        self.tools_menu.addAction(self.auto_update_action)
+        self.tools_menu.addSeparator()
+        self.donate_action = QtGui.QAction(self.brand, '', self)
+        self.donate_action.triggered.connect(self.open_donation)
+        self.tools_menu.addAction(self.donate_action)
+        self.donation_settings_action = QtGui.QAction(self.brand, '', self)
+        self.donation_settings_action.triggered.connect(self.configure_donation)
+        self.tools_menu.addAction(self.donation_settings_action)
+
         self.help_menu = bar.addMenu('')
         self.support_action = QtGui.QAction(self.brand, '', self)
         self.support_action.triggered.connect(self.open_support_page)
@@ -3134,6 +3142,15 @@ class Window(QtWidgets.QMainWindow):
             self.font_size_actions[size].setText(self.translated(key))
             self.font_size_actions[size].setChecked(self.ui_font_size == size)
         self.tab_visibility_menu.setTitle(self.translated('Anpassa flikar'))
+        self.tools_menu.setTitle(self.translated('Verktyg'))
+        self.deps_action.setText(self.translated('Kontrollera/installera Python-tillägg…'))
+        self.python_update_action.setText(self.translated('Installera/uppdatera senaste Python…'))
+        self.packages_update_action.setText(self.translated('Uppdatera alla Python-paket (starta om)…'))
+        self.git_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+        self.autostart_action.setText(self.translated('Starta automatiskt vid inloggning'))
+        self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
+        self.donate_action.setText(self.translated('Stöd utvecklingen · Ko-fi'))
+        self.donation_settings_action.setText(self.translated('Ange/ändra Ko-fi-länk'))
         self.help_menu.setTitle(self.translated('Hjälp'))
         self.support_action.setText(self.translated('Hjälp och support'))
         self.error_log_action.setText(self.translated('Öppna fellogg'))
@@ -4442,6 +4459,12 @@ class Window(QtWidgets.QMainWindow):
         if hasattr(self, 'activity_log'):
             self.activity_log.appendPlainText(self.localize_runtime_text(text))
 
+    def append_main_log(self, text):
+        if hasattr(self, 'log'):
+            self.log.show()
+            self.log.appendPlainText(self.localize_runtime_text(text))
+            self.log.ensureCursorVisible()
+
     def append_worker_message(self, target, text):
         target.appendPlainText(self.localize_runtime_text(text))
 
@@ -4499,7 +4522,7 @@ class Window(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(str)
     def append_batch_message(self, text):
-        self.append_worker_message(self.log, text)
+        self.append_main_log(text)
 
     def localize_runtime_text(self, text):
         if self.ui_language != 'en':
@@ -4708,9 +4731,9 @@ class Window(QtWidgets.QMainWindow):
             LOGGER.info('Autostart: %s', 'på' if enabled else 'av')
         except Exception as exc:
             LOGGER.exception('Autostart kunde inte ändras')
-            self.autostart.blockSignals(True)
-            self.autostart.setChecked(not enabled)
-            self.autostart.blockSignals(False)
+            self.autostart_action.blockSignals(True)
+            self.autostart_action.setChecked(not enabled)
+            self.autostart_action.blockSignals(False)
             self.show_message('warning', 'Autostart kunde inte ändras', str(exc))
 
     def launch_maintenance_launcher(self, windows_flags, unix_flags):
@@ -4796,7 +4819,7 @@ class Window(QtWidgets.QMainWindow):
             LOGGER.info('Tyst versionssökning avstängd')
 
     def schedule_auto_update_check(self, initial=False):
-        if not hasattr(self, 'auto_update_timer') or not self.auto_update_check.isChecked():
+        if not hasattr(self, 'auto_update_timer') or not self.auto_update_action.isChecked():
             if hasattr(self, 'auto_update_timer'):
                 self.auto_update_timer.stop()
             return
@@ -4810,7 +4833,7 @@ class Window(QtWidgets.QMainWindow):
         self.auto_update_timer.start(max(1000, delay_ms))
 
     def run_scheduled_update_check(self):
-        if not self.auto_update_check.isChecked():
+        if not self.auto_update_action.isChecked():
             return
         self.ui_settings.setValue('lastAutoUpdateCheck', time.time())
         self.ui_settings.sync()
@@ -4825,8 +4848,8 @@ class Window(QtWidgets.QMainWindow):
             return
         self._git_update_worker_active = True
         if not silent:
-            self.git_update_button.setEnabled(False)
-            self.git_update_button.setText(self.translated('Kontrollerar GitHub main efter uppdateringar…'))
+            self.git_update_action.setEnabled(False)
+            self.git_update_action.setText(self.translated('Kontrollerar GitHub main efter uppdateringar…'))
         self.git_update_worker = GitUpdateWorker(apply_update=False)
         self._git_update_worker_mode = ('check', silent)
         self._git_update_worker_result = None
@@ -4854,8 +4877,8 @@ class Window(QtWidgets.QMainWindow):
             self.finish_git_update(result)
 
     def finish_git_update_check(self, result, silent):
-        self.git_update_button.setEnabled(True)
-        self.git_update_button.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+        self.git_update_action.setEnabled(True)
+        self.git_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
         status = result.get('status')
         if status == 'current':
             LOGGER.info('GitHub main är redan uppdaterad')
@@ -4911,8 +4934,8 @@ class Window(QtWidgets.QMainWindow):
         if self._git_update_worker_active:
             return
         self._git_update_worker_active = True
-        self.git_update_button.setEnabled(False)
-        self.git_update_button.setText(self.translated('Uppdaterar GitHub-version…'))
+        self.git_update_action.setEnabled(False)
+        self.git_update_action.setText(self.translated('Uppdaterar GitHub-version…'))
         self.git_update_worker = GitUpdateWorker(apply_update=True)
         self._git_update_worker_mode = ('apply', False)
         self._git_update_worker_result = None
@@ -4921,8 +4944,8 @@ class Window(QtWidgets.QMainWindow):
         self.git_update_worker.start()
 
     def finish_git_update(self, result):
-        self.git_update_button.setEnabled(True)
-        self.git_update_button.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
+        self.git_update_action.setEnabled(True)
+        self.git_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
         if result.get('status') == 'updated':
             LOGGER.info('GitHub main uppdaterad: %s -> %s', result.get('local'), result.get('remote'))
             self.restart_after_git_update()
@@ -4964,14 +4987,14 @@ class Window(QtWidgets.QMainWindow):
     def install_packages(self, packages):
         if getattr(self, 'pip_worker', None) and self.pip_worker.isRunning():
             return
-        self.deps_button.setEnabled(False)
+        self.deps_action.setEnabled(False)
         LOGGER.info('Installation/uppdatering startad: %s', ', '.join(packages))
         self.pip_worker = PipWorker(packages)
         self.pip_worker.finished_install.connect(self.install_finished)
         self.pip_worker.start()
 
     def install_finished(self, ok, output):
-        self.deps_button.setEnabled(True)
+        self.deps_action.setEnabled(True)
         LOGGER.info('Pip-resultat: %s; %s', 'lyckades' if ok else 'misslyckades', output[-1000:])
         self.show_message('information', 'Installation' if ok else 'Installationsfel', ('Klart. Starta om appen för att aktivera tilläggen.\n\n' if ok else 'Installationen misslyckades.\n\n') + output)
 
@@ -5574,7 +5597,7 @@ class Window(QtWidgets.QMainWindow):
             self.editor_source = Path(path)
             self.editor_history.clear()
             self.show_editor_image()
-            self.log.appendPlainText(f'Öppnade foto: {path}')
+            self.append_main_log(f'Öppnade foto: {path}')
             LOGGER.info('Fotoredigerare öppnade: %s', path)
         except Exception as exc:
             self.show_message('warning', 'Fel', str(exc))
@@ -5632,7 +5655,7 @@ class Window(QtWidgets.QMainWindow):
             self.editor_image.save(buffer, format='PNG')
             buffer.seek(0)
             enhance(buffer, target, self.factor.currentIndex() + 1, self.sliders['Skärpa'].value(), self.sliders['Färgstyrka'].value(), self.sliders['Klarhet/kontrast'].value(), False)
-            self.log.appendPlainText(f'Redigerad kopia sparad: {target}')
+            self.append_main_log(f'Redigerad kopia sparad: {target}')
             LOGGER.info('Redigerad kopia sparad: %s', target)
             self.show_message('information', 'Klart', f'Sparad: {target}')
         except Exception as exc:
@@ -5652,12 +5675,12 @@ class Window(QtWidgets.QMainWindow):
         c['font_size'] = self.ui_font_size
         self.setStyleSheet('''
             QMainWindow, QWidget {background:%(bg)s; color:%(text)s; font-family:"Segoe UI",Arial,sans-serif; font-size:%(font_size)spx}
-            QLabel#heroTitle {font-size:25px; font-weight:800; color:%(text)s}
-            QLabel#subtitle {font-size:13px; color:%(muted)s}
-            QTabWidget::pane, QGroupBox {border:1px solid %(border)s; border-radius:10px; background:%(panel)s}
-            QGroupBox {font-weight:700; margin-top:12px; padding:12px}
-            QGroupBox::title {subcontrol-origin:margin; left:15px; padding:0 6px}
-            QTabBar::tab {background:%(panel)s; color:%(muted)s; border:1px solid %(border)s; padding:9px 13px; margin-right:3px; border-top-left-radius:7px; border-top-right-radius:7px}
+            QLabel#heroTitle {font-size:22px; font-weight:800; color:%(text)s}
+            QLabel#subtitle {font-size:12px; color:%(muted)s}
+            QTabWidget::pane, QGroupBox {border:1px solid %(border)s; border-radius:9px; background:%(panel)s}
+            QGroupBox {font-weight:700; margin-top:10px; padding:10px}
+            QGroupBox::title {subcontrol-origin:margin; left:13px; padding:0 5px}
+            QTabBar::tab {background:%(panel)s; color:%(muted)s; border:1px solid %(border)s; padding:7px 9px; margin-right:2px; border-top-left-radius:7px; border-top-right-radius:7px}
             QTabBar::tab:selected {background:%(accent)s; color:white; font-weight:700}
             QLineEdit,QPlainTextEdit,QListWidget,QDateTimeEdit,QSpinBox,QComboBox {background:%(field)s; color:%(text)s; border:1px solid %(border)s; border-radius:6px; padding:6px; selection-background-color:%(accent)s}
             QLineEdit:focus,QPlainTextEdit:focus {border:2px solid %(accent)s}
@@ -5877,8 +5900,9 @@ class Window(QtWidgets.QMainWindow):
         self.go.setEnabled(False)
         self.stop.setEnabled(True)
         self.progress.setValue(0)
+        self.progress.show()
         destination_text = str(output_location) if mode != 'overwrite' else f'originalfiler i {root}'
-        self.log.appendPlainText(f'Bearbetar {len(items)} filer → {destination_text}')
+        self.append_main_log(f'Bearbetar {len(items)} filer → {destination_text}')
         LOGGER.info('Mappbearbetning startad: %d filer från %s (resultatläge %s)', len(items), root, mode)
         self.worker.start()
 
@@ -5891,7 +5915,7 @@ class Window(QtWidgets.QMainWindow):
     def finished(self):
         self.go.setEnabled(True)
         self.stop.setEnabled(False)
-        self.log.appendPlainText('Bearbetningen avslutad. Kontrollera eventuella DELVIS/FEL ovan.')
+        self.append_main_log('Bearbetningen avslutad. Kontrollera eventuella DELVIS/FEL ovan.')
         LOGGER.info('Mappbearbetning avslutad')
 
     def restore_preferences(self):
@@ -5902,7 +5926,7 @@ class Window(QtWidgets.QMainWindow):
             'preserveFolderStructure': 'structure', 'overwriteArchive': 'overwrite',
             'imageRecursive': 'image_recursive', 'imageStripMetadata': 'image_strip', 'libraryRecursive': 'library_recursive',
             'videoRecursive': 'video_recursive', 'audioRecursive': 'audio_recursive', 'duplicateRecursive': 'duplicate_recursive', 'colorRecursive': 'color_recursive', 'stabilizeRecursive': 'stabilize_recursive', 'cleanupRecursive': 'cleanup_recursive', 'codecRecursive': 'codec_recursive', 'musicRecursive': 'music_recursive',
-            'conversionKeepMetadata': 'conversion_metadata', 'autoUpdateCheck': 'auto_update_check',
+            'conversionKeepMetadata': 'conversion_metadata',
         }
         for key, attribute in checkbox_keys.items():
             widget = getattr(self, attribute, None)
@@ -5969,7 +5993,7 @@ class Window(QtWidgets.QMainWindow):
             'preserveFolderStructure': 'structure', 'overwriteArchive': 'overwrite',
             'imageRecursive': 'image_recursive', 'imageStripMetadata': 'image_strip', 'libraryRecursive': 'library_recursive',
             'videoRecursive': 'video_recursive', 'audioRecursive': 'audio_recursive', 'duplicateRecursive': 'duplicate_recursive', 'colorRecursive': 'color_recursive', 'stabilizeRecursive': 'stabilize_recursive', 'cleanupRecursive': 'cleanup_recursive', 'codecRecursive': 'codec_recursive', 'musicRecursive': 'music_recursive',
-            'conversionKeepMetadata': 'conversion_metadata', 'autoUpdateCheck': 'auto_update_check',
+            'conversionKeepMetadata': 'conversion_metadata', 'autoUpdateCheck': 'auto_update_action',
         }
         for key, attribute in checkbox_keys.items():
             widget = getattr(self, attribute, None)

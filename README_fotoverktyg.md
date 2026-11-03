@@ -8,7 +8,7 @@ Python 3.10 eller senare rekommenderas. Starta helst via projektets launcher så
 
 - **Windows:** dubbelklicka `Starta_Fotoverktyg.vbs`. `Starta_Fotoverktyg.ps1` frågar innan paket installeras och kan installera/uppdatera senaste stabila Python via winget.
 - **macOS/Linux:** kör `./start_mediaforge.sh` från Terminal. Den skapar en app-lokal virtuell miljö och ber om godkännande innan saknade paket installeras. När den är klar startar GUI:t frikopplat från terminalen; utdata omdirigeras till `MediaForge_Data/Logs/launcher.log`. Python-runtime uppdateras via Homebrew på macOS eller upptäckt systempakethanterare på Linux; Linux-distributionens förråd kan släpa efter senaste upstream-versionen.
-- Appen har knappar för att kontrollera/installera tillägg, uppdatera alla paket (inklusive PyQt6 efter omstart), installera/uppdatera Python och kontrollera GitHub-uppdatering.
+- Under menyn **Verktyg** finns hantering av Python-tillägg, Python-/paketuppdatering, GitHub-uppdatering, autostart, tyst versionssökning och Ko-fi.
 
 Installera även **ExifTool** separat för bred metadatahantering, **FFmpeg** för videokonvertering och `xorriso`, `genisoimage` eller `mkisofs` för att skapa ISO till musik-data-DVD. På Linux kan Qt även kräva systembibliotek för grafiskt gränssnitt.
 
@@ -50,7 +50,7 @@ Menyn **Visa** låter dig dölja/visa och dra om ordningen på flikar, ändra te
 
 ## Design, ikon och autostart
 
-Gränssnittet har mörkt/ljust tema, tydliga flikar och den nya MediaForge-symbolen i apphuvudet, fönstret/aktivitetsfältet, flikarna och knapparna. `fotoverktyg_icon.png` används i appen och Linux-autostart; den matchande flerupplösta `fotoverktyg_icon.ico` används i Windows-autostartgenvägen och kan även användas för andra genvägar/paketering. Behåll båda ikonfilerna bredvid appen. **Starta automatiskt vid inloggning** är frivilligt och avstängt om det inte aktiverats tidigare. Det registreras för ditt användarkonto i Windows Start-mapp, macOS `~/Library/LaunchAgents` eller Linux `~/.config/autostart`. Windows-autostart använder MediaForge-startaren och en genväg med appens ikon, aldrig `.pyw` direkt. Avmarkera kryssrutan för att ta bort autostart. Flyttar du appfilen senare behöver du slå av/på autostart igen. Autostart startar bara fönstret, **inte** filbearbetning eller nedladdning.
+Gränssnittet har mörkt/ljust tema, tydliga flikar och den nya MediaForge-symbolen i apphuvudet, fönstret/aktivitetsfältet, flikarna och knapparna. `fotoverktyg_icon.png` används i appen och Linux-autostart; den matchande flerupplösta `fotoverktyg_icon.ico` används i Windows-autostartgenvägen och kan även användas för andra genvägar/paketering. Behåll båda ikonfilerna bredvid appen. I menyn **Verktyg** kan du slå på eller av **Starta automatiskt vid inloggning**. Det registreras för ditt användarkonto i Windows Start-mapp, macOS `~/Library/LaunchAgents` eller Linux `~/.config/autostart`. Windows-autostart använder MediaForge-startaren och en genväg med appens ikon, aldrig `.pyw` direkt. Flyttar du appfilen senare behöver du slå av/på autostart igen. Autostart startar bara fönstret, **inte** filbearbetning eller nedladdning.
 
 På Linux behövs även Qt:s systembibliotek, exempelvis `libxkbcommon.so.0`, för att starta PyQt6; dessa kan inte installeras genom appens paketknapp.
 
