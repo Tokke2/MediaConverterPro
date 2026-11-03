@@ -11,10 +11,14 @@ import tempfile
 import csv
 import json
 import hashlib
+import io
+import stat
+import zipfile
 import urllib.request
+from urllib.parse import quote
 from fractions import Fraction
 from datetime import datetime, timedelta
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import logging
 from logging.handlers import RotatingFileHandler
@@ -30,6 +34,15 @@ SETTINGS_FILE = SETTINGS_DIR / 'preferences.ini'
 APP_VERSION = '0.0.2'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
 UPDATE_RELEASE_API = 'https://api.github.com/repos/Tokke2/MediaConverterPro/releases/latest'
+UPDATEABLE_RELEASE_FILES = {
+    '.gitignore', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
+    'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs',
+    'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png',
+    'start_mediaforge.sh',
+}
+MAX_RELEASE_ARCHIVE_BYTES = 80 * 1024 * 1024
+MAX_RELEASE_FILE_BYTES = 40 * 1024 * 1024
+MAX_RELEASE_FILES_BYTES = 100 * 1024 * 1024
 
 
 
@@ -120,7 +133,9 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.': 'The Git worktree is not clean. Commit, stash, or discard changes before updating.',
  'Uppdatering tillgänglig: {local} → {remote}. Uppdatera nu? Endast snabbspolning tillåts.': 'Update available: {local} → {remote}. Update now? Only a fast-forward update is allowed.',
  'Uppdateringen är klar. Starta om MediaForge för att använda den nya versionen.': 'Update complete. Restart MediaForge to use the updated code.',
- 'Git-uppdateringen misslyckades:': 'Git update failed:',
+ 'GitHub-uppdateringen misslyckades:': 'GitHub release update failed:',
+ 'Git saknas i PATH och uppdateraren kan därför inte verifiera arbetskopian. Installera Git eller använd en källkodsinstallation utan .git-mapp.': 'Git is not available in PATH, so the updater cannot verify this checkout. Install Git or use a source-archive installation without a .git folder.',
+ 'Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En säkerhetskopia sparas i MediaForge_Data/Backups.': 'Git is not installed in this copy. Only application files will be replaced; settings and user data are kept. A backup is saved in MediaForge_Data/Backups.',
  'Python-uppdatering' : 'Python update',
  'GitHub-uppdatering': 'GitHub update',
     'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
@@ -1206,21 +1221,157 @@ class ReleaseUpdateWorker(QtCore.QThread):
         if not isinstance(tag, str) or not tag.strip():
             raise RuntimeError('GitHub returned a release without a tag name.')
         tag = tag.strip()
-        if self.git('check-ref-format', f'refs/tags/{tag}', allow_failure=True).returncode:
-            raise RuntimeError(f'GitHub returned an invalid release tag: {tag}')
+        if len(tag) > 200 or any(not character.isprintable() for character in tag):
+            raise RuntimeError('GitHub returned an invalid release tag.')
         return tag
+
+    @staticmethod
+    def manifest_fingerprint(files):
+        digest = hashlib.sha256()
+        for name in sorted(files):
+            encoded_name = name.encode('utf-8')
+            data = files[name]
+            digest.update(len(encoded_name).to_bytes(4, 'big'))
+            digest.update(encoded_name)
+            digest.update(len(data).to_bytes(8, 'big'))
+            digest.update(data)
+        return digest.hexdigest()
+
+    def download_release_files(self, tag):
+        archive_url = 'https://codeload.github.com/Tokke2/MediaConverterPro/zip/refs/tags/' + quote(tag, safe='')
+        request = urllib.request.Request(archive_url, headers={'User-Agent': 'MediaForge'})
+        with urllib.request.urlopen(request, timeout=60) as response:
+            archive_data = response.read(MAX_RELEASE_ARCHIVE_BYTES + 1)
+        if len(archive_data) > MAX_RELEASE_ARCHIVE_BYTES:
+            raise RuntimeError('The GitHub release source archive is too large to install safely.')
+
+        files = {}
+        modes = {}
+        total_size = 0
+        try:
+            with zipfile.ZipFile(io.BytesIO(archive_data)) as archive:
+                roots = set()
+                for info in archive.infolist():
+                    path = PurePosixPath(info.filename)
+                    if path.is_absolute() or '..' in path.parts or chr(92) in info.filename:
+                        raise RuntimeError('The GitHub release archive contains an unsafe path.')
+                    if path.parts:
+                        roots.add(path.parts[0])
+                    if len(path.parts) != 2 or path.parts[1] not in UPDATEABLE_RELEASE_FILES or info.is_dir():
+                        continue
+                    name = path.parts[1]
+                    if name in files:
+                        raise RuntimeError(f'The GitHub release archive contains duplicate file: {name}')
+                    mode = (info.external_attr >> 16) & 0xFFFF
+                    if stat.S_ISLNK(mode):
+                        raise RuntimeError(f'The GitHub release archive contains a symbolic link: {name}')
+                    if info.file_size > MAX_RELEASE_FILE_BYTES:
+                        raise RuntimeError(f'The GitHub release file is too large: {name}')
+                    total_size += info.file_size
+                    if total_size > MAX_RELEASE_FILES_BYTES:
+                        raise RuntimeError('The GitHub release files are too large to install safely.')
+                    data = archive.read(info)
+                    if len(data) != info.file_size:
+                        raise RuntimeError(f'The GitHub release file is incomplete: {name}')
+                    files[name] = data
+                    modes[name] = stat.S_IMODE(mode) if mode else None
+                if len(roots) != 1:
+                    raise RuntimeError('The GitHub release source archive has an unexpected folder structure.')
+        except zipfile.BadZipFile as exc:
+            raise RuntimeError('GitHub did not return a valid source ZIP archive.') from exc
+        if 'fotoverktyg.pyw' not in files:
+            raise RuntimeError('The GitHub release archive does not contain the MediaForge application.')
+        return files, modes
+
+    def install_release_files(self, tag, files, modes):
+        temp_root = APP_DATA_DIR / 'Temp'
+        temp_root.mkdir(parents=True, exist_ok=True)
+        backup_root = APP_DATA_DIR / 'Backups' / 'ReleaseUpdate' / f'{time.strftime("%Y%m%d-%H%M%S")}-{time.time_ns()}-{os.getpid()}'
+        for name in files:
+            if (APP_DIR / name).is_symlink():
+                raise RuntimeError(f'Refusing to replace a symbolic link: {name}')
+        changed = [name for name, data in files.items()
+                   if not (APP_DIR / name).is_file() or (APP_DIR / name).read_bytes() != data]
+        if not changed:
+            return
+
+        backups_created = []
+        replaced = []
+        with tempfile.TemporaryDirectory(prefix='release-update-', dir=temp_root) as staging_name:
+            staging = Path(staging_name)
+            for name in changed:
+                destination = APP_DIR / name
+                if destination.is_symlink():
+                    raise RuntimeError(f'Refusing to replace a symbolic link: {name}')
+                staged_file = staging / name
+                staged_file.write_bytes(files[name])
+                mode = modes.get(name)
+                if mode is None:
+                    mode = stat.S_IMODE(destination.stat().st_mode) if destination.exists() else 0o644
+                os.chmod(staged_file, mode)
+                if destination.exists():
+                    backup = backup_root / name
+                    backup.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(destination, backup)
+                    backups_created.append((name, backup))
+            try:
+                for name in changed:
+                    os.replace(staging / name, APP_DIR / name)
+                    replaced.append(name)
+            except Exception:
+                backup_by_name = dict(backups_created)
+                for name in reversed(replaced):
+                    backup = backup_by_name.get(name)
+                    destination = APP_DIR / name
+                    if backup is not None and backup.exists():
+                        os.replace(backup, destination)
+                    elif destination.exists():
+                        destination.unlink()
+                raise
+        LOGGER.info('Release %s files installed: %s; backups: %s', tag, ', '.join(changed), backup_root)
+
+    def run_archive_update(self, tag):
+        files, modes = self.download_release_files(tag)
+        local_files = {}
+        for name in UPDATEABLE_RELEASE_FILES:
+            path = APP_DIR / name
+            if path.is_file() and not path.is_symlink():
+                local_files[name] = path.read_bytes()
+        local = self.manifest_fingerprint(local_files)
+        remote = self.manifest_fingerprint(files)
+        changed_files = sorted(name for name in files
+                               if name not in local_files or local_files[name] != files[name])
+        if not changed_files:
+            self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote, 'tag': tag, 'method': 'archive'})
+            return
+        if not self.apply_update:
+            self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'tag': tag,
+                                    'changed_files': changed_files, 'method': 'archive'})
+            return
+        self.install_release_files(tag, files, modes)
+        self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote, 'tag': tag,
+                                'changed_files': changed_files, 'method': 'archive'})
 
     def run(self):
         try:
+            if not (APP_DIR / '.git').exists():
+                tag = self.latest_release_tag()
+                self.run_archive_update(tag)
+                return
+            if not shutil.which('git'):
+                self.result_ready.emit({'status': 'skipped', 'reason': 'git_unavailable'})
+                return
             local, reason = self.check_worktree()
             if reason:
                 self.result_ready.emit({'status': 'skipped', 'reason': reason})
                 return
             tag = self.latest_release_tag()
+            if self.git('check-ref-format', f'refs/tags/{tag}', allow_failure=True).returncode:
+                raise RuntimeError(f'GitHub returned an invalid release tag: {tag}')
             self.git('fetch', '--quiet', '--no-tags', UPDATE_REMOTE_URL, f'refs/tags/{tag}', timeout=90)
             local_after_fetch, reason = self.check_worktree()
             if reason:
-                self.result_ready.emit({'status': 'skipped', 'reason': reason})
+                self.result_ready.emit({'status': 'skipped', 'reason': reason, 'tag': tag})
                 return
             local = local_after_fetch
             remote = self.git('rev-parse', 'FETCH_HEAD').stdout
@@ -4946,6 +5097,8 @@ class Window(QtWidgets.QMainWindow):
             changed_files = result.get('changed_files', [])
             LOGGER.info('Ny GitHub-release %s upptäckt: %s -> %s (%d ändrade filer)', tag, local, remote, len(changed_files))
             prompt = self.translated('Ny GitHub-release {tag} finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efteråt.').format(tag=tag, local=local[:10], remote=remote[:10])
+            if result.get('method') == 'archive':
+                prompt += '\n\n' + self.translated('Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En säkerhetskopia sparas i MediaForge_Data/Backups.')
             if changed_files:
                 shown_files = changed_files[:8]
                 file_list = '\n'.join('• ' + path for path in shown_files)
@@ -4972,6 +5125,8 @@ class Window(QtWidgets.QMainWindow):
                 message = self.translated('Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.')
             elif reason == 'not_fast_forward':
                 message = self.translated('Kan inte uppdatera säkert eftersom den lokala grenen inte kan snabbspolas till releasen.')
+            elif reason == 'git_unavailable':
+                message = self.translated('Git saknas i PATH och uppdateraren kan därför inte verifiera arbetskopian. Installera Git eller använd en källkodsinstallation utan .git-mapp.')
             else:
                 message = self.translated('Uppdateringskontrollen kunde inte genomföras.')
             LOGGER.info('GitHub-releaseuppdatering hoppas över: %s', reason)
@@ -4984,7 +5139,7 @@ class Window(QtWidgets.QMainWindow):
         message = result.get('message', self.translated('Uppdateringskontrollen kunde inte genomföras.'))
         LOGGER.warning('GitHub-releasekontroll misslyckades: %s', message)
         if not silent:
-            self.show_message('warning', 'GitHub-uppdatering', self.translated('Git-uppdateringen misslyckades:') + '\n' + message)
+            self.show_message('warning', 'GitHub-uppdatering', self.translated('GitHub-uppdateringen misslyckades:') + '\n' + message)
 
     def apply_release_update(self):
         if self._git_update_worker_active:
