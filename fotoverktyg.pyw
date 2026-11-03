@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import time
+import platform
 import tempfile
 import csv
 import json
@@ -25,6 +26,7 @@ LOG_DIR = APP_DATA_DIR / 'Logs'
 LOG_FILE = LOG_DIR / 'mediaforge.log'
 ERROR_LOG_FILE = LOG_DIR / 'errors.log'
 SETTINGS_FILE = SETTINGS_DIR / 'preferences.ini'
+APP_VERSION = '0.0.2'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
 UPDATE_BRANCH = 'main'
 
@@ -782,7 +784,44 @@ UI_TRANSLATIONS.update({
     'Bildförbättring används bara när resultatet sparas i arkivmappen.': 'Image enhancement is only used when saving to the archive folder.',
     'Originalen lämnas orörda; resultat sparas i den valda arkivmappen.': 'Originals remain untouched; results are saved in the selected archive folder.',
     'Nya rensade kopior får suffixet _rensad och sparas bredvid källfilerna.': 'New cleaned copies get the _rensad suffix and are saved beside the source files.',
-    'Original ersätts först när en tillfällig kopia har rensats klart.': 'Originals are replaced only after a temporary copy has been cleaned successfully.'
+    'Original ersätts först när en tillfällig kopia har rensats klart.': 'Originals are replaced only after a temporary copy has been cleaned successfully.',
+    'Fil': 'File',
+    'Visa': 'View',
+    'Hjälp': 'Help',
+    'Avsluta': 'Quit',
+    'Anpassa flikar': 'Customize tabs',
+    'Textstorlek': 'Text size',
+    'Mindre': 'Smaller',
+    'Standard': 'Default',
+    'Större': 'Larger',
+    'Extra stor': 'Extra large',
+    'Mörkt tema': 'Dark theme',
+    'Hjälp och support': 'Help & support',
+    'Support för MediaForge': 'MediaForge support',
+    'Snabbhjälp': 'Quick help',
+    'Kom igång': 'Getting started',
+    'Krav och verktyg': 'Requirements and tools',
+    'Loggar och integritet': 'Logs and privacy',
+    'Kopiera diagnostik för support': 'Copy diagnostics for support',
+    'GitHub-sidan kunde inte öppnas.': 'Could not open the GitHub page.',
+    'Installera Python 3.10 eller senare via den medföljande startaren.': 'Install Python 3.10 or later using the provided launcher.',
+    'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.': 'Video, slideshow, and audio tools require FFmpeg. ExifTool is recommended for broad metadata support.',
+    'Fellogg finns under MediaForge_Data/Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.': 'The error log is under MediaForge_Data/Logs/errors.log. Review logs before sharing; they may contain file paths and ad IDs.',
+    'Diagnostik innehåller bara versions- och miljöinformation, inte dina filer eller logginnehåll.': 'Diagnostics contain only version and environment information, not your files or log contents.',
+    'Kopiera diagnostik': 'Copy diagnostics',
+    'Öppna GitHub-support': 'Open GitHub support',
+    'Stäng': 'Close',
+    'Diagnostik kopierad till urklipp.': 'Diagnostics copied to clipboard.',
+    'Visa alla flikar': 'Show all tabs',
+    'Appversion': 'App version',
+    'Operativsystem': 'Operating system',
+    'Python': 'Python',
+    'Qt': 'Qt',
+    'FFmpeg': 'FFmpeg',
+    'ExifTool': 'ExifTool',
+    'Tillgänglig': 'Available',
+    'Saknas': 'Missing',
+    'Minst en flik måste vara synlig i valt arbetsläge.': 'At least one tab must stay visible in the selected mode.'
 })
 
 def exiftool(args, timeout=60):
@@ -2752,7 +2791,7 @@ class Window(QtWidgets.QMainWindow):
         self.brand = QtGui.QIcon(str(icon_file)) if icon_file.exists() else brand_icon()
         self.setWindowIcon(self.brand)
         self.resize(1100, 850)
-        self.setMinimumSize(850, 700)
+        self.setMinimumSize(760, 560)
         self.worker = None
         self.dark = False
         central = QtWidgets.QWidget()
@@ -2787,6 +2826,20 @@ class Window(QtWidgets.QMainWindow):
             self.ui_settings.sync()
             legacy_settings.clear()
             legacy_settings.sync()
+        try:
+            saved_font_size = int(self.ui_settings.value('uiFontSize', 12))
+        except (TypeError, ValueError):
+            saved_font_size = 12
+        self.ui_font_size = saved_font_size if saved_font_size in {11, 12, 14, 16} else 12
+        saved_hidden_tabs = self.ui_settings.value('hiddenTabs', [])
+        self.hidden_tabs = set(map(str, saved_hidden_tabs)) if isinstance(saved_hidden_tabs, (list, tuple, set)) else set()
+        saved_geometry = self.ui_settings.value('windowGeometry')
+        if saved_geometry:
+            try:
+                if not self.restoreGeometry(saved_geometry):
+                    LOGGER.warning('A sparad fönsterlayout kunde inte återställas')
+            except (TypeError, RuntimeError):
+                LOGGER.warning('A sparad fönsterlayout kunde inte återställas')
         self.ui_language = self.ui_settings.value('language', 'sv')
         self.media_mode = self.ui_settings.value('mediaMode', 'all')
         saved_dark = self.ui_settings.value('darkTheme', True, type=bool)
@@ -2813,6 +2866,9 @@ class Window(QtWidgets.QMainWindow):
         preferences.addStretch()
         main.addLayout(preferences)
         self.tabs = QtWidgets.QTabWidget()
+        self.tabs.setDocumentMode(True)
+        self.tabs.setMovable(True)
+        self.tabs.tabBar().setUsesScrollButtons(True)
         main.addWidget(self.tabs)
         action_row = QtWidgets.QHBoxLayout()
         self.deps_button = QtWidgets.QPushButton('Kontrollera/installera Python-tillägg…')
@@ -2969,9 +3025,6 @@ class Window(QtWidgets.QMainWindow):
         self.output_mode.currentIndexChanged.connect(self.update_processing_output_mode)
         buttons = QtWidgets.QHBoxLayout()
         main.addLayout(buttons)
-        theme = QtWidgets.QPushButton('Ljust/mörkt tema')
-        theme.clicked.connect(self.toggle_theme)
-        buttons.addWidget(theme)
         export = QtWidgets.QPushButton('Exportera logg')
         export.clicked.connect(self.export_log)
         buttons.addWidget(export)
@@ -2989,13 +3042,23 @@ class Window(QtWidgets.QMainWindow):
         self.log.setReadOnly(True)
         main.addWidget(self.log, 1)
         for index in range(self.tabs.count()):
+            widget = self.tabs.widget(index)
+            widget.setProperty('tabVisibilityKey', self.tabs.tabText(index))
+        self.restore_tab_order()
+        self.tabs.tabBar().tabMoved.connect(self.persist_tab_order)
+        for index in range(self.tabs.count()):
             self.tabs.setTabIcon(index, self.brand)
         self.mode_combo.currentIndexChanged.connect(self.change_media_mode)
         self.language_combo.currentIndexChanged.connect(self.change_ui_language)
         self.apply_media_mode()
-        last_tab = int(self.ui_settings.value('lastTab', 0))
-        if 0 <= last_tab < self.tabs.count() and self.tabs.isTabVisible(last_tab):
-            self.tabs.setCurrentIndex(last_tab)
+        preferred_tab_key = str(self.ui_settings.value('lastTabId', ''))
+        preferred_tab = next((i for i in range(self.tabs.count()) if self.tabs.widget(i).property('tabVisibilityKey') == preferred_tab_key), -1)
+        if preferred_tab >= 0 and self.tabs.isTabVisible(preferred_tab):
+            self.tabs.setCurrentIndex(preferred_tab)
+        else:
+            last_tab = int(self.ui_settings.value('lastTab', 0))
+            if 0 <= last_tab < self.tabs.count() and self.tabs.isTabVisible(last_tab):
+                self.tabs.setCurrentIndex(last_tab)
         self.autostart = QtWidgets.QCheckBox('Starta automatiskt vid inloggning')
         self.autostart.setChecked(autostart_enabled())
         self.autostart.setEnabled(autostart_supported())
@@ -3021,8 +3084,134 @@ class Window(QtWidgets.QMainWindow):
         self._git_update_worker_active = False
         self._git_update_restart_pending = False
         self.setup_system_tray()
+        self.setup_menu_bar()
         self.schedule_auto_update_check(initial=True)
         LOGGER.info('Fönstret öppnat; loggfil: %s', LOG_FILE)
+
+    def setup_menu_bar(self):
+        bar = self.menuBar()
+        self.file_menu = bar.addMenu('')
+        self.file_exit_action = QtGui.QAction('', self)
+        self.file_exit_action.triggered.connect(self.close)
+        self.file_menu.addAction(self.file_exit_action)
+
+        self.view_menu = bar.addMenu('')
+        self.theme_action = QtGui.QAction('', self)
+        self.theme_action.setCheckable(True)
+        self.theme_action.triggered.connect(self.toggle_theme)
+        self.view_menu.addAction(self.theme_action)
+        self.font_size_menu = self.view_menu.addMenu('')
+        self.font_size_group = QtGui.QActionGroup(self)
+        self.font_size_group.setExclusive(True)
+        self.font_size_actions = {}
+        for size, label in ((11, 'Mindre'), (12, 'Standard'), (14, 'Större'), (16, 'Extra stor')):
+            action = QtGui.QAction('', self)
+            action.setCheckable(True)
+            action.triggered.connect(lambda checked=False, value=size: self.set_ui_font_size(value))
+            self.font_size_group.addAction(action)
+            self.font_size_menu.addAction(action)
+            self.font_size_actions[size] = action
+        self.tab_visibility_menu = self.view_menu.addMenu('')
+
+        self.help_menu = bar.addMenu('')
+        self.support_action = QtGui.QAction('', self)
+        self.support_action.triggered.connect(self.open_support_page)
+        self.help_menu.addAction(self.support_action)
+        self.error_log_action = QtGui.QAction('', self)
+        self.error_log_action.triggered.connect(self.open_error_log)
+        self.help_menu.addAction(self.error_log_action)
+        self.retranslate_menu_bar()
+
+    def retranslate_menu_bar(self):
+        self.file_menu.setTitle(self.translated('Fil'))
+        self.file_exit_action.setText(self.translated('Avsluta'))
+        self.view_menu.setTitle(self.translated('Visa'))
+        self.theme_action.setText(self.translated('Mörkt tema'))
+        self.theme_action.setChecked(self.dark)
+        self.font_size_menu.setTitle(self.translated('Textstorlek'))
+        for size, label in ((11, 'Mindre'), (12, 'Standard'), (14, 'Större'), (16, 'Extra stor')):
+            key = 'Extra stor' if label == 'Extra stor' else label
+            self.font_size_actions[size].setText(self.translated(key))
+            self.font_size_actions[size].setChecked(self.ui_font_size == size)
+        self.tab_visibility_menu.setTitle(self.translated('Anpassa flikar'))
+        self.help_menu.setTitle(self.translated('Hjälp'))
+        self.support_action.setText(self.translated('Hjälp och support'))
+        self.error_log_action.setText(self.translated('Öppna fellogg'))
+        self.refresh_tab_visibility_menu()
+
+    def refresh_tab_visibility_menu(self):
+        self.tab_visibility_menu.clear()
+        show_all = self.tab_visibility_menu.addAction(self.translated('Visa alla flikar'))
+        show_all.triggered.connect(self.show_all_tabs)
+        self.tab_visibility_menu.addSeparator()
+        for index in range(self.tabs.count()):
+            widget = self.tabs.widget(index)
+            key = str(widget.property('tabVisibilityKey'))
+            action = self.tab_visibility_menu.addAction(self.tabs.tabText(index))
+            action.setCheckable(True)
+            action.setChecked(key not in self.hidden_tabs)
+            action.setData(key)
+            action.triggered.connect(lambda checked=False, tab_key=key: self.set_user_tab_visible(tab_key, checked))
+
+    def set_user_tab_visible(self, tab_key, visible):
+        if visible:
+            self.hidden_tabs.discard(tab_key)
+        else:
+            candidate_hidden = self.hidden_tabs | {tab_key}
+            current_mode_tabs = []
+            for index in range(self.tabs.count()):
+                widget = self.tabs.widget(index)
+                key = str(widget.property('tabVisibilityKey'))
+                category = widget.property('mediaMode') or 'both'
+                in_mode = self.media_mode == 'all' or category == 'both' or category == self.media_mode
+                if in_mode and key not in candidate_hidden:
+                    current_mode_tabs.append(key)
+            if not current_mode_tabs:
+                self.show_message('warning', 'Fel', 'Minst en flik måste vara synlig i valt arbetsläge.')
+                QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
+                return
+            self.hidden_tabs.add(tab_key)
+        self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
+        self.ui_settings.sync()
+        self.apply_media_mode()
+        QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
+
+    def show_all_tabs(self):
+        self.hidden_tabs.clear()
+        self.ui_settings.setValue('hiddenTabs', [])
+        self.ui_settings.sync()
+        self.apply_media_mode()
+        QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
+
+    def restore_tab_order(self):
+        saved_order = self.ui_settings.value('tabOrder', [])
+        if not isinstance(saved_order, (list, tuple)):
+            saved_order = []
+        keys = [str(self.tabs.widget(i).property('tabVisibilityKey')) for i in range(self.tabs.count())]
+        desired_order = [str(key) for key in saved_order if str(key) in keys]
+        desired_order += [key for key in keys if key not in desired_order]
+        tab_bar = self.tabs.tabBar()
+        for target, key in enumerate(desired_order):
+            current = next((i for i in range(self.tabs.count()) if self.tabs.widget(i).property('tabVisibilityKey') == key), -1)
+            if current >= 0 and current != target:
+                tab_bar.moveTab(current, target)
+
+    def persist_tab_order(self, *_):
+        order = [str(self.tabs.widget(i).property('tabVisibilityKey')) for i in range(self.tabs.count())]
+        self.ui_settings.setValue('tabOrder', order)
+        self.ui_settings.sync()
+        if hasattr(self, 'tab_visibility_menu'):
+            QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
+
+    def set_ui_font_size(self, size):
+        if size not in {11, 12, 14, 16}:
+            return
+        self.ui_font_size = size
+        self.ui_settings.setValue('uiFontSize', size)
+        self.ui_settings.sync()
+        self.apply_theme()
+        for font_size, action in self.font_size_actions.items():
+            action.setChecked(font_size == size)
 
     def setup_system_tray(self):
         if not QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
@@ -4423,6 +4612,8 @@ class Window(QtWidgets.QMainWindow):
             self.tray_quit_action.setText(self.translated('Avsluta MediaForge'))
         if hasattr(self, 'output_mode'):
             self.update_processing_output_mode()
+        if hasattr(self, 'file_menu'):
+            self.retranslate_menu_bar()
 
     def change_ui_language(self, index):
         language = self.language_combo.itemData(index)
@@ -4442,9 +4633,23 @@ class Window(QtWidgets.QMainWindow):
 
     def apply_media_mode(self):
         for index in range(self.tabs.count()):
-            category = self.tabs.widget(index).property('mediaMode') or 'both'
-            visible = self.media_mode == 'all' or category == 'both' or category == self.media_mode
-            self.tabs.setTabVisible(index, visible)
+            widget = self.tabs.widget(index)
+            category = widget.property('mediaMode') or 'both'
+            key = str(widget.property('tabVisibilityKey'))
+            in_mode = self.media_mode == 'all' or category == 'both' or category == self.media_mode
+            self.tabs.setTabVisible(index, in_mode and key not in self.hidden_tabs)
+        if not any(self.tabs.isTabVisible(i) for i in range(self.tabs.count())):
+            for index in range(self.tabs.count()):
+                widget = self.tabs.widget(index)
+                category = widget.property('mediaMode') or 'both'
+                if self.media_mode == 'all' or category == 'both' or category == self.media_mode:
+                    key = str(widget.property('tabVisibilityKey'))
+                    self.hidden_tabs.discard(key)
+                    self.tabs.setTabVisible(index, True)
+                    self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
+                    self.ui_settings.sync()
+                    LOGGER.warning('A visible flik återställdes eftersom arbetsläget annars var tomt')
+                    break
         current = self.tabs.currentWidget()
         if current is not None and not self.tabs.isTabVisible(self.tabs.indexOf(current)):
             visible = [i for i in range(self.tabs.count()) if self.tabs.isTabVisible(i)]
@@ -5436,12 +5641,17 @@ class Window(QtWidgets.QMainWindow):
     def toggle_theme(self):
         self.dark = not self.dark
         self.ui_settings.setValue('darkTheme', self.dark)
+        self.ui_settings.sync()
+        self.apply_theme()
+
+    def apply_theme(self):
         if self.dark:
             c = dict(bg='#101726', panel='#192439', field='#243147', border='#394b65', text='#f2f6fd', muted='#a3b5ce', accent='#3b82f6', hover='#2563eb')
         else:
             c = dict(bg='#f1f5fb', panel='#ffffff', field='#f8fafc', border='#cbd5e1', text='#182437', muted='#52637d', accent='#2563eb', hover='#1d4ed8')
+        c['font_size'] = self.ui_font_size
         self.setStyleSheet('''
-            QMainWindow, QWidget {background:%(bg)s; color:%(text)s; font-family:"Segoe UI",Arial,sans-serif; font-size:12px}
+            QMainWindow, QWidget {background:%(bg)s; color:%(text)s; font-family:"Segoe UI",Arial,sans-serif; font-size:%(font_size)spx}
             QLabel#heroTitle {font-size:25px; font-weight:800; color:%(text)s}
             QLabel#subtitle {font-size:13px; color:%(muted)s}
             QTabWidget::pane, QGroupBox {border:1px solid %(border)s; border-radius:10px; background:%(panel)s}
@@ -5458,6 +5668,8 @@ class Window(QtWidgets.QMainWindow):
             QProgressBar::chunk {background:%(accent)s; border-radius:4px}
             QCheckBox {spacing:8px}
         ''' % c)
+        if hasattr(self, 'theme_action'):
+            self.theme_action.setChecked(self.dark)
 
     def browse(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(self, self.translated('Välj källmapp'))
@@ -5468,6 +5680,75 @@ class Window(QtWidgets.QMainWindow):
         path = QtWidgets.QFileDialog.getExistingDirectory(self, self.translated('Välj arkivmapp'))
         if path:
             self.archive.setText(path)
+
+    def diagnostic_summary(self):
+        pyqt_version = getattr(QtCore, 'PYQT_VERSION_STR', 'unknown')
+        entries = [
+            f"{self.translated('Appversion')}: {APP_VERSION}",
+            f"{self.translated('Operativsystem')}: {platform.system()} {platform.release()}",
+            f"{self.translated('Python')}: {platform.python_version()}",
+            f"{self.translated('Qt')}: PyQt {pyqt_version} / Qt {QtCore.qVersion()}",
+        ]
+        for name, command in (('FFmpeg', 'ffmpeg'), ('ExifTool', 'exiftool')):
+            state = self.translated('Tillgänglig') if shutil.which(command) else self.translated('Saknas')
+            entries.append(f'{name}: {state}')
+        return '\n'.join(entries)
+
+    def open_support_page(self):
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(self.translated('Hjälp och support'))
+        dialog.setMinimumSize(620, 520)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        heading = QtWidgets.QLabel(self.translated('Support för MediaForge'))
+        heading.setStyleSheet('font-size:18px;font-weight:700')
+        layout.addWidget(heading)
+        quick_help = QtWidgets.QGroupBox(self.translated('Snabbhjälp'))
+        help_layout = QtWidgets.QVBoxLayout(quick_help)
+        for title, text in (
+            ('Kom igång', 'Installera Python 3.10 eller senare via den medföljande startaren.'),
+            ('Krav och verktyg', 'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.'),
+            ('Loggar och integritet', 'Fellogg finns under MediaForge_Data/Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.'),
+        ):
+            label = QtWidgets.QLabel(f'<b>{self.translated(title)}</b><br>{self.translated(text)}')
+            label.setWordWrap(True)
+            label.setTextFormat(QtCore.Qt.TextFormat.RichText)
+            help_layout.addWidget(label)
+        layout.addWidget(quick_help)
+        diagnostics_group = QtWidgets.QGroupBox(self.translated('Kopiera diagnostik för support'))
+        diagnostics_layout = QtWidgets.QVBoxLayout(diagnostics_group)
+        privacy_note = QtWidgets.QLabel(self.translated('Diagnostik innehåller bara versions- och miljöinformation, inte dina filer eller logginnehåll.'))
+        privacy_note.setWordWrap(True)
+        diagnostics_layout.addWidget(privacy_note)
+        diagnostic_view = QtWidgets.QPlainTextEdit(self.diagnostic_summary())
+        diagnostic_view.setReadOnly(True)
+        diagnostic_view.setMaximumHeight(130)
+        diagnostics_layout.addWidget(diagnostic_view)
+        layout.addWidget(diagnostics_group)
+        buttons = QtWidgets.QHBoxLayout()
+        open_log = QtWidgets.QPushButton(self.translated('Öppna fellogg'))
+        open_log.clicked.connect(self.open_error_log)
+        buttons.addWidget(open_log)
+        copy_diagnostics = QtWidgets.QPushButton(self.translated('Kopiera diagnostik'))
+        copy_diagnostics.clicked.connect(lambda: self.copy_diagnostics(dialog))
+        buttons.addWidget(copy_diagnostics)
+        support = QtWidgets.QPushButton(self.translated('Öppna GitHub-support'))
+        support.clicked.connect(self.open_github_support)
+        buttons.addWidget(support)
+        buttons.addStretch()
+        close = QtWidgets.QPushButton(self.translated('Stäng'))
+        close.clicked.connect(dialog.accept)
+        buttons.addWidget(close)
+        layout.addLayout(buttons)
+        dialog.exec()
+
+    def copy_diagnostics(self, parent=None):
+        QtWidgets.QApplication.clipboard().setText(self.diagnostic_summary())
+        QtWidgets.QMessageBox.information(parent or self, self.translated('Hjälp och support'), self.translated('Diagnostik kopierad till urklipp.'))
+
+    def open_github_support(self):
+        url = QtCore.QUrl('https://github.com/Tokke2/MediaConverterPro/issues/new')
+        if not QtGui.QDesktopServices.openUrl(url):
+            self.show_message('warning', 'Hjälp och support', 'GitHub-sidan kunde inte öppnas.')
 
     def open_error_log(self):
         try:
@@ -5648,6 +5929,10 @@ class Window(QtWidgets.QMainWindow):
             pass
 
     def save_preferences(self):
+        self.ui_settings.setValue('windowGeometry', self.saveGeometry())
+        self.ui_settings.setValue('uiFontSize', self.ui_font_size)
+        self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
+        self.persist_tab_order()
         fields = {
             'sourceFolder': 'source', 'archiveFolder': 'archive',
             'imageSourceFolder': 'image_source', 'imageOutputFolder': 'image_destination', 'libraryFolder': 'library_source',
@@ -5670,7 +5955,9 @@ class Window(QtWidgets.QMainWindow):
                     self.ui_settings.setValue(key, field.text())
         current = self.tabs.currentWidget()
         if current is not None:
-            self.ui_settings.setValue('lastTab', self.tabs.indexOf(current))
+            current_index = self.tabs.indexOf(current)
+            self.ui_settings.setValue('lastTab', current_index)
+            self.ui_settings.setValue('lastTabId', current.property('tabVisibilityKey'))
         checkbox_keys = {
             'enhanceImages': 'enhance_box', 'keepExifOnExport': 'keep_exif',
             'writeMetadataDates': 'meta', 'writeFileDates': 'fs', 'stripSoftwareMetadata': 'strip',

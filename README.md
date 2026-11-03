@@ -7,6 +7,8 @@ A desktop toolkit for photo and video workflows. MediaForge can enhance and opti
 - Choose **English** or **Svenska** from the language selector in the app. The choice is saved for the next launch.
 - Choose **All**, **Photo**, or **Video** in the workspace selector. **Photo** shows the photo-related tabs; **Video** shows video and music-DVD tabs. Shared date/metadata and activity-log tabs remain available in either mode.
 - Language, workspace, theme, recent folders, and common processing settings are saved locally.
+- The **View** menu lets you hide/show and drag-reorder individual tabs, change text size, and switch theme. Window size, tab visibility/order, and text size are remembered between launches.
+- **Help → Help & support** provides quick setup guidance, a privacy-safe diagnostics summary, the error-log shortcut, and a link to the project issue tracker. Diagnostics are never uploaded automatically; see [SUPPORT.md](SUPPORT.md) for reporting guidance.
 - The MediaForge icon is used in the app header, window/taskbar, tabs, buttons, Linux autostart, and the Windows autostart shortcut. Keep `fotoverktyg_icon.png` and its matching multi-size `fotoverktyg_icon.ico` beside the app; the ICO can also be used for other Windows shortcuts or EXE packaging.
 
 ## Autostart
@@ -84,6 +86,8 @@ MediaForge är ett skrivbordsprogram för foto- och videoflöden. Programmet kan
 - Välj **English** eller **Svenska** i språklistan i appen. Valet sparas till nästa start.
 - Välj **Alla**, **Foto** eller **Video** i arbetsläget. **Foto** visar fotorelaterade flikar; **Video** visar video- och musik-DVD-flikar. Gemensamma flikar för datum/metadata och aktivitetslogg visas i båda lägena.
 - Språk, arbetsläge, tema, senaste mappar och vanliga bearbetningsinställningar sparas lokalt.
+- Menyn **Visa** låter dig dölja/visa och dra om ordningen på flikar, ändra textstorlek och byta tema. Fönsterstorlek, flikval och textstorlek sparas mellan starter.
+- **Hjälp → Hjälp och support** innehåller snabbhjälp, integritetssäker diagnostik, genväg till felloggen och länk till projektets ärendehantering. Diagnostik laddas aldrig upp automatiskt; se [SUPPORT.md](SUPPORT.md) för rapporteringsråd.
 - MediaForge-ikonen används i apphuvudet, fönstret/aktivitetsfältet, flikarna, knapparna, Linux-autostart och Windows-autostartgenvägen. Behåll `fotoverktyg_icon.png` och matchande flerupplöst ICO bredvid appen; ICO-filen kan även användas för andra Windows-genvägar och EXE-paketering.
 
 ## Autostart

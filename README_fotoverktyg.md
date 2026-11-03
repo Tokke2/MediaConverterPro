@@ -18,6 +18,8 @@ Allt som MediaForge skapar eller använder lokalt sparas i `MediaForge_Data/` br
 
 **Sök tyst efter nya versioner (2 ggr/dygn)** är aktiverat som standard och kontrollerar högst var tolfte timme medan appen är öppen. Högerklicka på MediaForge-ikonen i systemfältet och välj **Kontrollera GitHub main-uppdatering…** för en manuell kontroll; ett klick på ikonen öppnar appfönstret. Uppdateraren jämför GitHub-commits och ändrade filer på `main`, inte versionsnumret eller GitHub Release-filer; en ny commit erbjuds även om versionsnumret är samma. Ändrade filer visas och du får bekräfta före snabbspolning. Efter godkännande startas appen om tyst. Ingen dialog visas när ingen ny commit finns. Funktionen kör inte när appen är stängd och fungerar inte i kopior utan Git.
 
+Menyn **Visa** låter dig dölja/visa och dra om ordningen på flikar, ändra textstorlek och byta tema. Fönsterstorlek, flikval och textstorlek sparas. Under **Hjälp → Hjälp och support** finns snabbhjälp, diagnostik som går att kopiera, genväg till felloggen och en länk till GitHub-ärenden. Loggar kan innehålla privata sökvägar; inget skickas automatiskt. Se även `SUPPORT.md` för instruktioner innan du rapporterar ett problem.
+
 ## Användning
 
 **Bildspel → MP4:** välj **Välj bilder…** för att lägga till foton och dra sedan raderna till önskad ordning. Ställ in visningstid och övergång (ingen, tona, svep eller skjut), välj Full HD/HD/kvadrat och lägg eventuellt till en musikfil. Välj en MP4-utdatafil under appmappen och klicka **Skapa bildspel**. Musik loopas om den är kortare än videon. Bilderna skalas så att hela bilden ryms; svarta kanter fyller ut bildformat som inte matchar videon. FFmpeg krävs; HEIC/HEIF/AVIF kräver även `pillow-heif`. Originalbilder och musikfil lämnas orörda.
