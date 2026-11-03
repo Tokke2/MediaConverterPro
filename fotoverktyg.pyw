@@ -766,6 +766,23 @@ UI_TRANSLATIONS.update({
     'Felloggen kunde inte öppnas:': 'Could not open the error log:',
     'Öppna MediaForge': 'Open MediaForge',
     'Avsluta MediaForge': 'Quit MediaForge',
+    'Resultatläge': 'Output mode',
+    'Spara bearbetade kopior i arkivmappen': 'Save processed copies in archive folder',
+    'Spara ny _rensad-kopia i källmappen': 'Save a new _rensad copy in source folder',
+    'Skriv över originalfiler i källmappen': 'Overwrite original files in source folder',
+    'Ersätt tidigare _rensad-kopior': 'Replace existing _cleaned copies',
+    'Filer och resultat (nya kopior i källmappen)': 'Files and output (new copies in source folder)',
+    'Filer och resultat (originalen skrivs över)': 'Files and output (originals will be overwritten)',
+    'Välj full metadatarensning innan du sparar i källmappen.': 'Select full metadata removal before saving in the source folder.',
+    'Skriv över originalfilerna? Detta kan inte ångras. MediaForge skapar en tillfällig kopia och ersätter varje original först när rensningen lyckats.': 'Overwrite the original files? This cannot be undone. MediaForge creates a temporary copy and replaces each original only after cleanup succeeds.',
+    'Bekräfta överskrivning': 'Confirm overwrite',
+    'Originalfiler skrivs över': 'Original files will be overwritten',
+    'Rensa metadata och skriv över…': 'Remove metadata and overwrite…',
+    'Originalen ersätts efter lyckad rensning. Misslyckade filer lämnas orörda.': 'Originals are replaced after successful cleanup. Files that fail are left unchanged.',
+    'Bildförbättring används bara när resultatet sparas i arkivmappen.': 'Image enhancement is only used when saving to the archive folder.',
+    'Originalen lämnas orörda; resultat sparas i den valda arkivmappen.': 'Originals remain untouched; results are saved in the selected archive folder.',
+    'Nya rensade kopior får suffixet _rensad och sparas bredvid källfilerna.': 'New cleaned copies get the _rensad suffix and are saved beside the source files.',
+    'Original ersätts först när en tillfällig kopia har rensats klart.': 'Originals are replaced only after a temporary copy has been cleaned successfully.'
 })
 
 def exiftool(args, timeout=60):
@@ -888,42 +905,83 @@ class Worker(QtCore.QThread):
     def run(self):
         s = self.settings
         root, archive = Path(s['root']), Path(s['archive'])
+        output_mode = s.get('output_mode', 'archive')
         for i, source in enumerate(self.items, 1):
             if self.cancelled:
                 self.message.emit('Avbrutet.')
                 break
+            temporary_target = None
+            original_signature = None
             try:
                 relative = source.relative_to(root) if s['structure'] else Path(source.name)
-                target = archive / relative
-                if target.exists() and not s['overwrite']:
-                    self.message.emit(f'HOPPADES ÖVER: {relative} finns redan')
+                if output_mode == 'same_folder':
+                    target = source.with_name(f'{source.stem}_rensad{source.suffix}')
+                elif output_mode == 'overwrite':
+                    target = source
+                else:
+                    target = archive / relative
+                if output_mode != 'overwrite' and target.exists() and not s['overwrite']:
+                    self.message.emit(f'HOPPADES ÖVER: {target.name} finns redan')
                     continue
                 # Offset must be calculated before altering metadata or filesystem timestamps.
                 dt = file_date(source) + s['delta'] if s['offset'] else s['date']
                 target.parent.mkdir(parents=True, exist_ok=True)
-                if s['enhance'] and source.suffix.lower() in PHOTO:
-                    if target.suffix.lower() not in {'.png', '.jpg', '.webp'}:
-                        target = target.with_suffix('.png')
-                    if target.exists() and not s['overwrite']:
-                        self.message.emit(f'HOPPADES ÖVER: {target.name} finns redan')
-                        continue
-                    enhance(source, target, s['factor'], s['sharp'], s['color'], s['clarity'], s['keep_exif'])
+                if output_mode in {'same_folder', 'overwrite'}:
+                    if output_mode == 'overwrite':
+                        stat = source.stat()
+                        original_signature = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
+                    fd, temporary_name = tempfile.mkstemp(prefix=f'.{source.stem}.mediaforge-', suffix=source.suffix, dir=source.parent)
+                    os.close(fd)
+                    temporary_target = Path(temporary_name)
+                    shutil.copy2(source, temporary_target)
+                    working_target = temporary_target
                 else:
-                    shutil.copy2(source, target)
+                    working_target = target
+                    if s['enhance'] and source.suffix.lower() in PHOTO:
+                        if target.suffix.lower() not in {'.png', '.jpg', '.webp'}:
+                            target = target.with_suffix('.png')
+                            working_target = target
+                        if target.exists() and not s['overwrite']:
+                            self.message.emit(f'HOPPADES ÖVER: {target.name} finns redan')
+                            continue
+                        enhance(source, target, s['factor'], s['sharp'], s['color'], s['clarity'], s['keep_exif'])
+                    else:
+                        shutil.copy2(source, target)
                 errors = []
                 try:
-                    set_dates(target, dt, s['metadata'], s['strip'], s['remove_all'])
+                    set_dates(working_target, dt, s['metadata'], s['strip'], s['remove_all'])
                 except Exception as exc:
                     errors.append(f'metadata: {exc}')
                 if s['filesystem']:
                     try:
-                        set_fs_date(target, dt)
+                        set_fs_date(working_target, dt)
                     except Exception as exc:
                         errors.append(f'filsystem: {exc}')
-                self.message.emit(f'{"DELVIS" if errors else "KLAR"}: {relative} → {target}\n  ' + '; '.join(errors) if errors else f'KLAR: {relative} → {target}')
+                if output_mode in {'same_folder', 'overwrite'}:
+                    if errors:
+                        self.message.emit(f'FEL: {source.name}: originalet lämnades orört; ' + '; '.join(errors))
+                        continue
+                    if output_mode == 'overwrite':
+                        current = source.stat()
+                        signature = (current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns)
+                        if signature != original_signature:
+                            raise RuntimeError('Originalet ändrades under bearbetningen och skrevs därför inte över.')
+                    os.replace(working_target, target)
+                    temporary_target = None
+                    if output_mode == 'overwrite':
+                        self.message.emit(f'KLAR: {relative} → {relative} (originalet ersatt)')
+                    else:
+                        self.message.emit(f'KLAR: {relative} → {target}')
+                else:
+                    self.message.emit(f'{"DELVIS" if errors else "KLAR"}: {relative} → {target}\n  ' + '; '.join(errors) if errors else f'KLAR: {relative} → {target}')
             except Exception as exc:
                 self.message.emit(f'FEL: {source.name}: {exc}')
             finally:
+                if temporary_target is not None:
+                    try:
+                        temporary_target.unlink(missing_ok=True)
+                    except OSError:
+                        LOGGER.warning('Kunde inte ta bort tillfällig fil %s', temporary_target)
                 self.progress.emit(i, len(self.items))
         self.completed.emit()
 
@@ -2873,6 +2931,7 @@ class Window(QtWidgets.QMainWindow):
         dv.addStretch()
 
         common = QtWidgets.QGroupBox('Filer och arkiv (originalen ändras aldrig)')
+        self.files_group = common
         main.addWidget(common)
         form = QtWidgets.QGridLayout(common)
         self.source = DropEdit()
@@ -2889,6 +2948,7 @@ class Window(QtWidgets.QMainWindow):
         dest = QtWidgets.QPushButton('Välj…')
         dest.clicked.connect(self.browse_archive)
         form.addWidget(dest, 1, 2)
+        self.archive_browse_button = dest
         self.recursive = QtWidgets.QCheckBox('Undermappar')
         self.recursive.setChecked(True)
         self.structure = QtWidgets.QCheckBox('Bevara mappstruktur')
@@ -2896,6 +2956,17 @@ class Window(QtWidgets.QMainWindow):
         self.overwrite = QtWidgets.QCheckBox('Skriv över arkivfiler')
         for x, box in enumerate((self.recursive, self.structure, self.overwrite)):
             form.addWidget(box, 2, x)
+        self.output_mode_label = QtWidgets.QLabel('Resultatläge')
+        form.addWidget(self.output_mode_label, 3, 0)
+        self.output_mode = QtWidgets.QComboBox()
+        self.output_mode.addItem('Spara bearbetade kopior i arkivmappen', 'archive')
+        self.output_mode.addItem('Spara ny _rensad-kopia i källmappen', 'same_folder')
+        self.output_mode.addItem('Skriv över originalfiler i källmappen', 'overwrite')
+        form.addWidget(self.output_mode, 3, 1, 1, 2)
+        self.output_mode_hint = QtWidgets.QLabel()
+        self.output_mode_hint.setWordWrap(True)
+        form.addWidget(self.output_mode_hint, 4, 0, 1, 3)
+        self.output_mode.currentIndexChanged.connect(self.update_processing_output_mode)
         buttons = QtWidgets.QHBoxLayout()
         main.addLayout(buttons)
         theme = QtWidgets.QPushButton('Ljust/mörkt tema')
@@ -4350,6 +4421,8 @@ class Window(QtWidgets.QMainWindow):
             self.tray_open_action.setText(self.translated('Öppna MediaForge'))
             self.tray_update_action.setText(self.translated('Kontrollera GitHub main-uppdatering…'))
             self.tray_quit_action.setText(self.translated('Avsluta MediaForge'))
+        if hasattr(self, 'output_mode'):
+            self.update_processing_output_mode()
 
     def change_ui_language(self, index):
         language = self.language_combo.itemData(index)
@@ -5423,30 +5496,94 @@ class Window(QtWidgets.QMainWindow):
                 LOGGER.exception('Loggexport misslyckades')
                 self.show_message('warning', 'Loggfel', str(exc))
 
+    def update_processing_output_mode(self, *_):
+        mode = self.output_mode.currentData()
+        in_source = mode in {'same_folder', 'overwrite'}
+        self.archive.setEnabled(not in_source)
+        self.archive_browse_button.setEnabled(not in_source)
+        self.structure.setEnabled(not in_source)
+        self.enhance_box.setEnabled(not in_source)
+        if mode == 'same_folder':
+            title = 'Filer och resultat (nya kopior i källmappen)'
+            self.overwrite.setText(self.translated('Ersätt tidigare _rensad-kopior'))
+            hint = 'Nya rensade kopior får suffixet _rensad och sparas bredvid källfilerna.'
+        elif mode == 'overwrite':
+            title = 'Filer och resultat (originalen skrivs över)'
+            self.overwrite.setText(self.translated('Originalfiler skrivs över'))
+            hint = 'Original ersätts först när en tillfällig kopia har rensats klart.'
+        else:
+            title = 'Filer och arkiv (originalen ändras aldrig)'
+            self.overwrite.setText(self.translated('Skriv över arkivfiler'))
+            hint = 'Originalen lämnas orörda; resultat sparas i den valda arkivmappen.'
+        self.overwrite.setEnabled(mode != 'overwrite')
+        self.files_group.setTitle(self.translated(title))
+        self.output_mode_hint.setText(self.translated(hint))
+        self.enhance_box.setToolTip(self.translated('Bildförbättring används bara när resultatet sparas i arkivmappen.'))
+        if hasattr(self, 'go'):
+            button_text = 'Rensa metadata och skriv över…' if mode == 'overwrite' else 'Bearbeta kopior'
+            self.go.setText(self.translated(button_text))
+
     def start(self):
         if self.worker and self.worker.isRunning():
             return
-        root = Path(self.source.text()).expanduser().resolve()
-        archive = self.require_app_output(self.archive.text())
-        if archive is None:
-            return
-        if not self.source.text() or not root.is_dir() or not self.archive.text():
+        if not self.source.text():
             self.show_message('warning', 'Fel', 'Välj en giltig källmapp och arkivmapp.')
             return
-        if root == archive or (root in archive.parents and not self.recursive.isChecked()):
+        root = Path(self.source.text()).expanduser().resolve()
+        if not root.is_dir():
+            self.show_message('warning', 'Fel', 'Välj en giltig källmapp och arkivmapp.')
+            return
+        mode = self.output_mode.currentData()
+        archive = None
+        if mode == 'archive':
+            archive = self.require_app_output(self.archive.text())
+            if archive is None:
+                return
+            if not self.archive.text():
+                self.show_message('warning', 'Fel', 'Välj en giltig källmapp och arkivmapp.')
+                return
             if root == archive:
                 self.show_message('warning', 'Fel', 'Arkivmappen måste skilja sig från källmappen.')
                 return
+        else:
+            if not self.remove_all.isChecked():
+                self.show_message('warning', 'Fel', 'Välj full metadatarensning innan du sparar i källmappen.')
+                return
         candidates = root.rglob('*') if self.recursive.isChecked() else root.iterdir()
-        items = sorted(p for p in candidates if p.is_file() and p.suffix.lower() in MEDIA and archive not in (p, *p.parents) and not any(part.startswith('.') for part in p.relative_to(root).parts))
+        items = []
+        skipped_symlinks = 0
+        for path in candidates:
+            if not path.is_file() or path.suffix.lower() not in MEDIA or any(part.startswith('.') for part in path.relative_to(root).parts):
+                continue
+            if mode == 'archive' and archive in (path, *path.parents):
+                continue
+            if mode == 'same_folder' and path.stem.lower().endswith('_rensad'):
+                continue
+            if mode == 'overwrite' and path.is_symlink():
+                skipped_symlinks += 1
+                continue
+            items.append(path)
+        items.sort()
+        if skipped_symlinks:
+            LOGGER.warning('Överskrivning hoppade över %d symboliska länkar', skipped_symlinks)
         if not items:
             self.show_message('information', 'Inga filer', 'Inga bilder eller videor hittades.')
             return
+        if mode == 'overwrite':
+            answer = QtWidgets.QMessageBox.warning(
+                self, self.translated('Bekräfta överskrivning'),
+                self.translated('Skriv över originalfilerna? Detta kan inte ångras. MediaForge skapar en tillfällig kopia och ersätter varje original först när rensningen lyckats.'),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No,
+            )
+            if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
         days, hours, minutes, seconds = [spin.value() for spin in self.offset_spins]
         delta = timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
         if self.sign.currentIndex():
             delta = -delta
-        settings = dict(root=root, archive=archive, structure=self.structure.isChecked(), overwrite=self.overwrite.isChecked(), enhance=self.enhance_box.isChecked(), factor=self.factor.currentIndex()+1, sharp=self.sliders['Skärpa'].value(), color=self.sliders['Färgstyrka'].value(), clarity=self.sliders['Klarhet/kontrast'].value(), keep_exif=self.keep_exif.isChecked(), offset=self.offset.isChecked(), delta=delta, date=self.date_edit.dateTime().toPyDateTime(), metadata=self.meta.isChecked(), filesystem=self.fs.isChecked(), strip=self.strip.isChecked(), remove_all=self.remove_all.isChecked())
+        output_location = archive if mode == 'archive' else root
+        settings = dict(root=root, archive=output_location, output_mode=mode, structure=self.structure.isChecked(), overwrite=self.overwrite.isChecked(), enhance=self.enhance_box.isChecked() and mode == 'archive', factor=self.factor.currentIndex()+1, sharp=self.sliders['Skärpa'].value(), color=self.sliders['Färgstyrka'].value(), clarity=self.sliders['Klarhet/kontrast'].value(), keep_exif=self.keep_exif.isChecked(), offset=self.offset.isChecked(), delta=delta, date=self.date_edit.dateTime().toPyDateTime(), metadata=self.meta.isChecked(), filesystem=self.fs.isChecked(), strip=self.strip.isChecked(), remove_all=self.remove_all.isChecked())
         self.worker = Worker(items, settings)
         self.worker.message.connect(self.append_batch_message)
         self.worker.message.connect(self.record)
@@ -5455,8 +5592,9 @@ class Window(QtWidgets.QMainWindow):
         self.go.setEnabled(False)
         self.stop.setEnabled(True)
         self.progress.setValue(0)
-        self.log.appendPlainText(f'Bearbetar {len(items)} filer → {archive}')
-        LOGGER.info('Mappbearbetning startad: %d filer från %s', len(items), root)
+        destination_text = str(output_location) if mode != 'overwrite' else f'originalfiler i {root}'
+        self.log.appendPlainText(f'Bearbetar {len(items)} filer → {destination_text}')
+        LOGGER.info('Mappbearbetning startad: %d filer från %s (resultatläge %s)', len(items), root, mode)
         self.worker.start()
 
     def cancel(self):
@@ -5490,7 +5628,7 @@ class Window(QtWidgets.QMainWindow):
         for key, label in slider_keys.items():
             if label in self.sliders:
                 self.sliders[label].setValue(int(self.ui_settings.value(key, self.sliders[label].value())))
-        for key, attribute in {'scaleFactor': 'factor', 'videoSizeLimit': 'video_size', 'audioFormat': 'audio_format', 'colorSourceProfile': 'color_source_profile', 'colorTargetProfile': 'color_target_profile', 'stabilizeStrength': 'stabilize_strength', 'webQuality': 'web_quality', 'adQuality': 'ad_quality', 'jpegQuality': 'jpeg_quality', 'videoCrf': 'video_crf'}.items():
+        for key, attribute in {'scaleFactor': 'factor', 'videoSizeLimit': 'video_size', 'audioFormat': 'audio_format', 'processingOutputMode': 'output_mode', 'colorSourceProfile': 'color_source_profile', 'colorTargetProfile': 'color_target_profile', 'stabilizeStrength': 'stabilize_strength', 'webQuality': 'web_quality', 'adQuality': 'ad_quality', 'jpegQuality': 'jpeg_quality', 'videoCrf': 'video_crf'}.items():
             widget = getattr(self, attribute, None)
             if widget is not None:
                 value = int(self.ui_settings.value(key, widget.currentIndex() if isinstance(widget, QtWidgets.QComboBox) else widget.value()))
@@ -5548,7 +5686,7 @@ class Window(QtWidgets.QMainWindow):
                 self.ui_settings.setValue(key, widget.isChecked())
         for key, label in {'sharpness': 'Skärpa', 'colorStrength': 'Färgstyrka', 'clarity': 'Klarhet/kontrast'}.items():
             self.ui_settings.setValue(key, self.sliders[label].value())
-        for key, attribute in {'scaleFactor': 'factor', 'videoSizeLimit': 'video_size', 'audioFormat': 'audio_format', 'colorSourceProfile': 'color_source_profile', 'colorTargetProfile': 'color_target_profile', 'stabilizeStrength': 'stabilize_strength', 'webQuality': 'web_quality', 'adQuality': 'ad_quality', 'jpegQuality': 'jpeg_quality', 'videoCrf': 'video_crf'}.items():
+        for key, attribute in {'scaleFactor': 'factor', 'videoSizeLimit': 'video_size', 'audioFormat': 'audio_format', 'processingOutputMode': 'output_mode', 'colorSourceProfile': 'color_source_profile', 'colorTargetProfile': 'color_target_profile', 'stabilizeStrength': 'stabilize_strength', 'webQuality': 'web_quality', 'adQuality': 'ad_quality', 'jpegQuality': 'jpeg_quality', 'videoCrf': 'video_crf'}.items():
             widget = getattr(self, attribute, None)
             if widget is not None:
                 self.ui_settings.setValue(key, widget.currentIndex() if isinstance(widget, QtWidgets.QComboBox) else widget.value())

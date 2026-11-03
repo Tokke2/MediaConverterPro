@@ -66,7 +66,7 @@ The in-app updater checks GitHub `main` commits (not GitHub Release assets or ve
 - **Audio enhancement** — normalize loudness or reduce steady background noise in audio/video folders. Audio is re-encoded while video streams are copied; requires FFmpeg.
 - **Codec report** — inspect container, duration, video/audio codecs, resolution, frame rate, bitrates, sample rate, and channels; export a CSV. Requires ffprobe.
 - **Create music DVD** — collect supported audio files into a DVD-5-sized data-disc folder and, when an ISO authoring tool is installed, create an ISO that can be burned as a disc image. This is a **data DVD**, not DVD-Video; compatibility with standalone DVD players varies.
-- **Date & EXIF** — adjust dates and remove metadata on copies where supported.
+- **Date & EXIF** — adjust dates and remove metadata. Choose archive copies, new `_rensad` copies beside the source files, or explicitly overwrite originals after a confirmation; same-folder modes require full metadata removal and leave originals untouched if a file fails.
 - **Activity log** — review actions, job results, and errors.
 
 ## Safety and limitations
@@ -141,7 +141,7 @@ Den inbyggda uppdateraren kontrollerar GitHub-commits på `main` (inte GitHub Re
 - **Ljudförbättring** — normalisera ljudstyrka eller minska konstant bakgrundsbrus i ljud-/videomappar. Ljudet kodas om medan videoströmmen kopieras; kräver FFmpeg.
 - **Codec-rapport** — granska container, längd, ljud-/videocodec, upplösning, bildfrekvens, bitrate, samplingsfrekvens och kanaler; exportera CSV. Kräver ffprobe.
 - **Skapa musik-DVD** — samla ljudfiler i en mapp som ryms på en DVD-5 och skapa, om ett ISO-verktyg finns installerat, en ISO som kan brännas som skivavbild. Detta är en **data-DVD**, inte DVD-Video; kompatibilitet med fristående DVD-spelare varierar.
-- **Datum & EXIF** — ändra datum och rensa metadata på kopior där formatet stöds.
+- **Datum & EXIF** — ändra datum och rensa metadata. Välj arkivkopior, nya `_rensad`-kopior bredvid källfilerna eller bekräfta att originalen ska skrivas över; källmappslägena kräver full metadatarensning och lämnar originalet orört om en fil misslyckas.
 - **Aktivitetslogg** — granska åtgärder, jobbresultat och fel.
 
 ## Säkerhet och begränsningar
