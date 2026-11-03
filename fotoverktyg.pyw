@@ -819,6 +819,8 @@ UI_TRANSLATIONS.update({
     'Diagnostik kopierad till urklipp.': 'Diagnostics copied to clipboard.',
     'Visa alla flikar': 'Show all tabs',
     'Fliken visas inte i valt arbetsläge.': 'This tab is outside the selected workspace mode.',
+    'Inga flikar visas. Öppna menyn Flikar och markera de flikar du vill använda.': 'No tabs are shown. Open the Tabs menu and check the tabs you want to use.',
+    'Dölj alla flikar': 'Hide all tabs',
     'Markera för att visa fliken; avmarkera för att dölja den.': 'Check to show this tab; uncheck to hide it.',
     'Appversion': 'App version',
     'Operativsystem': 'Operating system',
@@ -2897,6 +2899,13 @@ class Window(QtWidgets.QMainWindow):
         self.tabs.setMovable(True)
         self.tabs.tabBar().setUsesScrollButtons(True)
         main.addWidget(self.tabs)
+        self.no_tabs_panel = QtWidgets.QLabel('Inga flikar visas. Öppna menyn Flikar och markera de flikar du vill använda.')
+        self.no_tabs_panel.setObjectName('emptyTabsHint')
+        self.no_tabs_panel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.no_tabs_panel.setWordWrap(True)
+        self.no_tabs_panel.setMinimumHeight(160)
+        self.no_tabs_panel.hide()
+        main.addWidget(self.no_tabs_panel)
         QtCore.QTimer.singleShot(200, self.offer_missing_dependencies)
         image_tab = QtWidgets.QWidget()
         image_tab.setProperty('mediaMode', 'photo')
@@ -2991,9 +3000,13 @@ class Window(QtWidgets.QMainWindow):
         dv.addWidget(QtWidgets.QLabel('ExifTool rekommenderas för HEIC, PNG, RAW och video. Utan det krävs piexif för JPEG/TIFF.'))
         dv.addStretch()
 
+        self.processing_panel = QtWidgets.QWidget()
+        processing_layout = QtWidgets.QVBoxLayout(self.processing_panel)
+        processing_layout.setContentsMargins(0, 0, 0, 0)
+        processing_layout.setSpacing(8)
         common = QtWidgets.QGroupBox('Filer och arkiv (originalen ändras aldrig)')
         self.files_group = common
-        main.addWidget(common)
+        processing_layout.addWidget(common)
         form = QtWidgets.QGridLayout(common)
         self.source = DropEdit()
         self.source.setText(str(self.ui_settings.value('sourceFolder', '')))
@@ -3029,7 +3042,7 @@ class Window(QtWidgets.QMainWindow):
         form.addWidget(self.output_mode_hint, 4, 0, 1, 3)
         self.output_mode.currentIndexChanged.connect(self.update_processing_output_mode)
         buttons = QtWidgets.QHBoxLayout()
-        main.addLayout(buttons)
+        processing_layout.addLayout(buttons)
         export = QtWidgets.QPushButton('Exportera logg')
         export.clicked.connect(self.export_log)
         buttons.addWidget(export)
@@ -3041,6 +3054,7 @@ class Window(QtWidgets.QMainWindow):
         self.stop.setEnabled(False)
         self.stop.clicked.connect(self.cancel)
         buttons.addWidget(self.stop)
+        main.addWidget(self.processing_panel)
         self.progress = QtWidgets.QProgressBar()
         self.progress.setMaximumHeight(18)
         self.progress.hide()
@@ -3054,6 +3068,11 @@ class Window(QtWidgets.QMainWindow):
         for index in range(self.tabs.count()):
             widget = self.tabs.widget(index)
             widget.setProperty('tabVisibilityKey', self.tabs.tabText(index))
+        if not self.ui_settings.value('tabVisibilityConfigured', False, type=bool):
+            self.hidden_tabs = {str(self.tabs.widget(index).property('tabVisibilityKey')) for index in range(self.tabs.count())}
+            self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
+            self.ui_settings.setValue('tabVisibilityConfigured', True)
+            self.ui_settings.sync()
         self.restore_tab_order()
         self.tabs.tabBar().tabMoved.connect(self.persist_tab_order)
         for index in range(self.tabs.count()):
@@ -3186,6 +3205,8 @@ class Window(QtWidgets.QMainWindow):
         self.tab_visibility_menu.clear()
         show_all = self.tab_visibility_menu.addAction(self.translated('Visa alla flikar'))
         show_all.triggered.connect(self.show_all_tabs)
+        hide_all = self.tab_visibility_menu.addAction(self.translated('Dölj alla flikar'))
+        hide_all.triggered.connect(self.hide_all_tabs)
         self.tab_visibility_menu.addSeparator()
         for index in range(self.tabs.count()):
             widget = self.tabs.widget(index)
@@ -3204,21 +3225,9 @@ class Window(QtWidgets.QMainWindow):
         if visible:
             self.hidden_tabs.discard(tab_key)
         else:
-            candidate_hidden = self.hidden_tabs | {tab_key}
-            current_mode_tabs = []
-            for index in range(self.tabs.count()):
-                widget = self.tabs.widget(index)
-                key = str(widget.property('tabVisibilityKey'))
-                category = widget.property('mediaMode') or 'both'
-                in_mode = self.media_mode == 'all' or category == 'both' or category == self.media_mode
-                if in_mode and key not in candidate_hidden:
-                    current_mode_tabs.append(key)
-            if not current_mode_tabs:
-                self.show_message('warning', 'Fel', 'Minst en flik måste vara synlig i valt arbetsläge.')
-                QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
-                return
             self.hidden_tabs.add(tab_key)
         self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
+        self.ui_settings.setValue('tabVisibilityConfigured', True)
         self.ui_settings.sync()
         self.apply_media_mode()
         QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
@@ -3226,6 +3235,15 @@ class Window(QtWidgets.QMainWindow):
     def show_all_tabs(self):
         self.hidden_tabs.clear()
         self.ui_settings.setValue('hiddenTabs', [])
+        self.ui_settings.setValue('tabVisibilityConfigured', True)
+        self.ui_settings.sync()
+        self.apply_media_mode()
+        QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
+
+    def hide_all_tabs(self):
+        self.hidden_tabs = {str(self.tabs.widget(index).property('tabVisibilityKey')) for index in range(self.tabs.count())}
+        self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
+        self.ui_settings.setValue('tabVisibilityConfigured', True)
         self.ui_settings.sync()
         self.apply_media_mode()
         QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
@@ -4692,26 +4710,19 @@ class Window(QtWidgets.QMainWindow):
             key = str(widget.property('tabVisibilityKey'))
             in_mode = self.media_mode == 'all' or category == 'both' or category == self.media_mode
             self.tabs.setTabVisible(index, in_mode and key not in self.hidden_tabs)
-        if not any(self.tabs.isTabVisible(i) for i in range(self.tabs.count())):
-            for index in range(self.tabs.count()):
-                widget = self.tabs.widget(index)
-                category = widget.property('mediaMode') or 'both'
-                if self.media_mode == 'all' or category == 'both' or category == self.media_mode:
-                    key = str(widget.property('tabVisibilityKey'))
-                    self.hidden_tabs.discard(key)
-                    self.tabs.setTabVisible(index, True)
-                    self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
-                    self.ui_settings.sync()
-                    LOGGER.warning('A visible flik återställdes eftersom arbetsläget annars var tomt')
-                    break
+        visible = [i for i in range(self.tabs.count()) if self.tabs.isTabVisible(i)]
+        has_visible_tabs = bool(visible)
+        self.tabs.setVisible(has_visible_tabs)
+        self.no_tabs_panel.setVisible(not has_visible_tabs)
+        self.processing_panel.setVisible(has_visible_tabs)
+        if not has_visible_tabs:
+            self.progress.hide()
+            self.log.hide()
+            LOGGER.info('Alla flikar är dolda; välj flikar från menyn Flikar')
         current = self.tabs.currentWidget()
-        if current is not None and not self.tabs.isTabVisible(self.tabs.indexOf(current)):
-            visible = [i for i in range(self.tabs.count()) if self.tabs.isTabVisible(i)]
+        if current is not None and not self.tabs.isTabVisible(self.tabs.indexOf(current)) and visible:
             preferred = next((i for i in visible if self.tabs.widget(i).property('mediaMode') == self.media_mode), None)
-            if preferred is None and visible:
-                preferred = visible[0]
-            if preferred is not None:
-                self.tabs.setCurrentIndex(preferred)
+            self.tabs.setCurrentIndex(preferred if preferred is not None else visible[0])
 
     def donation_url(self):
         return SETTINGS_DIR / 'donation_url.txt'
@@ -5999,6 +6010,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui_settings.setValue('windowGeometry', self.saveGeometry())
         self.ui_settings.setValue('uiFontSize', self.ui_font_size)
         self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
+        self.ui_settings.setValue('tabVisibilityConfigured', True)
         self.persist_tab_order()
         fields = {
             'sourceFolder': 'source', 'archiveFolder': 'archive',
