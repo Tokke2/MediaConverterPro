@@ -117,6 +117,13 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
     'Sök tyst efter nya versioner (2 ggr/dygn)': 'Silently check for updates twice a day',
     'Installerar release…': 'Installing release…',
+    'Bearbetar %p% (%v/%m)': 'Processing %p% (%v/%m)',
+    'Klart · %p% (%v/%m)': 'Done · %p% (%v/%m)',
+    'Avbrutet · %p% (%v/%m)': 'Cancelled · %p% (%v/%m)',
+    'Bearbetning klar': 'Processing complete',
+    'Bearbetning avbruten': 'Processing cancelled',
+    'Mappbearbetningen är klar för {total} filer. Kontrollera loggen för eventuella FEL, DELVIS eller HOPPADES ÖVER.': 'Folder processing is complete for {total} files. Check the log for any errors, partial results, or skipped files.',
+    'Mappbearbetningen avbröts efter {done} av {total} filer. Kontrollera loggen.': 'Folder processing was cancelled after {done} of {total} files. Check the log.',
     'Ny GitHub-release {tag} finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efteråt.': 'A new GitHub release {tag} is available ({local} → {remote}). Update now? The app will restart automatically afterwards.',
     'Filer som ändrats:': 'Changed files:',
     '… och {count} till': '… and {count} more',
@@ -1056,6 +1063,14 @@ class Worker(QtCore.QThread):
                         LOGGER.warning('Kunde inte ta bort tillfällig fil %s', temporary_target)
                 self.progress.emit(i, len(self.items))
         self.completed.emit()
+
+
+class ProgressBar(QtWidgets.QProgressBar):
+    """Progress indicator that consistently shows percentage and item counts."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFormat('%p% (%v/%m)')
 
 
 class DropEdit(QtWidgets.QLineEdit):
@@ -3222,7 +3237,7 @@ class Window(QtWidgets.QMainWindow):
         self.stop.clicked.connect(self.cancel)
         buttons.addWidget(self.stop)
         main.addWidget(self.processing_panel)
-        self.progress = QtWidgets.QProgressBar()
+        self.progress = ProgressBar()
         self.progress.setMaximumHeight(18)
         self.progress.hide()
         main.addWidget(self.progress)
@@ -3531,7 +3546,7 @@ class Window(QtWidgets.QMainWindow):
         self.image_stop.clicked.connect(self.cancel_image_optimization)
         row.addWidget(self.image_stop)
         layout.addLayout(row)
-        self.image_progress = QtWidgets.QProgressBar()
+        self.image_progress = ProgressBar()
         layout.addWidget(self.image_progress)
         self.image_log = QtWidgets.QPlainTextEdit()
         self.image_log.setReadOnly(True)
@@ -3585,7 +3600,7 @@ class Window(QtWidgets.QMainWindow):
         self.duplicate_cancel_move_button.clicked.connect(self.cancel_duplicate_move)
         row.addWidget(self.duplicate_cancel_move_button)
         layout.addLayout(row)
-        self.duplicate_progress = QtWidgets.QProgressBar()
+        self.duplicate_progress = ProgressBar()
         layout.addWidget(self.duplicate_progress)
         self.duplicate_status = QtWidgets.QLabel('')
         layout.addWidget(self.duplicate_status)
@@ -3873,7 +3888,7 @@ class Window(QtWidgets.QMainWindow):
         self.video_stop.clicked.connect(self.cancel_video_conversion)
         row.addWidget(self.video_stop)
         layout.addLayout(row)
-        self.video_progress = QtWidgets.QProgressBar()
+        self.video_progress = ProgressBar()
         layout.addWidget(self.video_progress)
         self.video_log = QtWidgets.QPlainTextEdit()
         self.video_log.setReadOnly(True)
@@ -3974,7 +3989,7 @@ class Window(QtWidgets.QMainWindow):
         action_row.addWidget(self.slideshow_cancel_button)
         action_row.addStretch()
         layout.addLayout(action_row)
-        self.slideshow_progress = QtWidgets.QProgressBar()
+        self.slideshow_progress = ProgressBar()
         layout.addWidget(self.slideshow_progress)
         self.slideshow_log = QtWidgets.QPlainTextEdit()
         self.slideshow_log.setReadOnly(True)
@@ -4139,7 +4154,7 @@ class Window(QtWidgets.QMainWindow):
         self.audio_cancel_button.clicked.connect(self.cancel_video_audio)
         row.addWidget(self.audio_cancel_button)
         layout.addLayout(row)
-        self.audio_progress = QtWidgets.QProgressBar()
+        self.audio_progress = ProgressBar()
         layout.addWidget(self.audio_progress)
         self.audio_log = QtWidgets.QPlainTextEdit()
         self.audio_log.setReadOnly(True)
@@ -4254,7 +4269,7 @@ class Window(QtWidgets.QMainWindow):
         self.color_cancel.clicked.connect(self.cancel_color_conversion)
         buttons.addWidget(self.color_cancel)
         layout.addLayout(buttons)
-        self.color_progress = QtWidgets.QProgressBar()
+        self.color_progress = ProgressBar()
         layout.addWidget(self.color_progress)
         self.color_log = QtWidgets.QPlainTextEdit()
         self.color_log.setReadOnly(True)
@@ -4333,7 +4348,7 @@ class Window(QtWidgets.QMainWindow):
         self.stabilize_cancel.clicked.connect(self.cancel_video_stabilization)
         row.addWidget(self.stabilize_cancel)
         layout.addLayout(row)
-        self.stabilize_progress = QtWidgets.QProgressBar()
+        self.stabilize_progress = ProgressBar()
         layout.addWidget(self.stabilize_progress)
         self.stabilize_log = QtWidgets.QPlainTextEdit()
         self.stabilize_log.setReadOnly(True)
@@ -4408,7 +4423,7 @@ class Window(QtWidgets.QMainWindow):
         self.cleanup_cancel.clicked.connect(self.cancel_audio_cleanup)
         row.addWidget(self.cleanup_cancel)
         layout.addLayout(row)
-        self.cleanup_progress = QtWidgets.QProgressBar()
+        self.cleanup_progress = ProgressBar()
         layout.addWidget(self.cleanup_progress)
         self.cleanup_log = QtWidgets.QPlainTextEdit()
         self.cleanup_log.setReadOnly(True)
@@ -4479,7 +4494,7 @@ class Window(QtWidgets.QMainWindow):
         self.codec_export.clicked.connect(self.export_codec_report)
         row.addWidget(self.codec_export)
         layout.addLayout(row)
-        self.codec_progress = QtWidgets.QProgressBar()
+        self.codec_progress = ProgressBar()
         layout.addWidget(self.codec_progress)
         self.codec_log = QtWidgets.QPlainTextEdit()
         self.codec_log.setReadOnly(True)
@@ -4592,7 +4607,7 @@ class Window(QtWidgets.QMainWindow):
         self.music_stop.clicked.connect(self.cancel_music_dvd)
         row.addWidget(self.music_stop)
         layout.addLayout(row)
-        self.music_progress = QtWidgets.QProgressBar()
+        self.music_progress = ProgressBar()
         layout.addWidget(self.music_progress)
         self.music_log = QtWidgets.QPlainTextEdit()
         self.music_log.setReadOnly(True)
@@ -5256,7 +5271,7 @@ class Window(QtWidgets.QMainWindow):
         self.web_stop.setEnabled(False)
         self.web_stop.clicked.connect(self.cancel_web_download)
         row.addWidget(self.web_stop)
-        self.web_progress = QtWidgets.QProgressBar()
+        self.web_progress = ProgressBar()
         layout.addWidget(self.web_progress)
         self.web_log = QtWidgets.QPlainTextEdit()
         self.web_log.setReadOnly(True)
@@ -5347,7 +5362,7 @@ class Window(QtWidgets.QMainWindow):
         self.ad_stop.setEnabled(False)
         self.ad_stop.clicked.connect(self.cancel_ad_download)
         row.addWidget(self.ad_stop)
-        self.ad_progress = QtWidgets.QProgressBar()
+        self.ad_progress = ProgressBar()
         layout.addWidget(self.ad_progress)
         self.ad_log = QtWidgets.QPlainTextEdit()
         self.ad_log.setReadOnly(True)
@@ -5457,7 +5472,7 @@ class Window(QtWidgets.QMainWindow):
         self.cancel_conversion_button.setEnabled(False)
         self.cancel_conversion_button.clicked.connect(self.cancel_conversion)
         row.addWidget(self.cancel_conversion_button)
-        self.conversion_progress = QtWidgets.QProgressBar()
+        self.conversion_progress = ProgressBar()
         layout.addWidget(self.conversion_progress)
         self.conversion_log = QtWidgets.QPlainTextEdit()
         self.conversion_log.setReadOnly(True)
@@ -6122,6 +6137,8 @@ class Window(QtWidgets.QMainWindow):
         self.worker.completed.connect(self.finished)
         self.go.setEnabled(False)
         self.stop.setEnabled(True)
+        self.progress.setFormat(self.translated('Bearbetar %p% (%v/%m)'))
+        self.progress.setMaximum(len(items))
         self.progress.setValue(0)
         self.progress.show()
         destination_text = str(output_location) if mode != 'overwrite' else f'originalfiler i {root}'
@@ -6138,8 +6155,21 @@ class Window(QtWidgets.QMainWindow):
     def finished(self):
         self.go.setEnabled(True)
         self.stop.setEnabled(False)
-        self.append_main_log('Bearbetningen avslutad. Kontrollera eventuella DELVIS/FEL ovan.')
-        LOGGER.info('Mappbearbetning avslutad')
+        total = self.progress.maximum()
+        done = min(self.progress.value(), total)
+        cancelled = bool(self.worker and self.worker.cancelled and done < total)
+        if cancelled:
+            self.progress.setFormat(self.translated('Avbrutet · %p% (%v/%m)'))
+            message = self.translated('Mappbearbetningen avbröts efter {done} av {total} filer. Kontrollera loggen.').format(done=done, total=total)
+            title = 'Bearbetning avbruten'
+        else:
+            self.progress.setValue(total)
+            self.progress.setFormat(self.translated('Klart · %p% (%v/%m)'))
+            message = self.translated('Mappbearbetningen är klar för {total} filer. Kontrollera loggen för eventuella FEL, DELVIS eller HOPPADES ÖVER.').format(total=total)
+            title = 'Bearbetning klar'
+        self.append_main_log(message)
+        LOGGER.info('Mappbearbetning avslutad: %d/%d filer%s', done, total, ' (avbruten)' if cancelled else '')
+        self.show_message('information', title, message)
 
     def restore_preferences(self):
         checkbox_keys = {
