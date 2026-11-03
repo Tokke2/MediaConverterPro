@@ -6040,9 +6040,15 @@ if __name__ == '__main__':
         LOGGER.critical('Ohanterat fel', exc_info=(exc_type, exc_value, exc_tb))
         QtWidgets.QMessageBox.critical(None, 'MediaForge - error', f'{exc_value}\n\nError log: {ERROR_LOG_FILE}\nFull log: {LOG_FILE}')
     sys.excepthook = log_uncaught
+    if sys.platform == 'win32':
+        try:
+            # Keep taskbar grouping and window identity on MediaForge, not pythonw.exe.
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('Tokke2.MediaForge')
+        except (AttributeError, OSError) as exc:
+            LOGGER.warning('Kunde inte ange MediaForge-appens aktivitetsfälts-ID: %s', exc)
     app = QtWidgets.QApplication(sys.argv)
-    icon_file = Path(__file__).resolve().with_name('fotoverktyg_icon.png')
-    app.setWindowIcon(QtGui.QIcon(str(icon_file)) if icon_file.exists() else brand_icon())
+    app.setWindowIcon(brand_icon())
     window = Window()
     launch_path = None
     if len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
