@@ -80,7 +80,8 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
                                                                                                      'originals '
                                                                                                      'stay '
                                                                                                      'untouched.',
- 'Visa flikar:': 'Show tabs:',
+ 'Arbetsläge:': 'Workspace mode:',
+ 'Flikar': 'Tabs',
  'Verktyg': 'Tools',
  'Alla': 'All',
  'Foto': 'Photo',
@@ -817,6 +818,8 @@ UI_TRANSLATIONS.update({
     'Stäng': 'Close',
     'Diagnostik kopierad till urklipp.': 'Diagnostics copied to clipboard.',
     'Visa alla flikar': 'Show all tabs',
+    'Fliken visas inte i valt arbetsläge.': 'This tab is outside the selected workspace mode.',
+    'Markera för att visa fliken; avmarkera för att dölja den.': 'Check to show this tab; uncheck to hide it.',
     'Appversion': 'App version',
     'Operativsystem': 'Operating system',
     'Python': 'Python',
@@ -2873,7 +2876,7 @@ class Window(QtWidgets.QMainWindow):
         if self.media_mode not in {'all', 'photo', 'video'}:
             self.media_mode = 'all'
         preferences = QtWidgets.QHBoxLayout()
-        self.mode_label = QtWidgets.QLabel('Visa flikar:')
+        self.mode_label = QtWidgets.QLabel('Arbetsläge:')
         preferences.addWidget(self.mode_label)
         self.mode_combo = QtWidgets.QComboBox()
         for label, value in [('Alla', 'all'), ('Foto', 'photo'), ('Video', 'video')]:
@@ -3107,7 +3110,7 @@ class Window(QtWidgets.QMainWindow):
             self.font_size_group.addAction(action)
             self.font_size_menu.addAction(action)
             self.font_size_actions[size] = action
-        self.tab_visibility_menu = self.view_menu.addMenu('')
+        self.tab_visibility_menu = bar.addMenu('')
 
         self.tools_menu = bar.addMenu('')
         self.deps_action = QtGui.QAction(self.brand, '', self)
@@ -3164,7 +3167,7 @@ class Window(QtWidgets.QMainWindow):
             key = 'Extra stor' if label == 'Extra stor' else label
             self.font_size_actions[size].setText(self.translated(key))
             self.font_size_actions[size].setChecked(self.ui_font_size == size)
-        self.tab_visibility_menu.setTitle(self.translated('Anpassa flikar'))
+        self.tab_visibility_menu.setTitle(self.translated('Flikar'))
         self.tools_menu.setTitle(self.translated('Verktyg'))
         self.deps_action.setText(self.translated('Kontrollera/installera Python-tillägg…'))
         self.python_update_action.setText(self.translated('Installera/uppdatera senaste Python…'))
@@ -3187,9 +3190,13 @@ class Window(QtWidgets.QMainWindow):
         for index in range(self.tabs.count()):
             widget = self.tabs.widget(index)
             key = str(widget.property('tabVisibilityKey'))
+            category = widget.property('mediaMode') or 'both'
+            in_mode = self.media_mode == 'all' or category == 'both' or category == self.media_mode
             action = self.tab_visibility_menu.addAction(self.tabs.tabText(index))
             action.setCheckable(True)
-            action.setChecked(key not in self.hidden_tabs)
+            action.setChecked(self.tabs.isTabVisible(index))
+            action.setEnabled(in_mode)
+            action.setToolTip(self.translated('Markera för att visa fliken; avmarkera för att dölja den.') if in_mode else self.translated('Fliken visas inte i valt arbetsläge.'))
             action.setData(key)
             action.triggered.connect(lambda checked=False, tab_key=key: self.set_user_tab_visible(tab_key, checked))
 
@@ -4675,6 +4682,7 @@ class Window(QtWidgets.QMainWindow):
             self.media_mode = mode
             self.ui_settings.setValue('mediaMode', mode)
             self.apply_media_mode()
+            QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
             LOGGER.info('Visible tab mode changed to %s', mode)
 
     def apply_media_mode(self):
