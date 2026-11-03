@@ -171,7 +171,7 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($OpenPath)) {
         $appArguments += ' "' + $OpenPath + '"'
     }
-    Start-Process -FilePath $venvPythonw -ArgumentList $appArguments -WorkingDirectory $PSScriptRoot -ErrorAction Stop
+    Start-Process -FilePath $venvPythonw -ArgumentList $appArguments -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -ErrorAction Stop
 } catch {
     $failure = $_.Exception.Message
     Write-StartupLog "Startup failure: $failure"

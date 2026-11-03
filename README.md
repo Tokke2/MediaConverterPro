@@ -32,7 +32,7 @@ chmod +x start_mediaforge.sh   # one time, if needed
 ./start_mediaforge.sh
 ```
 
-The launcher uses Python 3.10+ and stores the virtual environment, pip cache, temporary package files, settings and logs inside `MediaForge_Data/` next to the app. **Install/update latest Python** uses Homebrew on macOS or the detected system package manager on Linux; Linux repositories can lag upstream Python releases, and these managers may request administrator approval. **Update all Python packages (restart)** refreshes the private app environment, including PyQt6. PyQt6 may also require native desktop/Qt libraries.
+The launcher uses Python 3.10+ and stores the virtual environment, pip cache, temporary package files, settings and logs inside `MediaForge_Data/` next to the app. After setup, the GUI starts detached from the terminal with standard output redirected to `Logs/launcher.log`. **Install/update latest Python** uses Homebrew on macOS or the detected system package manager on Linux; Linux repositories can lag upstream Python releases, and these managers may request administrator approval. **Update all Python packages (restart)** refreshes the private app environment, including PyQt6. PyQt6 may also require native desktop/Qt libraries.
 
 ### Optional system tools
 

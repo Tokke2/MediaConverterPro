@@ -139,4 +139,11 @@ fi
   exit 1
 }
 log "Starting MediaForge with Python $PYTHON_VERSION"
-exec "$VENV_PYTHON" "$APP_FILE" "$@"
+if command -v nohup >/dev/null 2>&1; then
+  nohup "$VENV_PYTHON" "$APP_FILE" "$@" </dev/null >> "$STARTUP_LOG" 2>&1 &
+else
+  "$VENV_PYTHON" "$APP_FILE" "$@" </dev/null >> "$STARTUP_LOG" 2>&1 &
+fi
+APP_PID=$!
+if command -v disown >/dev/null 2>&1; then disown "$APP_PID" 2>/dev/null || true; fi
+log "Started MediaForge without an attached console (PID $APP_PID, Python $PYTHON_VERSION)"

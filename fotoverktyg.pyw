@@ -3091,12 +3091,12 @@ class Window(QtWidgets.QMainWindow):
     def setup_menu_bar(self):
         bar = self.menuBar()
         self.file_menu = bar.addMenu('')
-        self.file_exit_action = QtGui.QAction('', self)
+        self.file_exit_action = QtGui.QAction(self.brand, '', self)
         self.file_exit_action.triggered.connect(self.close)
         self.file_menu.addAction(self.file_exit_action)
 
         self.view_menu = bar.addMenu('')
-        self.theme_action = QtGui.QAction('', self)
+        self.theme_action = QtGui.QAction(self.brand, '', self)
         self.theme_action.setCheckable(True)
         self.theme_action.triggered.connect(self.toggle_theme)
         self.view_menu.addAction(self.theme_action)
@@ -3105,7 +3105,7 @@ class Window(QtWidgets.QMainWindow):
         self.font_size_group.setExclusive(True)
         self.font_size_actions = {}
         for size, label in ((11, 'Mindre'), (12, 'Standard'), (14, 'Större'), (16, 'Extra stor')):
-            action = QtGui.QAction('', self)
+            action = QtGui.QAction(self.brand, '', self)
             action.setCheckable(True)
             action.triggered.connect(lambda checked=False, value=size: self.set_ui_font_size(value))
             self.font_size_group.addAction(action)
@@ -3114,10 +3114,10 @@ class Window(QtWidgets.QMainWindow):
         self.tab_visibility_menu = self.view_menu.addMenu('')
 
         self.help_menu = bar.addMenu('')
-        self.support_action = QtGui.QAction('', self)
+        self.support_action = QtGui.QAction(self.brand, '', self)
         self.support_action.triggered.connect(self.open_support_page)
         self.help_menu.addAction(self.support_action)
-        self.error_log_action = QtGui.QAction('', self)
+        self.error_log_action = QtGui.QAction(self.brand, '', self)
         self.error_log_action.triggered.connect(self.open_error_log)
         self.help_menu.addAction(self.error_log_action)
         self.retranslate_menu_bar()
@@ -5697,6 +5697,7 @@ class Window(QtWidgets.QMainWindow):
     def open_support_page(self):
         dialog = QtWidgets.QDialog(self)
         dialog.setWindowTitle(self.translated('Hjälp och support'))
+        dialog.setWindowIcon(self.brand)
         dialog.setMinimumSize(620, 520)
         layout = QtWidgets.QVBoxLayout(dialog)
         heading = QtWidgets.QLabel(self.translated('Support för MediaForge'))
@@ -5738,6 +5739,9 @@ class Window(QtWidgets.QMainWindow):
         close = QtWidgets.QPushButton(self.translated('Stäng'))
         close.clicked.connect(dialog.accept)
         buttons.addWidget(close)
+        for button in (open_log, copy_diagnostics, support, close):
+            button.setIcon(self.brand)
+            button.setIconSize(QtCore.QSize(16, 16))
         layout.addLayout(buttons)
         dialog.exec()
 

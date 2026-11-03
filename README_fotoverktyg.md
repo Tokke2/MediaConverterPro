@@ -7,7 +7,7 @@ En gemensam skrivbordsapp för foton och video. Flikarna omfattar **Bildförbät
 Python 3.10 eller senare rekommenderas. Starta helst via projektets launcher så att venv, paketcache och loggar hamnar i appens datamapp.
 
 - **Windows:** dubbelklicka `Starta_Fotoverktyg.vbs`. `Starta_Fotoverktyg.ps1` frågar innan paket installeras och kan installera/uppdatera senaste stabila Python via winget.
-- **macOS/Linux:** kör `./start_mediaforge.sh` från Terminal. Den skapar en app-lokal virtuell miljö och ber om godkännande innan saknade paket installeras. Python-runtime uppdateras via Homebrew på macOS eller upptäckt systempakethanterare på Linux; Linux-distributionens förråd kan släpa efter senaste upstream-versionen.
+- **macOS/Linux:** kör `./start_mediaforge.sh` från Terminal. Den skapar en app-lokal virtuell miljö och ber om godkännande innan saknade paket installeras. När den är klar startar GUI:t frikopplat från terminalen; utdata omdirigeras till `MediaForge_Data/Logs/launcher.log`. Python-runtime uppdateras via Homebrew på macOS eller upptäckt systempakethanterare på Linux; Linux-distributionens förråd kan släpa efter senaste upstream-versionen.
 - Appen har knappar för att kontrollera/installera tillägg, uppdatera alla paket (inklusive PyQt6 efter omstart), installera/uppdatera Python och kontrollera GitHub-uppdatering.
 
 Installera även **ExifTool** separat för bred metadatahantering, **FFmpeg** för videokonvertering och `xorriso`, `genisoimage` eller `mkisofs` för att skapa ISO till musik-data-DVD. På Linux kan Qt även kräva systembibliotek för grafiskt gränssnitt.
