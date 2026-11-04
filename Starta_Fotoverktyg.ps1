@@ -12,7 +12,7 @@ Add-Type -AssemblyName System.Windows.Forms
 $script = Join-Path $PSScriptRoot 'fotoverktyg.pyw'
 $dataDir = Join-Path $PSScriptRoot 'MediaForge_Data'
 $settingsDir = Join-Path $dataDir 'Settings'
-$logDir = Join-Path $dataDir 'Logs'
+$logDir = Join-Path $PSScriptRoot 'Logs'
 $cacheDir = Join-Path $dataDir 'PipCache'
 $tempDir = Join-Path $dataDir 'Temp'
 $pythonEnvDir = Join-Path $dataDir 'PythonEnv'

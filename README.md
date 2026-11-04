@@ -32,7 +32,7 @@ chmod +x start_mediaforge.sh   # one time, if needed
 ./start_mediaforge.sh
 ```
 
-The launcher uses Python 3.10+ and stores the virtual environment, pip cache, temporary package files, settings and logs inside `MediaForge_Data/` next to the app. After setup, the GUI starts detached from the terminal with standard output redirected to `Logs/launcher.log`. **Install/update latest Python** uses Homebrew on macOS or the detected system package manager on Linux; Linux repositories can lag upstream Python releases, and these managers may request administrator approval. **Update all Python packages (restart)** refreshes the private app environment, including PyQt6. PyQt6 may also require native desktop/Qt libraries.
+The launcher uses Python 3.10+ and stores the virtual environment, pip cache, temporary package files, and settings inside `MediaForge_Data/` next to the app. App and launcher logs are stored separately in the app-folder `Logs/` subfolder. After setup, the GUI starts detached from the terminal with standard output redirected to `Logs/launcher.log`. **Install/update latest Python** uses Homebrew on macOS or the detected system package manager on Linux; Linux repositories can lag upstream Python releases, and these managers may request administrator approval. **Update all Python packages (restart)** refreshes the private app environment, including PyQt6. PyQt6 may also require native desktop/Qt libraries.
 
 ### Optional system tools
 
@@ -44,7 +44,7 @@ These are system programs, not Python packages, and are not installed by MediaFo
 
 ## App-local storage and updates
 
-MediaForge creates a `MediaForge_Data/` folder alongside the app. Settings are in `Settings/`, detailed app and launcher logs in `Logs/`, including the rotating `Logs/errors.log` summary of app warnings/errors and launcher failures, the private Python virtual environment in `PythonEnv/`, pip downloads in `PipCache/`, temporary package files in `Temp/`, and default exports in `Output/`. The Ko-fi destination is maintainer-configured and cannot be changed in the app. All chosen output destinations must remain inside the application folder; external source folders can still be selected and read. Keep the app folder writable and do not delete `MediaForge_Data/` if you want to retain settings or exports. OS autostart registration remains in the normal per-user OS location.
+MediaForge stores settings in `MediaForge_Data/Settings/`, the private Python environment in `MediaForge_Data/PythonEnv/`, pip downloads in `MediaForge_Data/PipCache/`, temporary package files in `MediaForge_Data/Temp/`, and default exports in `MediaForge_Data/Output/`. App and launcher logs have their own subfolder, `Logs/`, directly inside the app folder; `Logs/errors.log` includes app warnings/errors and launcher failures. The Ko-fi destination is maintainer-configured and cannot be changed in the app. All chosen output destinations must remain inside the application folder; external source folders can still be selected and read. Keep the app folder writable. OS autostart registration remains in the normal per-user OS location.
 
 The in-app updater checks the latest published GitHub Release and fetches its Git tag (currently **0.0.2**), not commits from `main` or release binary assets. Choose **Help → Check for updates…** or use the system-tray menu. It compares commit IDs and changed files and asks before applying. A clean Git checkout is fast-forwarded when possible; if its branch has diverged from the release, the updater switches the working copy to the release tag in detached-HEAD mode while preserving the original branch and commits. If the checkout already contains the release commit, it will not downgrade it. Source-archive copies without `.git` can also update from the same release; only app files are replaced, existing files are backed up, and app data is kept. The enabled-by-default **Silently check for updates twice a day** option checks at most every 12 hours while MediaForge is open and stays quiet when no release is available. Checks do not run while the app is closed.
 
@@ -111,7 +111,7 @@ chmod +x start_mediaforge.sh   # en gång vid behov
 ./start_mediaforge.sh
 ```
 
-Startaren kräver Python 3.10+ och sparar virtuell miljö, paketcache, temporära paketfiler, inställningar och loggar i `MediaForge_Data/` bredvid appen. Knappen **Installera/uppdatera senaste Python** använder Homebrew på macOS eller upptäckt systempakethanterare på Linux. Linux-distributionens förråd kan släpa efter den senaste upstream-versionen; pakethanteraren kan begära administratörsgodkännande. **Uppdatera alla Python-paket (starta om)** uppdaterar även PyQt6. PyQt6 kan dessutom kräva inbyggda Qt-/skrivbordskomponenter.
+Startaren kräver Python 3.10+ och sparar virtuell miljö, paketcache, temporära paketfiler och inställningar i `MediaForge_Data/` bredvid appen. App- och startloggar sparas separat i `Logs/` direkt i appmappen. Knappen **Installera/uppdatera senaste Python** använder Homebrew på macOS eller upptäckt systempakethanterare på Linux. Linux-distributionens förråd kan släpa efter den senaste upstream-versionen; pakethanteraren kan begära administratörsgodkännande. **Uppdatera alla Python-paket (starta om)** uppdaterar även PyQt6. PyQt6 kan dessutom kräva inbyggda Qt-/skrivbordskomponenter.
 
 ### Valfria systemverktyg
 

@@ -27,7 +27,8 @@ APP_DIR = Path(__file__).resolve().parent
 APP_DATA_DIR = APP_DIR / 'MediaForge_Data'
 OUTPUT_DIR = APP_DATA_DIR / 'Output'
 SETTINGS_DIR = APP_DATA_DIR / 'Settings'
-LOG_DIR = APP_DATA_DIR / 'Logs'
+LOG_DIR = APP_DIR / 'Logs'
+LEGACY_LOG_DIR = APP_DATA_DIR / 'Logs'
 LOG_FILE = LOG_DIR / 'mediaforge.log'
 ERROR_LOG_FILE = LOG_DIR / 'errors.log'
 SETTINGS_FILE = SETTINGS_DIR / 'preferences.ini'
@@ -58,6 +59,14 @@ LOGGER = logging.getLogger('fotoverktyg')
 LOGGER.setLevel(logging.INFO)
 try:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
+    # Keep existing logs available after moving them out of MediaForge_Data/.
+    try:
+        for legacy_log in LEGACY_LOG_DIR.glob('*.log*'):
+            migrated_log = LOG_DIR / legacy_log.name
+            if legacy_log.is_file() and not migrated_log.exists():
+                shutil.copy2(legacy_log, migrated_log)
+    except OSError:
+        pass
     handler = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=3, encoding='utf-8')
     formatter = logging.Formatter('%(asctime)s | %(levelname)-7s | %(threadName)s | %(message)s')
     handler.setFormatter(formatter)
@@ -844,7 +853,7 @@ UI_TRANSLATIONS.update({
     'GitHub-sidan kunde inte öppnas.': 'Could not open the GitHub page.',
     'Installera Python 3.10 eller senare via den medföljande startaren.': 'Install Python 3.10 or later using the provided launcher.',
     'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.': 'Video, slideshow, and audio tools require FFmpeg. ExifTool is recommended for broad metadata support.',
-    'Fellogg finns under MediaForge_Data/Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.': 'The error log is under MediaForge_Data/Logs/errors.log. Review logs before sharing; they may contain file paths and ad IDs.',
+    'Fellogg finns under Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.': 'The error log is under Logs/errors.log. Review logs before sharing; they may contain file paths and ad IDs.',
     'Diagnostik innehåller bara versions- och miljöinformation, inte dina filer eller logginnehåll.': 'Diagnostics contain only version and environment information, not your files or log contents.',
     'Kopiera diagnostik': 'Copy diagnostics',
     'Öppna GitHub-support': 'Open GitHub support',
@@ -5937,7 +5946,7 @@ class Window(QtWidgets.QMainWindow):
         for title, text in (
             ('Kom igång', 'Installera Python 3.10 eller senare via den medföljande startaren.'),
             ('Krav och verktyg', 'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.'),
-            ('Loggar och integritet', 'Fellogg finns under MediaForge_Data/Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.'),
+            ('Loggar och integritet', 'Fellogg finns under Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.'),
         ):
             label = QtWidgets.QLabel(f'<b>{self.translated(title)}</b><br>{self.translated(text)}')
             label.setWordWrap(True)

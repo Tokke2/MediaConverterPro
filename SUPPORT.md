@@ -8,7 +8,7 @@ Open **Help → Help & support** for quick setup guidance, dependency reminders,
 
 1. Update to the latest version available for your installation and restart MediaForge.
 2. Note the operating system, what you were trying to do, the steps to reproduce it, and what you expected to happen.
-3. Open `MediaForge_Data/Logs/errors.log`; consult `mediaforge.log` as well if more context is needed.
+3. Open `Logs/errors.log` in the app folder; consult `Logs/mediaforge.log` as well if more context is needed.
 4. Review logs before sharing them. They can contain local file paths, listing URLs, and ad IDs. Remove private information first.
 5. Include the copied diagnostic summary and, if useful, a short sanitized log excerpt in an issue at <https://github.com/Tokke2/MediaConverterPro/issues/new>.
 
@@ -20,4 +20,4 @@ MediaForge does not upload diagnostic information or logs automatically.
 - FFmpeg is required for video conversion, stabilization, audio tools, codec reports, and slideshow export.
 - ExifTool is recommended for broad EXIF and media metadata support. Without it, metadata support is limited to supported JPEG/TIFF operations through `piexif`.
 
-Settings, logs, cache, and the private Python environment are stored under `MediaForge_Data/` next to the application. Keep that folder writable.
+Settings, cache, and the private Python environment are stored under `MediaForge_Data/` next to the application. Logs are stored in the sibling `Logs/` subfolder. Keep both app-folder locations writable.
