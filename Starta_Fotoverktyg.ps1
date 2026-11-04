@@ -13,14 +13,27 @@ $script = Join-Path $PSScriptRoot 'fotoverktyg.pyw'
 $dataDir = Join-Path $PSScriptRoot 'MediaForge_Data'
 $settingsDir = Join-Path $dataDir 'Settings'
 $logDir = Join-Path $PSScriptRoot 'Logs'
+$archiveDir = Join-Path $logDir 'Archive'
 $cacheDir = Join-Path $dataDir 'PipCache'
 $tempDir = Join-Path $dataDir 'Temp'
 $pythonEnvDir = Join-Path $dataDir 'PythonEnv'
 $startupLog = Join-Path $logDir 'launcher.log'
 $errorLog = Join-Path $logDir 'errors.log'
 
-foreach ($directory in @($settingsDir, $logDir, $cacheDir, $tempDir, $pythonEnvDir)) {
+foreach ($directory in @($settingsDir, $logDir, $archiveDir, $cacheDir, $tempDir, $pythonEnvDir)) {
     New-Item -ItemType Directory -Path $directory -Force | Out-Null
+}
+if (Test-Path -LiteralPath $startupLog -PathType Leaf) {
+    $previousLauncherLog = Get-Item -LiteralPath $startupLog
+    $today = (Get-Date).Date
+    if ($previousLauncherLog.LastWriteTime.Date -lt $today) {
+        $logDate = $previousLauncherLog.LastWriteTime.ToString('yyyy-MM-dd')
+        $archivedLog = Join-Path $archiveDir "launcher-$logDate.log"
+        if (Test-Path -LiteralPath $archivedLog) {
+            $archivedLog = Join-Path $archiveDir "launcher-$logDate-$(Get-Date -Format 'HHmmss').log"
+        }
+        try { Move-Item -LiteralPath $startupLog -Destination $archivedLog -ErrorAction Stop } catch { }
+    }
 }
 $env:PIP_CACHE_DIR = $cacheDir
 $env:TEMP = $tempDir

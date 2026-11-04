@@ -8,11 +8,28 @@ APP_FILE="$APP_DIR/fotoverktyg.pyw"
 DATA_DIR="$APP_DIR/MediaForge_Data"
 VENV_ROOT="$DATA_DIR/PythonEnv"
 LOG_DIR="$APP_DIR/Logs"
+ARCHIVE_DIR="$LOG_DIR/Archive"
 CACHE_DIR="$DATA_DIR/PipCache"
 TEMP_DIR="$DATA_DIR/Temp"
 STARTUP_LOG="$LOG_DIR/launcher.log"
 ERROR_LOG="$LOG_DIR/errors.log"
-mkdir -p "$VENV_ROOT" "$LOG_DIR" "$CACHE_DIR" "$TEMP_DIR" "$DATA_DIR/Settings"
+mkdir -p "$VENV_ROOT" "$LOG_DIR" "$ARCHIVE_DIR" "$CACHE_DIR" "$TEMP_DIR" "$DATA_DIR/Settings"
+
+archive_previous_launcher_log() {
+  [[ -f "$STARTUP_LOG" ]] || return 0
+  local modified_date today target
+  modified_date="$(stat -f '%Sm' -t '%Y-%m-%d' "$STARTUP_LOG" 2>/dev/null || true)"
+  if [[ ! "$modified_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+    modified_date="$(stat -c '%y' "$STARTUP_LOG" 2>/dev/null || true)"
+    modified_date="${modified_date%% *}"
+  fi
+  today="$(date '+%Y-%m-%d')"
+  [[ "$modified_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && "$modified_date" < "$today" ]] || return 0
+  target="$ARCHIVE_DIR/launcher-$modified_date.log"
+  [[ -e "$target" ]] && target="$ARCHIVE_DIR/launcher-$modified_date-$(date '+%H%M%S').log"
+  mv "$STARTUP_LOG" "$target" 2>/dev/null || true
+}
+archive_previous_launcher_log
 export PIP_CACHE_DIR="$CACHE_DIR" TMPDIR="$TEMP_DIR" TEMP="$TEMP_DIR" TMP="$TEMP_DIR" PYTHONNOUSERSITE=1
 
 log() { printf '%s | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$STARTUP_LOG" 2>/dev/null || true; }

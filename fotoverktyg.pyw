@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath
 
 import logging
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 
 APP_DIR = Path(__file__).resolve().parent
 APP_DATA_DIR = APP_DIR / 'MediaForge_Data'
@@ -29,6 +29,7 @@ OUTPUT_DIR = APP_DATA_DIR / 'Output'
 SETTINGS_DIR = APP_DATA_DIR / 'Settings'
 LOG_DIR = APP_DIR / 'Logs'
 LEGACY_LOG_DIR = APP_DATA_DIR / 'Logs'
+LOG_ARCHIVE_DIR = LOG_DIR / 'Archive'
 LOG_FILE = LOG_DIR / 'mediaforge.log'
 ERROR_LOG_FILE = LOG_DIR / 'errors.log'
 SETTINGS_FILE = SETTINGS_DIR / 'preferences.ini'
@@ -59,6 +60,7 @@ LOGGER = logging.getLogger('fotoverktyg')
 LOGGER.setLevel(logging.INFO)
 try:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
+    LOG_ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
     # Keep existing logs available after moving them out of MediaForge_Data/.
     try:
         for legacy_log in LEGACY_LOG_DIR.glob('*.log*'):
@@ -67,11 +69,19 @@ try:
                 shutil.copy2(legacy_log, migrated_log)
     except OSError:
         pass
-    handler = RotatingFileHandler(LOG_FILE, maxBytes=5_000_000, backupCount=3, encoding='utf-8')
     formatter = logging.Formatter('%(asctime)s | %(levelname)-7s | %(threadName)s | %(message)s')
+    handler = TimedRotatingFileHandler(LOG_FILE, when='midnight', interval=1, backupCount=0, encoding='utf-8')
+    def archived_log_name(default_name):
+        date_suffix = Path(default_name).name.rsplit('.', 1)[-1]
+        archived_path = LOG_ARCHIVE_DIR / f'mediaforge-{date_suffix}.log'
+        if archived_path.exists():
+            archived_path = LOG_ARCHIVE_DIR / f'mediaforge-{date_suffix}-{time.time_ns()}.log'
+        return str(archived_path)
+    handler.namer = archived_log_name
     handler.setFormatter(formatter)
     LOGGER.addHandler(handler)
-    error_handler = RotatingFileHandler(ERROR_LOG_FILE, maxBytes=2_000_000, backupCount=3, encoding='utf-8')
+    # Error records are intentionally append-only: they are never rotated or deleted automatically.
+    error_handler = logging.FileHandler(ERROR_LOG_FILE, encoding='utf-8')
     error_handler.setLevel(logging.WARNING)
     error_handler.setFormatter(formatter)
     LOGGER.addHandler(error_handler)
@@ -6008,7 +6018,8 @@ class Window(QtWidgets.QMainWindow):
             try:
                 for h in LOGGER.handlers:
                     h.flush()
-                parts = [f.read_text(encoding='utf-8') for f in [Path(str(LOG_FILE) + f'.{n}') for n in (3, 2, 1)] + [LOG_FILE] if f.exists()]
+                log_files = sorted(LOG_ARCHIVE_DIR.glob('mediaforge-*.log')) + [LOG_FILE]
+                parts = [log_file.read_text(encoding='utf-8') for log_file in log_files if log_file.exists()]
                 content = '\n'.join(parts) if parts else self.activity_log.toPlainText()
                 Path(path).write_text(content, encoding='utf-8')
                 LOGGER.info('Logg exporterad: %s', path)
