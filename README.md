@@ -2,6 +2,8 @@
 
 A desktop toolkit for photo and video workflows. MediaForge can enhance and optimize image folders, remove EXIF metadata, edit and convert photos, batch-convert videos, manage file dates, download supported web images, and prepare a music data-DVD.
 
+Copyright © 2026 Rickard Längkvist.
+
 ## Language and workspace modes
 
 - Choose **English** or **Svenska** from the language selector in the app. The choice is saved for the next launch.
@@ -80,6 +82,8 @@ MediaForge keeps source files unchanged for its copy/export workflows. Duplicate
 # MediaForge — verktyg för foto och video
 
 MediaForge är ett skrivbordsprogram för foto- och videoflöden. Programmet kan förbättra och optimera bildmappar, rensa EXIF, redigera och konvertera foton, batchkonvertera video, hantera fildatum, hämta vissa webbbilder och förbereda en musik-data-DVD.
+
+Copyright © 2026 Rickard Längkvist.
 
 ## Språk och arbetslägen
 

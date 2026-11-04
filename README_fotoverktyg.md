@@ -2,6 +2,8 @@
 
 En gemensam skrivbordsapp för foton och video. Flikarna omfattar **Bildförbättring**, **Bildoptimering**, **Bildbibliotek**, **Fotoredigerare**, **Bildspel → MP4**, **Dubblettfinnare**, **Färgprofiler**, **Videokonvertering**, **Videostabilisering**, **Ljudförbättring**, **Codec-rapport**, **Ljud från video**, **Skapa musik-DVD**, **AVIF/HEIC → JPEG**, **Annonsbilder → JPEG**, **Webbbilder → JPEG**, **Blocket → JPEG**, **Datum & EXIF** och **Aktivitetslogg**. Originalen lämnas orörda; batchjobb sparar kopior i en separat målmapp. Programmet stöder bildbearbetning, metadata-/datumhantering och videokonvertering via FFmpeg.
 
+Copyright © 2026 Rickard Längkvist.
+
 ## Installera och starta
 
 Python 3.10 eller senare rekommenderas. Starta helst via projektets launcher så att venv och paketcache hamnar i `MediaForge_Data/` och loggarna i den separata appmappen `Logs/`.

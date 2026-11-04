@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """MediaForge: photo and video tools for editing, conversion, and metadata."""
+# Copyright © 2026 Rickard Längkvist
 import os
 import shutil
 import subprocess
@@ -34,6 +35,7 @@ LOG_FILE = LOG_DIR / 'mediaforge.log'
 ERROR_LOG_FILE = LOG_DIR / 'errors.log'
 SETTINGS_FILE = SETTINGS_DIR / 'preferences.ini'
 APP_VERSION = '0.0.2'
+APP_COPYRIGHT = 'Copyright © 2026 Rickard Längkvist'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
 UPDATE_RELEASE_API = 'https://api.github.com/repos/Tokke2/MediaConverterPro/releases/latest'
 KOFI_URL = ''  # Fixed app destination; configured by the maintainer, never by the user.
@@ -5988,6 +5990,10 @@ class Window(QtWidgets.QMainWindow):
         close.clicked.connect(dialog.accept)
         buttons.addWidget(close)
         layout.addLayout(buttons)
+        copyright_label = QtWidgets.QLabel(APP_COPYRIGHT)
+        copyright_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        copyright_label.setStyleSheet('color:#8994a6; font-size:10px')
+        layout.addWidget(copyright_label)
         dialog.exec()
 
     def copy_diagnostics(self, parent=None):
