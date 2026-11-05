@@ -8,8 +8,8 @@ Copyright © 2026 Rickard Längkvist.
 
 Python 3.10 eller senare rekommenderas. Starta helst via projektets launcher så att venv och paketcache hamnar i `MediaForge_Data/` och loggarna i den separata appmappen `Logs/`.
 
-- **Windows:** dubbelklicka `Starta_Fotoverktyg.vbs`. `Starta_Fotoverktyg.ps1` frågar innan paket installeras och kan installera/uppdatera senaste stabila Python via winget.
-- **macOS/Linux:** kör `./start_mediaforge.sh` från Terminal. Den skapar en app-lokal virtuell miljö och ber om godkännande innan saknade paket installeras. När den är klar startar GUI:t frikopplat från terminalen; utdata omdirigeras till `Logs/launcher.log` i en egen undermapp bredvid appen. Python-runtime uppdateras via Homebrew på macOS eller upptäckt systempakethanterare på Linux; Linux-distributionens förråd kan släpa efter senaste upstream-versionen.
+- **Windows:** dubbelklicka `Starta_Fotoverktyg.vbs`. `Starta_Fotoverktyg.ps1` söker först efter en kompatibel Python och uppdaterar den via winget om den hanteras där. Python installeras bara om ingen kompatibel runtime hittas; en befintlig installation som inte hanteras av winget lämnas orörd i stället för att installera Python sida vid sida.
+- **macOS/Linux:** kör `./start_mediaforge.sh` från Terminal. Den skapar en app-lokal virtuell miljö och ber om godkännande innan saknade paket installeras. När den är klar startar GUI:t frikopplat från terminalen; utdata omdirigeras till `Logs/launcher.log` i en egen undermapp bredvid appen. Startaren söker först efter en kompatibel Python och uppdaterar den via Homebrew på macOS eller upptäckt systempakethanterare på Linux. Om ingen kompatibel runtime hittas installeras Python; om den befintliga installationen inte hanteras av pakethanteraren lämnas den orörd i stället för att installera Python sida vid sida. Linux-distributionens förråd kan släpa efter senaste upstream-versionen.
 - Under menyn **Verktyg** finns hantering av Python-tillägg, Python-/paketuppdatering, autostart, tyst versionssökning och Ko-fi. Manuell kontroll av senaste GitHub-releasen finns under **Hjälp → Sök efter uppdatering…**.
 
 Installera även **ExifTool** separat för bred metadatahantering, **FFmpeg** för videokonvertering och `xorriso`, `genisoimage` eller `mkisofs` för att skapa ISO till musik-data-DVD. På Linux kan Qt även kräva systembibliotek för grafiskt gränssnitt.
@@ -62,9 +62,9 @@ På Windows används helst `Starta_Fotoverktyg.vbs`, som hjälper till med Pytho
 
 Den gemensamma MediaForge-symbolen är en turkos bländare/filmram med en varm play-markör. PNG-versionen används i apphuvudet, fönsterikonen, flikar, knappar och Linux-autostart; ICO-versionen innehåller flera storlekar för Windows-genvägar eller framtida EXE-paketering. Håll båda filerna i samma mapp som `fotoverktyg.pyw`. Om du redan hade Linux-autostart, avmarkera och markera alternativet igen för att uppdatera skrivbordsfilens ikon.
 
-## Starta även om Python saknas (Windows)
+## Installera eller uppdatera Python (Windows)
 
-Dubbelklicka **`Starta_Fotoverktyg.vbs`** i stället för `.pyw`. Behåll `.vbs`, `.ps1`, `.pyw` och ikonfilen i samma mapp. Startaren körs utan konsolfönster. Om Python 3.10+ saknas får du en fråga innan installation; via winget installeras senaste stabila Python för ditt användarkonto och därefter en app-lokal virtuell miljö med nödvändiga paket. Om winget saknas öppnas python.org och du behöver installera Python manuellt och starta om startaren.
+Dubbelklicka **`Starta_Fotoverktyg.vbs`** i stället för `.pyw`. Behåll `.vbs`, `.ps1`, `.pyw` och ikonfilen i samma mapp. Startaren körs utan konsolfönster. Startaren kontrollerar först om Python 3.10+ redan finns. En befintlig winget-hanterad installation uppdateras med winget; Python installeras endast när ingen kompatibel runtime hittas. En befintlig Python som inte hanteras av winget lämnas oförändrad och ingen sidoinstallation görs. Om Python saknas och winget inte finns öppnas python.org för manuell installation. Därefter används en app-lokal virtuell miljö med nödvändiga paket.
 
 **Begränsning:** En ensam `.pyw`-fil kan inte visa en installationsfråga när Python saknas, eftersom den då inte kan köras. Därför behövs de två separata Windows-startfilerna. VBS-startaren begär inte administratörsrättigheter; `winget`-installationen kräver användarens godkännande. På macOS/Linux behövs en separat installationsmetod via systemets pakethanterare.
 

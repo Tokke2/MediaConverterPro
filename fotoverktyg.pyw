@@ -135,7 +135,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'AVIF/HEIC → JPEG': 'AVIF/HEIC → JPEG',
  'Fotoredigerare': 'Photo editor',
  'Kontrollera/installera Python-tillägg…': 'Check/install Python packages…',
- 'Installera/uppdatera senaste Python…': 'Install/update latest Python…',
+ 'Uppdatera/installera Python…': 'Update/install Python…',
     'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
     'Sök tyst efter nya versioner (2 ggr/dygn)': 'Silently check for updates twice a day',
     'Installerar release…': 'Installing release…',
@@ -3387,7 +3387,7 @@ class Window(QtWidgets.QMainWindow):
         self.tab_visibility_menu.setTitle(self.translated('Flikar'))
         self.tools_menu.setTitle(self.translated('Verktyg'))
         self.deps_action.setText(self.translated('Kontrollera/installera Python-tillägg…'))
-        self.python_update_action.setText(self.translated('Installera/uppdatera senaste Python…'))
+        self.python_update_action.setText(self.translated('Uppdatera/installera Python…'))
         self.packages_update_action.setText(self.translated('Uppdatera alla Python-paket (starta om)…'))
         self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         self.autostart_action.setText(self.translated('Starta automatiskt vid inloggning'))

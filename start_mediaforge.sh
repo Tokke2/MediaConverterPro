@@ -72,13 +72,13 @@ if [[ "$WAIT_FOR_PID" =~ ^[1-9][0-9]*$ ]]; then
 fi
 
 find_python() {
-  local candidate version
+  local candidate candidate_path version
   for candidate in "${PYTHON:-}" python3 python; do
     [[ -n "$candidate" ]] || continue
-    command -v "$candidate" >/dev/null 2>&1 || continue
-    if "$candidate" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then
-      version="$("$candidate" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
-      printf '%s\n' "$candidate" "$version"
+    candidate_path="$(command -v "$candidate" 2>/dev/null)" || continue
+    if "$candidate_path" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then
+      version="$("$candidate_path" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+      printf '%s\n' "$candidate_path" "$version"
       return 0
     fi
   done
@@ -86,34 +86,75 @@ find_python() {
 }
 
 install_or_update_python() {
+  local action="$1" existing_python="${2:-}"
   if [[ "$(uname -s)" == Darwin ]] && command -v brew >/dev/null 2>&1; then
-    printf '%s\n' 'Updating the OS-managed Python runtime with Homebrew…'
-    brew update && brew upgrade python || brew install python
+    if [[ "$action" == update ]]; then
+      brew list --versions python >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by Homebrew; it was left unchanged and no second Python was installed.' >&2; return 1; }
+      printf '%s\n' 'Updating the existing Homebrew Python runtime…'
+      brew update && brew upgrade python
+    else
+      printf '%s\n' 'No compatible Python was found; installing Python with Homebrew…'
+      brew update && brew install python
+    fi
   elif command -v apt-get >/dev/null 2>&1; then
-    printf '%s\n' 'Updating Python 3 using the system package manager (sudo may be requested)…'
-    sudo apt-get update && sudo apt-get install --only-upgrade -y python3 python3-venv || sudo apt-get install -y python3 python3-venv
+    if [[ "$action" == update ]]; then
+      dpkg-query -S "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by apt; it was left unchanged and no second Python was installed.' >&2; return 1; }
+      printf '%s\n' 'Updating the existing apt-managed Python runtime…'
+      sudo apt-get update && sudo apt-get install --only-upgrade -y python3 python3-venv
+    else
+      printf '%s\n' 'No compatible Python was found; installing Python through apt…'
+      sudo apt-get update && sudo apt-get install -y python3 python3-venv
+    fi
   elif command -v dnf >/dev/null 2>&1; then
-    printf '%s\n' 'Updating Python 3 using the system package manager (sudo may be requested)…'
-    sudo dnf upgrade -y python3 || sudo dnf install -y python3
+    if [[ "$action" == update ]]; then
+      rpm -qf "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by dnf; it was left unchanged and no second Python was installed.' >&2; return 1; }
+      printf '%s\n' 'Updating the existing dnf-managed Python runtime…'
+      sudo dnf upgrade -y python3
+    else
+      printf '%s\n' 'No compatible Python was found; installing Python through dnf…'
+      sudo dnf install -y python3
+    fi
   elif command -v pacman >/dev/null 2>&1; then
-    printf '%s\n' 'Updating Python 3 using the system package manager (sudo may be requested)…'
-    sudo pacman -Syu --needed python python-pip
+    if [[ "$action" == update ]]; then
+      pacman -Qo "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by pacman; it was left unchanged and no second Python was installed.' >&2; return 1; }
+      printf '%s\n' 'Updating the existing pacman-managed Python runtime…'
+      sudo pacman -Syu --needed python python-pip
+    else
+      printf '%s\n' 'No compatible Python was found; installing Python through pacman…'
+      sudo pacman -Syu --needed python python-pip
+    fi
   elif command -v zypper >/dev/null 2>&1; then
-    printf '%s\n' 'Updating Python 3 using the system package manager (sudo may be requested)…'
-    sudo zypper refresh && sudo zypper update -y python3 || sudo zypper install -y python3 python3-venv
+    if [[ "$action" == update ]]; then
+      rpm -qf "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by zypper; it was left unchanged and no second Python was installed.' >&2; return 1; }
+      printf '%s\n' 'Updating the existing zypper-managed Python runtime…'
+      sudo zypper refresh && sudo zypper update -y python3
+    else
+      printf '%s\n' 'No compatible Python was found; installing Python through zypper…'
+      sudo zypper refresh && sudo zypper install -y python3 python3-venv
+    fi
   else
-    printf '%s\n' 'No supported Python package manager was found. Install the latest stable Python 3.10+ for this OS, then rerun MediaForge.' >&2
-    if command -v open >/dev/null 2>&1; then open 'https://www.python.org/downloads/' >/dev/null 2>&1 || true; fi
+    printf '%s\n' 'No supported Python package manager was found. Existing Python was not replaced; no second installation was attempted.' >&2
+    if [[ "$action" == install ]]; then
+      printf '%s\n' 'Install Python 3.10+ manually, then rerun MediaForge.' >&2
+      if command -v open >/dev/null 2>&1; then open 'https://www.python.org/downloads/' >/dev/null 2>&1 || true; fi
+    fi
     return 1
   fi
 }
 
+python_info="$(find_python || true)"
 if ((INSTALL_LATEST_PYTHON)); then
-  log 'User requested OS Python runtime update'
-  install_or_update_python
+  if [[ -n "$python_info" ]]; then
+    log 'User requested an update of the existing OS Python runtime'
+    install_or_update_python update "$(sed -n '1p' <<<"$python_info")"
+  else
+    log 'No compatible Python found; user requested installation of the latest runtime'
+    install_or_update_python install
+  fi
+  python_info="$(find_python || true)"
 fi
 
-python_info="$(find_python)" || {
+[[ -n "$python_info" ]] || {
   write_error 'Python 3.10+ was not found'
   printf '%s\n' 'Python 3.10+ was not found. Install it with your OS package manager, then run this launcher again.' >&2
   if [[ "$(uname -s)" == Darwin ]] && command -v open >/dev/null 2>&1; then open 'https://www.python.org/downloads/' >/dev/null 2>&1 || true; fi

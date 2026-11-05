@@ -23,7 +23,7 @@ Python 3.10 or later is recommended.
 
 ### Windows
 
-Keep `Starta_Fotoverktyg.vbs`, `Starta_Fotoverktyg.ps1`, `fotoverktyg.pyw`, and the icon files together. Start the app with `Starta_Fotoverktyg.vbs`. The launcher checks for Python 3.10+ and the required packages before startup. It asks before installing packages, keeps the virtual environment and pip cache inside the app folder, and can install/update the latest stable Python available through winget for the current user. In the app, **Update all Python packages (restart)** safely updates PyQt6 and the other requirements after closing the running app.
+Keep `Starta_Fotoverktyg.vbs`, `Starta_Fotoverktyg.ps1`, `fotoverktyg.pyw`, and the icon files together. Start the app with `Starta_Fotoverktyg.vbs`. The launcher checks for Python 3.10+ and the required packages before startup. It asks before installing packages, keeps the virtual environment and pip cache inside the app folder, and checks for an existing compatible Python first, updates it through winget when that installation is winget-managed, and installs Python only when no compatible runtime is found. An existing unmanaged Python is left in place rather than duplicated; the launcher explains when it cannot update that installation automatically. In the app, **Update all Python packages (restart)** safely updates PyQt6 and the other requirements after closing the running app.
 
 ### macOS / Linux
 
@@ -34,7 +34,7 @@ chmod +x start_mediaforge.sh   # one time, if needed
 ./start_mediaforge.sh
 ```
 
-The launcher uses Python 3.10+ and stores the virtual environment, pip cache, temporary package files, and settings inside `MediaForge_Data/` next to the app. App and launcher logs are stored separately in the app-folder `Logs/` subfolder. After setup, the GUI starts detached from the terminal with standard output redirected to `Logs/launcher.log`. **Install/update latest Python** uses Homebrew on macOS or the detected system package manager on Linux; Linux repositories can lag upstream Python releases, and these managers may request administrator approval. **Update all Python packages (restart)** refreshes the private app environment, including PyQt6. PyQt6 may also require native desktop/Qt libraries.
+The launcher uses Python 3.10+ and stores the virtual environment, pip cache, temporary package files, and settings inside `MediaForge_Data/` next to the app. App and launcher logs are stored separately in the app-folder `Logs/` subfolder. After setup, the GUI starts detached from the terminal with standard output redirected to `Logs/launcher.log`. **Update Python runtime** first checks for a compatible existing Python. If found, it updates that runtime through Homebrew or the detected system package manager on Linux; if none is found, it installs Python. An existing runtime not managed by the available package manager is left untouched rather than duplicated. Linux repositories can lag upstream Python releases, and these managers may request administrator approval. **Update all Python packages (restart)** refreshes the private app environment, including PyQt6. PyQt6 may also require native desktop/Qt libraries.
 
 ### Optional system tools
 
@@ -104,7 +104,7 @@ Python 3.10 eller senare rekommenderas.
 
 ### Windows
 
-Ha `Starta_Fotoverktyg.vbs`, `Starta_Fotoverktyg.ps1`, `fotoverktyg.pyw` och ikonfilerna i samma mapp. Starta appen med `Starta_Fotoverktyg.vbs`. Startaren kontrollerar Python 3.10+ och nödvändiga paket, frågar innan paket installeras och kan installera/uppdatera senaste stabila Python via winget. Knappen **Uppdatera alla Python-paket (starta om)** uppdaterar även PyQt6 först när appen har stängts.
+Ha `Starta_Fotoverktyg.vbs`, `Starta_Fotoverktyg.ps1`, `fotoverktyg.pyw` och ikonfilerna i samma mapp. Starta appen med `Starta_Fotoverktyg.vbs`. Startaren kontrollerar Python 3.10+ och nödvändiga paket, frågar innan paket installeras, söker först efter en kompatibel befintlig Python och uppdaterar den via winget om den hanteras där. Python installeras bara om ingen kompatibel runtime hittas; en befintlig installation som inte hanteras av winget lämnas orörd i stället för att skapa en sidoinstallation. Knappen **Uppdatera alla Python-paket (starta om)** uppdaterar även PyQt6 först när appen har stängts.
 
 ### macOS / Linux
 
@@ -115,7 +115,7 @@ chmod +x start_mediaforge.sh   # en gång vid behov
 ./start_mediaforge.sh
 ```
 
-Startaren kräver Python 3.10+ och sparar virtuell miljö, paketcache, temporära paketfiler och inställningar i `MediaForge_Data/` bredvid appen. App- och startloggar sparas separat i `Logs/` direkt i appmappen; loggar från föregående dagar arkiveras i `Logs/Archive/`, medan olösta fel ligger kvar i `Logs/errors.log`. Knappen **Installera/uppdatera senaste Python** använder Homebrew på macOS eller upptäckt systempakethanterare på Linux. Linux-distributionens förråd kan släpa efter den senaste upstream-versionen; pakethanteraren kan begära administratörsgodkännande. **Uppdatera alla Python-paket (starta om)** uppdaterar även PyQt6. PyQt6 kan dessutom kräva inbyggda Qt-/skrivbordskomponenter.
+Startaren kräver Python 3.10+ och sparar virtuell miljö, paketcache, temporära paketfiler och inställningar i `MediaForge_Data/` bredvid appen. App- och startloggar sparas separat i `Logs/` direkt i appmappen; loggar från föregående dagar arkiveras i `Logs/Archive/`, medan olösta fel ligger kvar i `Logs/errors.log`. Knappen **Uppdatera Python-runtime** söker först efter en kompatibel befintlig Python. Om den hittas uppdateras den via Homebrew eller upptäckt systempakethanterare på Linux; om ingen hittas installeras Python. En befintlig runtime som inte hanteras av pakethanteraren lämnas orörd i stället för att skapa en sidoinstallation. Linux-distributionens förråd kan släpa efter den senaste upstream-versionen; pakethanteraren kan begära administratörsgodkännande. **Uppdatera alla Python-paket (starta om)** uppdaterar även PyQt6. PyQt6 kan dessutom kräva inbyggda Qt-/skrivbordskomponenter.
 
 ### Valfria systemverktyg
 

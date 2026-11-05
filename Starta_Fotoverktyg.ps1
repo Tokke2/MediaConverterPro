@@ -73,22 +73,35 @@ function Find-LatestWingetPythonId {
     if ($latest) { return "Python.Python.$($latest.Key)" }
     return $null
 }
-function Install-LatestPython {
+function Install-LatestPython([hashtable]$ExistingPython = $null) {
     $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
     if (-not $winget) {
+        if ($ExistingPython) {
+            throw "Python $($ExistingPython.Version) is already installed, but winget is unavailable. It was left unchanged; no second Python installation was attempted."
+        }
         Start-Process 'https://www.python.org/downloads/windows/'
-        throw 'winget is not available. The official Python download page was opened; install Python 3.10 or later and run the launcher again.'
+        throw 'No compatible Python is installed and winget is unavailable. The official Python download page was opened; install Python 3.10 or later and run the launcher again.'
     }
+
+    if ($ExistingPython) {
+        $packageId = "Python.Python.$($ExistingPython.Version)"
+        $listedPackages = & $winget.Source list --id $packageId --exact --accept-source-agreements 2>$null | Out-String
+        if ($LASTEXITCODE -ne 0 -or $listedPackages -notmatch [regex]::Escape($packageId)) {
+            throw "Python $($ExistingPython.Version) is installed but is not managed by winget. It was left unchanged; no second Python installation was attempted."
+        }
+        Write-StartupLog "Updating existing Python package $packageId"
+        $upgradeArgs = @('upgrade', '--id', $packageId, '--exact', '--accept-package-agreements', '--accept-source-agreements')
+        & $winget.Source @upgradeArgs >> $startupLog 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "winget could not update existing $packageId (exit code $LASTEXITCODE). No new Python installation was attempted. See $startupLog" }
+        return $ExistingPython.Version
+    }
+
     $packageId = Find-LatestWingetPythonId
     if (-not $packageId) { throw 'Could not find the latest stable Python package in winget.' }
-    Write-StartupLog "Installing latest Python package $packageId"
+    Write-StartupLog "Installing Python package $packageId because no compatible Python is installed"
     $installArgs = @('install', '--id', $packageId, '--exact', '--scope', 'user', '--accept-package-agreements', '--accept-source-agreements')
     & $winget.Source @installArgs >> $startupLog 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        $upgradeArgs = @('upgrade', '--id', $packageId, '--exact', '--scope', 'user', '--accept-package-agreements', '--accept-source-agreements')
-        & $winget.Source @upgradeArgs >> $startupLog 2>&1
-    }
-    if ($LASTEXITCODE -ne 0) { throw "winget could not install/update $packageId (exit code $LASTEXITCODE). See $startupLog" }
+    if ($LASTEXITCODE -ne 0) { throw "winget could not install $packageId (exit code $LASTEXITCODE). See $startupLog" }
     return ($packageId -replace '^Python\.Python\.', '')
 }
 function Find-BasePython([string]$preferredVersion = '') {
@@ -127,14 +140,14 @@ try {
 
     $basePython = Find-BasePython
     if ($InstallLatestPython) {
-        if (-not (Ask 'Install or update the latest stable Python available in winget? MediaForge will then rebuild its private Python environment.' 'Python runtime')) {
-            Write-StartupLog 'Latest Python installation cancelled by user'
+        if (-not (Ask 'Update the installed Python through winget, or install Python only if no compatible version is present? MediaForge will use the resulting runtime.' 'Python runtime')) {
+            Write-StartupLog 'Python runtime update/install cancelled by user'
             exit
         }
-        $preferredVersion = Install-LatestPython
+        $preferredVersion = Install-LatestPython $basePython
         $basePython = Find-BasePython $preferredVersion
         if (-not $basePython) {
-            Notice 'Python was installed. Windows has not refreshed its PATH in this launcher yet. Run the launcher again after signing out and back in if needed.' 'Python runtime'
+            Notice 'The Python runtime was updated or installed, but this launcher could not detect it yet. Run the launcher again after signing out and back in if needed.' 'Python runtime'
             exit
         }
     } elseif (-not $basePython) {
@@ -142,7 +155,7 @@ try {
             Write-StartupLog 'Python installation declined'
             exit
         }
-        $preferredVersion = Install-LatestPython
+        $preferredVersion = Install-LatestPython $basePython
         $basePython = Find-BasePython $preferredVersion
         if (-not $basePython) {
             Notice 'Python was installed. Run this launcher again; Windows may need a new sign-in to refresh PATH.' 'Python runtime'
