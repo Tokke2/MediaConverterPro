@@ -124,6 +124,22 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Språk:': 'Language:',
  'Svenska': 'Swedish',
  'Engelska': 'English',
+ 'Välj källmapp…': 'Choose source folder…',
+ 'Välj arkivmapp…': 'Choose archive folder…',
+ 'Bearbeta mappjobb…': 'Process folder job…',
+ 'Beräkna tid och diskutrymme': 'Estimate time and disk space',
+ 'Beräkning av tid och diskutrymme': 'Time and disk space estimate',
+ 'Okänt': 'Unknown',
+ 'Jobbet avbröts': 'Job cancelled',
+ 'Varning: uppskattat utrymme överstiger ledigt utrymme': 'Warning: estimated space exceeds available disk space',
+ 'Välj källmapp och beräkna förhandsuppskattning av filer, diskutrymme och återstående tid.': 'Choose a source folder and calculate a preview of file count, disk space and remaining time.',
+ 'Filer: {count} · Indata: {input_size} · Beräknat utrymme: ca {required_size} · Ledigt på målenheten: {free_space} · {eta}': 'Files: {count} · Input: {input_size} · Estimated space: approx. {required_size} · Free on destination drive: {free_space} · {eta}',
+ 'Utrymmet uppskattas från källfilernas storlek. I överskrivningsläge behövs tillfälligt ungefär storleken på den största filen; bearbetning kan ändra resultatstorleken. Tidsprognosen bygger på uppmätt hastighet under det aktuella jobbet.': 'Space is estimated from source file sizes. Overwrite mode temporarily needs about the size of the largest file; processing can change output sizes. The time estimate uses measured throughput from the current job.',
+ 'Tidsprognos visas efter första filen': 'Time estimate appears after the first file',
+ 'Beräknad återstående tid: {duration}': 'Estimated time remaining: {duration}',
+ 'Jobbet är klart': 'Job complete',
+ 'Tangentbordsgenvägar': 'Keyboard shortcuts',
+ '{modifier}+O väljer källmapp; {modifier}+Shift+O väljer arkivmapp; {modifier}+Enter startar mappjobbet; F1 öppnar hjälp; {modifier}+Q avslutar. Ctrl+Tab och Ctrl+Shift+Tab växlar flik.': '{modifier}+O selects the source folder; {modifier}+Shift+O selects the archive folder; {modifier}+Enter starts the folder job; F1 opens help; {modifier}+Q exits. Ctrl+Tab and Ctrl+Shift+Tab switch tabs.',
  'Bildförbättring': 'Photo enhancement',
  'Datum & EXIF': 'Date & EXIF',
  'Bildoptimering': 'Image optimization',
@@ -3212,6 +3228,14 @@ class Window(QtWidgets.QMainWindow):
         common = QtWidgets.QGroupBox('Mappjobb — kopior i arkivmappen')
         self.files_group = common
         processing_layout.addWidget(common)
+        self.batch_estimate_stats = None
+        self.batch_eta_seconds = None
+        self.batch_eta_status = 'Välj källmapp och beräkna förhandsuppskattning av filer, diskutrymme och återstående tid.'
+        self.batch_estimate_label = QtWidgets.QLabel(self.translated(self.batch_eta_status))
+        self.batch_estimate_label.setWordWrap(True)
+        self.batch_estimate_label.setAccessibleName(self.translated('Beräkning av tid och diskutrymme'))
+        self.batch_estimate_label.setToolTip(self.translated('Utrymmet uppskattas från källfilernas storlek. I överskrivningsläge behövs tillfälligt ungefär storleken på den största filen; bearbetning kan ändra resultatstorleken. Tidsprognosen bygger på uppmätt hastighet under det aktuella jobbet.'))
+        processing_layout.addWidget(self.batch_estimate_label)
         form = QtWidgets.QGridLayout(common)
         self.source = DropEdit()
         self.source.setText(str(self.ui_settings.value('sourceFolder', '')))
@@ -3246,12 +3270,20 @@ class Window(QtWidgets.QMainWindow):
         self.output_mode_hint.setWordWrap(True)
         form.addWidget(self.output_mode_hint, 4, 0, 1, 3)
         self.output_mode.currentIndexChanged.connect(self.update_processing_output_mode)
+        self.output_mode.currentIndexChanged.connect(self.invalidate_batch_estimate)
+        self.source.textChanged.connect(self.invalidate_batch_estimate)
+        self.archive.textChanged.connect(self.invalidate_batch_estimate)
+        self.recursive.toggled.connect(self.invalidate_batch_estimate)
         buttons = QtWidgets.QHBoxLayout()
         processing_layout.addLayout(buttons)
         export = QtWidgets.QPushButton('Exportera logg')
         export.clicked.connect(self.export_log)
         buttons.addWidget(export)
         buttons.addStretch()
+        self.estimate_button = QtWidgets.QPushButton('Beräkna tid och diskutrymme')
+        self.estimate_button.clicked.connect(self.estimate_batch)
+        self.estimate_button.setAccessibleName(self.translated('Beräkna tid och diskutrymme'))
+        buttons.addWidget(self.estimate_button)
         self.go = QtWidgets.QPushButton('Bearbeta alla filer i mappen')
         self.go.clicked.connect(self.start)
         buttons.addWidget(self.go)
@@ -3310,7 +3342,22 @@ class Window(QtWidgets.QMainWindow):
     def setup_menu_bar(self):
         bar = self.menuBar()
         self.file_menu = bar.addMenu('')
+        self.choose_source_action = QtGui.QAction('', self)
+        self.choose_source_action.setShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Open))
+        self.choose_source_action.triggered.connect(self.browse)
+        self.file_menu.addAction(self.choose_source_action)
+        self.choose_archive_action = QtGui.QAction('', self)
+        self.shortcut_modifier = 'Meta' if sys.platform == 'darwin' else 'Ctrl'
+        self.choose_archive_action.setShortcut(QtGui.QKeySequence(f'{self.shortcut_modifier}+Shift+O'))
+        self.choose_archive_action.triggered.connect(self.browse_archive)
+        self.file_menu.addAction(self.choose_archive_action)
+        self.process_folder_action = QtGui.QAction('', self)
+        self.process_folder_action.setShortcut(QtGui.QKeySequence(f'{self.shortcut_modifier}+Return'))
+        self.process_folder_action.triggered.connect(self.start)
+        self.file_menu.addAction(self.process_folder_action)
+        self.file_menu.addSeparator()
         self.file_exit_action = QtGui.QAction('', self)
+        self.file_exit_action.setShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Quit))
         self.file_exit_action.triggered.connect(self.close)
         self.file_menu.addAction(self.file_exit_action)
 
@@ -3363,6 +3410,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.help_menu = bar.addMenu('')
         self.support_action = QtGui.QAction('', self)
+        self.support_action.setShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.HelpContents))
         self.support_action.triggered.connect(self.open_support_page)
         self.help_menu.addAction(self.support_action)
         self.release_update_action = QtGui.QAction('', self)
@@ -3375,6 +3423,9 @@ class Window(QtWidgets.QMainWindow):
 
     def retranslate_menu_bar(self):
         self.file_menu.setTitle(self.translated('Fil'))
+        self.choose_source_action.setText(self.translated('Välj källmapp…'))
+        self.choose_archive_action.setText(self.translated('Välj arkivmapp…'))
+        self.process_folder_action.setText(self.translated('Bearbeta mappjobb…'))
         self.file_exit_action.setText(self.translated('Avsluta'))
         self.view_menu.setTitle(self.translated('Visa'))
         self.theme_action.setText(self.translated('Mörkt tema'))
@@ -4880,6 +4931,12 @@ class Window(QtWidgets.QMainWindow):
             self.tray_quit_action.setText(self.translated('Avsluta MediaForge'))
         if hasattr(self, 'output_mode'):
             self.update_processing_output_mode()
+        if hasattr(self, 'estimate_button'):
+            self.estimate_button.setAccessibleName(self.translated('Beräkna tid och diskutrymme'))
+        if hasattr(self, 'batch_estimate_label'):
+            self.batch_estimate_label.setAccessibleName(self.translated('Beräkning av tid och diskutrymme'))
+            self.batch_estimate_label.setToolTip(self.translated('Utrymmet uppskattas från källfilernas storlek. I överskrivningsläge behövs tillfälligt ungefär storleken på den största filen; bearbetning kan ändra resultatstorleken. Tidsprognosen bygger på uppmätt hastighet under det aktuella jobbet.'))
+            self.render_batch_estimate()
         if hasattr(self, 'file_menu'):
             self.retranslate_menu_bar()
 
@@ -5958,6 +6015,7 @@ class Window(QtWidgets.QMainWindow):
         for title, text in (
             ('Kom igång', 'Installera Python 3.10 eller senare via den medföljande startaren.'),
             ('Krav och verktyg', 'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.'),
+            ('Tangentbordsgenvägar', self.translated('{modifier}+O väljer källmapp; {modifier}+Shift+O väljer arkivmapp; {modifier}+Enter startar mappjobbet; F1 öppnar hjälp; {modifier}+Q avslutar. Ctrl+Tab och Ctrl+Shift+Tab växlar flik.').format(modifier='⌘' if sys.platform == 'darwin' else 'Ctrl')),
             ('Loggar och integritet', 'Fellogg finns under Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.'),
         ):
             label = QtWidgets.QLabel(f'<b>{self.translated(title)}</b><br>{self.translated(text)}')
@@ -6060,32 +6118,29 @@ class Window(QtWidgets.QMainWindow):
             button_text = 'Rensa metadata och skriv över alla filer…' if mode == 'overwrite' else 'Bearbeta alla filer i mappen'
             self.go.setText(self.translated(button_text))
 
-    def start(self):
-        if self.worker and self.worker.isRunning():
-            return
+    def collect_batch_plan(self):
         if not self.source.text():
             self.show_message('warning', 'Fel', 'Välj en giltig källmapp och arkivmapp.')
-            return
+            return None
         root = Path(self.source.text()).expanduser().resolve()
         if not root.is_dir():
             self.show_message('warning', 'Fel', 'Välj en giltig källmapp och arkivmapp.')
-            return
+            return None
         mode = self.output_mode.currentData()
         archive = None
         if mode == 'archive':
             archive = self.require_app_output(self.archive.text())
             if archive is None:
-                return
+                return None
             if not self.archive.text():
                 self.show_message('warning', 'Fel', 'Välj en giltig källmapp och arkivmapp.')
-                return
+                return None
             if root == archive:
                 self.show_message('warning', 'Fel', 'Arkivmappen måste skilja sig från källmappen.')
-                return
-        else:
-            if not self.remove_all.isChecked():
-                self.show_message('warning', 'Fel', 'Välj full metadatarensning innan du sparar i källmappen.')
-                return
+                return None
+        elif not self.remove_all.isChecked():
+            self.show_message('warning', 'Fel', 'Välj full metadatarensning innan du sparar i källmappen.')
+            return None
         candidates = root.rglob('*') if self.recursive.isChecked() else root.iterdir()
         items = []
         skipped_symlinks = 0
@@ -6101,11 +6156,142 @@ class Window(QtWidgets.QMainWindow):
                 continue
             items.append(path)
         items.sort()
-        if skipped_symlinks:
-            LOGGER.warning('Överskrivning hoppade över %d symboliska länkar', skipped_symlinks)
         if not items:
             self.show_message('information', 'Inga filer', 'Inga bilder eller videor hittades.')
+            return None
+        output_location = archive if mode == 'archive' else root
+        return root, archive, mode, output_location, items, skipped_symlinks
+
+    @staticmethod
+    def format_estimate_size(byte_count):
+        value = float(max(0, byte_count))
+        for unit in ('B', 'KB', 'MB', 'GB', 'TB'):
+            if value < 1024 or unit == 'TB':
+                return f'{value:.1f} {unit}' if unit != 'B' else f'{int(value)} B'
+            value /= 1024
+
+    @staticmethod
+    def format_estimate_duration(seconds):
+        seconds = max(0, int(round(seconds)))
+        if seconds < 60:
+            return f'{seconds} s'
+        if seconds < 3600:
+            minutes, remainder = divmod(seconds, 60)
+            return f'{minutes} min {remainder} s'
+        hours, remainder = divmod(seconds, 3600)
+        minutes = remainder // 60
+        return f'{hours} h {minutes} min'
+
+    def update_batch_estimate(self, items, output_location, mode):
+        sizes = []
+        for path in items:
+            try:
+                sizes.append(max(0, path.stat().st_size))
+            except OSError:
+                sizes.append(0)
+        total_bytes = sum(sizes)
+        required_bytes = max(sizes, default=0) if mode == 'overwrite' else total_bytes
+        destination = Path(output_location)
+        while not destination.exists() and destination != destination.parent:
+            destination = destination.parent
+        try:
+            free_bytes = shutil.disk_usage(destination).free
+        except OSError:
+            free_bytes = None
+        cumulative = [0]
+        for size in sizes:
+            cumulative.append(cumulative[-1] + size)
+        self.batch_estimate_stats = {
+            'count': len(items),
+            'input_bytes': total_bytes,
+            'required_bytes': required_bytes,
+            'free_bytes': free_bytes,
+            'cumulative_bytes': cumulative,
+            'mode': mode,
+        }
+        self.batch_eta_seconds = None
+        self.batch_eta_status = 'Tidsprognos visas efter första filen'
+        self.render_batch_estimate()
+
+    def render_batch_estimate(self):
+        if not hasattr(self, 'batch_estimate_label'):
             return
+        if not self.batch_estimate_stats:
+            self.batch_estimate_label.setText(self.translated('Välj källmapp och beräkna förhandsuppskattning av filer, diskutrymme och återstående tid.'))
+            self.batch_estimate_label.setAccessibleName(self.batch_estimate_label.text())
+            return
+        stats = self.batch_estimate_stats
+        if self.batch_eta_status:
+            eta = self.translated(self.batch_eta_status)
+        elif self.batch_eta_seconds is not None:
+            eta = self.translated('Beräknad återstående tid: {duration}').format(
+                duration=self.format_estimate_duration(self.batch_eta_seconds),
+            )
+        else:
+            eta = self.translated('Tidsprognos visas efter första filen')
+        free = self.translated('Okänt') if stats['free_bytes'] is None else self.format_estimate_size(stats['free_bytes'])
+        text = self.translated('Filer: {count} · Indata: {input_size} · Beräknat utrymme: ca {required_size} · Ledigt på målenheten: {free_space} · {eta}').format(
+            count=stats['count'],
+            input_size=self.format_estimate_size(stats['input_bytes']),
+            required_size=self.format_estimate_size(stats['required_bytes']),
+            free_space=free,
+            eta=eta,
+        )
+        if stats['free_bytes'] is not None and stats['required_bytes'] > stats['free_bytes']:
+            text += ' · ' + self.translated('Varning: uppskattat utrymme överstiger ledigt utrymme')
+        self.batch_estimate_label.setText(text)
+        self.batch_estimate_label.setAccessibleName(text)
+
+    def invalidate_batch_estimate(self, *_):
+        if self.worker and self.worker.isRunning():
+            return
+        self.batch_estimate_stats = None
+        self.batch_eta_seconds = None
+        self.batch_eta_status = 'Välj källmapp och beräkna förhandsuppskattning av filer, diskutrymme och återstående tid.'
+        self.render_batch_estimate()
+
+    def estimate_batch(self):
+        plan = self.collect_batch_plan()
+        if plan is None:
+            return
+        root, archive, mode, output_location, items, skipped_symlinks = plan
+        self.update_batch_estimate(items, output_location, mode)
+        LOGGER.info('Uppskattning skapad: %d filer från %s (%d symboliska länkar överhoppade)', len(items), root, skipped_symlinks)
+
+    def update_batch_progress(self, done, total):
+        self.progress.setMaximum(total)
+        self.progress.setValue(done)
+        stats = self.batch_estimate_stats
+        if not stats or done <= 0 or total <= done:
+            if stats and done >= total:
+                self.batch_eta_status = 'Jobbet är klart'
+                self.batch_eta_seconds = None
+                self.render_batch_estimate()
+            return
+        elapsed = max(0.001, time.monotonic() - self.batch_started_at)
+        done = min(done, len(stats['cumulative_bytes']) - 1)
+        processed_bytes = stats['cumulative_bytes'][done]
+        remaining_bytes = max(0, stats['input_bytes'] - processed_bytes)
+        remaining_items = max(0, total - done)
+        eta_by_items = elapsed / done * remaining_items
+        if processed_bytes > 0:
+            eta_by_bytes = elapsed / processed_bytes * remaining_bytes
+            self.batch_eta_seconds = max(eta_by_items, eta_by_bytes)
+        else:
+            self.batch_eta_seconds = eta_by_items
+        self.batch_eta_status = None
+        self.render_batch_estimate()
+
+    def start(self):
+        if self.worker and self.worker.isRunning():
+            return
+        plan = self.collect_batch_plan()
+        if plan is None:
+            return
+        root, archive, mode, output_location, items, skipped_symlinks = plan
+        if skipped_symlinks:
+            LOGGER.warning('Överskrivning hoppade över %d symboliska länkar', skipped_symlinks)
+        self.update_batch_estimate(items, output_location, mode)
         if mode == 'overwrite':
             answer = QtWidgets.QMessageBox.warning(
                 self, self.translated('Bekräfta överskrivning'),
@@ -6124,7 +6310,7 @@ class Window(QtWidgets.QMainWindow):
         self.worker = Worker(items, settings)
         self.worker.message.connect(self.append_batch_message)
         self.worker.message.connect(self.record)
-        self.worker.progress.connect(lambda done, total: (self.progress.setMaximum(total), self.progress.setValue(done)))
+        self.worker.progress.connect(self.update_batch_progress)
         self.worker.completed.connect(self.finished)
         self.go.setEnabled(False)
         self.stop.setEnabled(True)
@@ -6132,6 +6318,8 @@ class Window(QtWidgets.QMainWindow):
         self.progress.setMaximum(len(items))
         self.progress.setValue(0)
         self.progress.show()
+        self.estimate_button.setEnabled(False)
+        self.batch_started_at = time.monotonic()
         destination_text = str(output_location) if mode != 'overwrite' else f'originalfiler i {root}'
         self.append_main_log(f'Bearbetar {len(items)} filer → {destination_text}')
         LOGGER.info('Mappbearbetning startad: %d filer från %s (resultatläge %s)', len(items), root, mode)
@@ -6149,6 +6337,10 @@ class Window(QtWidgets.QMainWindow):
         total = self.progress.maximum()
         done = min(self.progress.value(), total)
         cancelled = bool(self.worker and self.worker.cancelled and done < total)
+        self.estimate_button.setEnabled(True)
+        self.batch_eta_status = 'Jobbet avbröts' if cancelled else 'Jobbet är klart'
+        self.batch_eta_seconds = None
+        self.render_batch_estimate()
         if cancelled:
             self.progress.setFormat(self.translated('Avbrutet · %p% (%v/%m)'))
             message = self.translated('Mappbearbetningen avbröts efter {done} av {total} filer. Kontrollera loggen.').format(done=done, total=total)
