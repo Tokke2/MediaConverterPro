@@ -12,6 +12,7 @@ CACHE_DIR="$DATA_DIR/PipCache"
 TEMP_DIR="$DATA_DIR/Temp"
 STARTUP_LOG="$LOG_DIR/launcher.log"
 ERROR_LOG="$LOG_DIR/errors.log"
+PACKAGE_CHECK_FILE="$DATA_DIR/Settings/PythonPackagesLastCheck.txt"
 mkdir -p "$LOG_DIR" "$ARCHIVE_DIR" "$CACHE_DIR" "$TEMP_DIR" "$DATA_DIR/Settings"
 
 archive_previous_launcher_log() {
@@ -42,6 +43,43 @@ write_warning() {
   local message="$*"
   printf '%s | WARNING | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$message" >> "$ERROR_LOG" 2>/dev/null || true
   log "WARNING: $message"
+}
+package_refresh_due() {
+  "$PYTHON" - "$PACKAGE_CHECK_FILE" <<'PY'
+from datetime import datetime, timedelta
+from pathlib import Path
+import sys
+
+stamp = Path(sys.argv[1])
+now = datetime.now().astimezone()
+scheduled = now.replace(hour=8, minute=0, second=0, microsecond=0) - timedelta(days=now.weekday())
+if now < scheduled:
+    scheduled -= timedelta(days=7)
+try:
+    last = datetime.fromisoformat(stamp.read_text(encoding='utf-8').strip()).astimezone(now.tzinfo)
+except (FileNotFoundError, ValueError, OSError):
+    print('1')
+else:
+    print('1' if last < scheduled else '0')
+PY
+}
+record_package_refresh_attempt() {
+  "$PYTHON" - "$PACKAGE_CHECK_FILE" <<'PY'
+from datetime import datetime, timedelta
+from pathlib import Path
+import os, sys
+
+stamp = Path(sys.argv[1])
+now = datetime.now().astimezone()
+slot = now.replace(hour=8, minute=0, second=0, microsecond=0) - timedelta(days=now.weekday())
+if now < slot:
+    slot -= timedelta(days=7)
+if now.weekday() == 6 or (now.weekday() == 0 and now.time() < slot.time()):
+    slot += timedelta(days=7)
+tmp = stamp.with_suffix(stamp.suffix + '.tmp')
+tmp.write_text(slot.isoformat(), encoding='utf-8')
+os.replace(tmp, stamp)
+PY
 }
 on_error() {
   local status=$?
@@ -189,22 +227,36 @@ if ! "$PYTHON" -m pip --version >/dev/null 2>&1; then
     exit 1
   fi
 fi
-PIP_HELP="$("$PYTHON" -m pip install --help 2>/dev/null || true)"
-PIP_ARGS=(install --user --upgrade)
-if [[ "$PIP_HELP" == *--break-system-packages* ]]; then PIP_ARGS+=(--break-system-packages); fi
-PIP_ARGS+=(PyQt6 Pillow pillow-heif piexif)
-if ((UPDATE_PACKAGES)); then
-  log 'User requested an additional shared Python package refresh'
+packages_available=0
+if "$PYTHON" -c "$PROBE" >/dev/null 2>&1; then packages_available=1; fi
+refresh_due=0
+if ((UPDATE_PACKAGES)) || ((!packages_available)); then
+  refresh_due=1
 else
-  log 'Checking/updating shared user Python packages at startup'
+  due_value="$(package_refresh_due)" || due_value=1
+  [[ "$due_value" == 1 ]] && refresh_due=1
 fi
-if ! "$PYTHON" -m pip "${PIP_ARGS[@]}" >> "$STARTUP_LOG" 2>&1; then
-  if ! "$PYTHON" -c "$PROBE" >/dev/null 2>&1; then
-    write_error 'Python package update failed and required shared packages are unavailable'
-    printf 'Python package update failed and required packages are unavailable. See %s\n' "$STARTUP_LOG" >&2
-    exit 1
+if ((refresh_due)); then
+  record_package_refresh_attempt
+  PIP_HELP="$("$PYTHON" -m pip install --help 2>/dev/null || true)"
+  PIP_ARGS=(install --user --upgrade)
+  if [[ "$PIP_HELP" == *--break-system-packages* ]]; then PIP_ARGS+=(--break-system-packages); fi
+  PIP_ARGS+=(PyQt6 Pillow pillow-heif piexif)
+  if ((UPDATE_PACKAGES)); then
+    log 'User requested a shared Python package refresh'
+  else
+    log 'Weekly shared Python package refresh due (Monday 08:00 local time)'
   fi
-  write_warning 'Shared Python package update failed; continuing with already installed packages'
+  if ! "$PYTHON" -m pip "${PIP_ARGS[@]}" >> "$STARTUP_LOG" 2>&1; then
+    if ! "$PYTHON" -c "$PROBE" >/dev/null 2>&1; then
+      write_error 'Python package update failed and required shared packages are unavailable'
+      printf 'Python package update failed and required packages are unavailable. See %s\n' "$STARTUP_LOG" >&2
+      exit 1
+    fi
+    write_warning 'Shared Python package update failed; continuing with already installed packages'
+  fi
+else
+  log 'Skipping shared Python package refresh; the weekly Monday 08:00 local-time window has not arrived'
 fi
 "$PYTHON" -c "$PROBE" >/dev/null || {
   write_error 'Required Python packages could not be verified after the startup update'
