@@ -1,5 +1,5 @@
-# Windows launcher for MediaForge. App data, its virtual environment, and package cache
-# are kept under the application folder. The OS Python runtime is installed separately.
+# Windows launcher for MediaForge. App data and pip cache stay under the app folder;
+# Python packages are shared through the current user's Python installation.
 param(
     [switch]$UpdatePackages,
     [switch]$InstallLatestPython,
@@ -16,11 +16,10 @@ $logDir = Join-Path $PSScriptRoot 'Logs'
 $archiveDir = Join-Path $logDir 'Archive'
 $cacheDir = Join-Path $dataDir 'PipCache'
 $tempDir = Join-Path $dataDir 'Temp'
-$pythonEnvDir = Join-Path $dataDir 'PythonEnv'
 $startupLog = Join-Path $logDir 'launcher.log'
 $errorLog = Join-Path $logDir 'errors.log'
 
-foreach ($directory in @($settingsDir, $logDir, $archiveDir, $cacheDir, $tempDir, $pythonEnvDir)) {
+foreach ($directory in @($settingsDir, $logDir, $archiveDir, $cacheDir, $tempDir)) {
     New-Item -ItemType Directory -Path $directory -Force | Out-Null
 }
 if (Test-Path -LiteralPath $startupLog -PathType Leaf) {
@@ -38,13 +37,16 @@ if (Test-Path -LiteralPath $startupLog -PathType Leaf) {
 $env:PIP_CACHE_DIR = $cacheDir
 $env:TEMP = $tempDir
 $env:TMP = $tempDir
-$env:PYTHONNOUSERSITE = '1'
+Remove-Item Env:PYTHONNOUSERSITE -ErrorAction SilentlyContinue
 
 function Write-StartupLog([string]$text) {
     try { Add-Content -LiteralPath $startupLog -Value ("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $text") -Encoding UTF8 } catch { }
 }
 function Write-ErrorLog([string]$text) {
     try { Add-Content -LiteralPath $errorLog -Value ("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | ERROR | $text") -Encoding UTF8 } catch { }
+}
+function Write-WarningLog([string]$text) {
+    try { Add-Content -LiteralPath $errorLog -Value ("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | WARNING | $text") -Encoding UTF8 } catch { }
 }
 function Notice([string]$text, [string]$title = 'MediaForge') {
     [System.Windows.Forms.MessageBox]::Show($text, $title, 'OK', 'Information') | Out-Null
@@ -115,13 +117,13 @@ function Find-BasePython([string]$preferredVersion = '') {
         $candidate = Get-Command $name -ErrorAction SilentlyContinue
         if ($candidate) { $candidates += ,@{ File = $candidate.Source; Args = @() } }
     }
-    $versionCode = 'import sys; print("%d.%d" % sys.version_info[:2]); raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'
+    $versionCode = 'import sys; print("%d.%d" % sys.version_info[:2]); print(getattr(sys, "_base_executable", sys.executable)); raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'
     foreach ($candidate in $candidates) {
         try {
             $commandArgs = @($candidate.Args) + @('-c', $versionCode)
-            $version = & $candidate.File @commandArgs 2>$null
-            if ($LASTEXITCODE -eq 0) {
-                return @{ File = $candidate.File; Args = @($candidate.Args); Version = ($version | Select-Object -Last 1).ToString().Trim() }
+            $probeOutput = @(& $candidate.File @commandArgs 2>$null)
+            if ($LASTEXITCODE -eq 0 -and $probeOutput.Count -ge 2) {
+                return @{ File = $probeOutput[-1].ToString().Trim(); Args = @(); Version = $probeOutput[0].ToString().Trim(); Executable = $probeOutput[-1].ToString().Trim() }
             }
         } catch { }
     }
@@ -163,41 +165,43 @@ try {
         }
     }
 
-    $venvPath = Join-Path $pythonEnvDir ("py" + $basePython.Version)
-    $venvPython = Join-Path $venvPath 'Scripts\python.exe'
-    $venvPythonw = Join-Path $venvPath 'Scripts\pythonw.exe'
-    if (-not (Test-Path -LiteralPath $venvPython)) {
-        New-Item -ItemType Directory -Path $pythonEnvDir -Force | Out-Null
-        $venvArgs = @($basePython.Args) + @('-m', 'venv', $venvPath)
-        & $basePython.File @venvArgs >> $startupLog 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "Could not create the app-local Python environment (code $LASTEXITCODE). See $startupLog" }
-    }
-    if (-not (Test-Path -LiteralPath $venvPythonw)) { throw 'The private Python environment has no pythonw.exe.' }
-
     $probeCode = 'import PyQt6, PIL, pillow_heif, piexif'
-    $missing = $false
-    & $venvPython -c $probeCode 2>$null
-    if ($LASTEXITCODE -ne 0) { $missing = $true }
-    if ($missing -and -not $UpdatePackages) {
-        if (-not (Ask 'MediaForge needs PyQt6, Pillow, pillow-heif and piexif. Install the missing packages in its private app folder?' 'Python packages')) {
-            Write-StartupLog 'Package installation declined'
-            exit
-        }
+    $pipProbeArgs = @($basePython.Args) + @('-m', 'pip', '--version')
+    & $basePython.File @pipProbeArgs 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        $ensurePipArgs = @($basePython.Args) + @('-m', 'ensurepip', '--upgrade', '--user')
+        & $basePython.File @ensurePipArgs >> $startupLog 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Python's pip module is unavailable. Install pip for Python $($basePython.Version), then rerun MediaForge. See $startupLog" }
     }
-    if ($missing -or $UpdatePackages) {
-        Write-StartupLog 'Installing/updating app-local Python packages'
-        $pipArgs = @('-m', 'pip', 'install', '--upgrade', 'PyQt6', 'Pillow', 'pillow-heif', 'piexif')
-        & $venvPython @pipArgs >> $startupLog 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "Python package installation failed (pip exit code $LASTEXITCODE). See $startupLog" }
+
+    $pipHelpArgs = @($basePython.Args) + @('-m', 'pip', 'install', '--help')
+    $pipHelp = (& $basePython.File @pipHelpArgs 2>$null | Out-String)
+    $pipArgs = @($basePython.Args) + @('-m', 'pip', 'install', '--user', '--upgrade')
+    if ($pipHelp -match '--break-system-packages') { $pipArgs += '--break-system-packages' }
+    $pipArgs += @('PyQt6', 'Pillow', 'pillow-heif', 'piexif')
+    if ($UpdatePackages) { Write-StartupLog 'User requested an additional shared Python package refresh' }
+    else { Write-StartupLog 'Checking/updating shared user Python packages at startup' }
+    & $basePython.File @pipArgs >> $startupLog 2>&1
+    $packageUpdateExitCode = $LASTEXITCODE
+    $probeArgs = @($basePython.Args) + @('-c', $probeCode)
+    & $basePython.File @probeArgs 2>$null
+    $packagesAvailable = ($LASTEXITCODE -eq 0)
+    if ($packageUpdateExitCode -ne 0) {
+        Write-WarningLog "Shared Python package update failed (exit code $packageUpdateExitCode)"
+        if (-not $packagesAvailable) { throw "Python package update failed and required packages are unavailable (exit code $packageUpdateExitCode). See $startupLog" }
+        Write-StartupLog 'Continuing with the already installed packages.'
+    } elseif (-not $packagesAvailable) {
+        throw 'Required Python packages could not be verified after the startup update.'
     }
-    & $venvPython -c $probeCode 2>$null
-    if ($LASTEXITCODE -ne 0) { throw 'Required Python packages could not be verified after installation.' }
-    Write-StartupLog "Starting MediaForge using Python $($basePython.Version)"
+
+    $pythonw = Join-Path (Split-Path -Parent $basePython.Executable) 'pythonw.exe'
+    if (-not (Test-Path -LiteralPath $pythonw)) { throw "pythonw.exe is missing next to $($basePython.Executable). Cannot start the GUI without a console." }
+    Write-StartupLog "Starting MediaForge using shared Python $($basePython.Version)"
     $appArguments = '"' + $script + '"'
     if (-not [string]::IsNullOrWhiteSpace($OpenPath)) {
         $appArguments += ' "' + $OpenPath + '"'
     }
-    Start-Process -FilePath $venvPythonw -ArgumentList $appArguments -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -ErrorAction Stop
+    Start-Process -FilePath $pythonw -ArgumentList $appArguments -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -ErrorAction Stop
 } catch {
     $failure = $_.Exception.Message
     Write-StartupLog "Startup failure: $failure"

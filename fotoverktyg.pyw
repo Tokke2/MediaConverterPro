@@ -154,7 +154,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'Uppdateringskontrollen kunde inte genomföras.': 'The update check could not be completed.',
  'Uppdatering kräver en ren Git-kopia av MediaForge.': 'Updating requires a clean Git checkout of MediaForge.',
  'Den lokala grenen skiljer sig från releasen. Uppdateringen växlar arbetskopian till releasetaggen i frikopplat läge. Din nuvarande gren och dess commits behålls.': 'This branch differs from the release. Updating switches this working copy to the release tag in detached-HEAD mode. Your current branch and its commits are preserved.',
- 'Detta stänger MediaForge och uppdaterar paketen i appens privata Python-miljö. Fortsätta?': 'This closes MediaForge and updates packages in its private Python environment. Continue?',
+ 'Detta stänger MediaForge och uppdaterar paketen i den gemensamma Python-installationen för ditt användarkonto. Andra program som använder samma Python kan också påverkas. Fortsätta?': 'This closes MediaForge and updates packages in the shared Python installation for your user account. Other programs using the same Python may also be affected. Continue?',
  'Sök efter uppdatering…': 'Check for updates…',
  'Detta stänger MediaForge och startar Python-uppdateringen. Fortsätta?': 'This will close MediaForge and start the Python update flow. Continue?',
  'Söker efter senaste release…': 'Checking for the latest release…',
@@ -5007,7 +5007,7 @@ class Window(QtWidgets.QMainWindow):
             self.show_message('critical', 'Python-uppdatering', str(exc))
 
     def update_all_python_packages(self):
-        prompt = self.translated('Detta stänger MediaForge och uppdaterar paketen i appens privata Python-miljö. Fortsätta?')
+        prompt = self.translated('Detta stänger MediaForge och uppdaterar paketen i den gemensamma Python-installationen för ditt användarkonto. Andra program som använder samma Python kan också påverkas. Fortsätta?')
         if QtWidgets.QMessageBox.question(
             self, self.translated('Python-uppdatering'), prompt,
             QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,

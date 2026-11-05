@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
-# Cross-platform launcher for macOS and Linux. All MediaForge-managed state lives
-# alongside the application; the operating-system Python runtime is not copied here.
+# Cross-platform launcher for macOS and Linux. App data stays beside the application;
+# Python packages use the shared user installation, not an app-specific environment.
 set -Eeuo pipefail
 
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_FILE="$APP_DIR/fotoverktyg.pyw"
 DATA_DIR="$APP_DIR/MediaForge_Data"
-VENV_ROOT="$DATA_DIR/PythonEnv"
 LOG_DIR="$APP_DIR/Logs"
 ARCHIVE_DIR="$LOG_DIR/Archive"
 CACHE_DIR="$DATA_DIR/PipCache"
 TEMP_DIR="$DATA_DIR/Temp"
 STARTUP_LOG="$LOG_DIR/launcher.log"
 ERROR_LOG="$LOG_DIR/errors.log"
-mkdir -p "$VENV_ROOT" "$LOG_DIR" "$ARCHIVE_DIR" "$CACHE_DIR" "$TEMP_DIR" "$DATA_DIR/Settings"
+mkdir -p "$LOG_DIR" "$ARCHIVE_DIR" "$CACHE_DIR" "$TEMP_DIR" "$DATA_DIR/Settings"
 
 archive_previous_launcher_log() {
   [[ -f "$STARTUP_LOG" ]] || return 0
@@ -30,13 +29,19 @@ archive_previous_launcher_log() {
   mv "$STARTUP_LOG" "$target" 2>/dev/null || true
 }
 archive_previous_launcher_log
-export PIP_CACHE_DIR="$CACHE_DIR" TMPDIR="$TEMP_DIR" TEMP="$TEMP_DIR" TMP="$TEMP_DIR" PYTHONNOUSERSITE=1
+export PIP_CACHE_DIR="$CACHE_DIR" TMPDIR="$TEMP_DIR" TEMP="$TEMP_DIR" TMP="$TEMP_DIR"
+unset PYTHONNOUSERSITE
 
 log() { printf '%s | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$STARTUP_LOG" 2>/dev/null || true; }
 write_error() {
   local message="$*"
   printf '%s | ERROR | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$message" >> "$ERROR_LOG" 2>/dev/null || true
   log "ERROR: $message"
+}
+write_warning() {
+  local message="$*"
+  printf '%s | WARNING | %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$message" >> "$ERROR_LOG" 2>/dev/null || true
+  log "WARNING: $message"
 }
 on_error() {
   local status=$?
@@ -72,11 +77,13 @@ if [[ "$WAIT_FOR_PID" =~ ^[1-9][0-9]*$ ]]; then
 fi
 
 find_python() {
-  local candidate candidate_path version
+  local candidate candidate_path base_python_path version
   for candidate in "${PYTHON:-}" python3 python; do
     [[ -n "$candidate" ]] || continue
     candidate_path="$(command -v "$candidate" 2>/dev/null)" || continue
     if "$candidate_path" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; then
+      base_python_path="$("$candidate_path" -c 'import sys; print(getattr(sys, "_base_executable", sys.executable))' 2>/dev/null)"
+      [[ -x "$base_python_path" ]] && candidate_path="$base_python_path"
       version="$("$candidate_path" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
       printf '%s\n' "$candidate_path" "$version"
       return 0
@@ -100,10 +107,10 @@ install_or_update_python() {
     if [[ "$action" == update ]]; then
       dpkg-query -S "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by apt; it was left unchanged and no second Python was installed.' >&2; return 1; }
       printf '%s\n' 'Updating the existing apt-managed Python runtime…'
-      sudo apt-get update && sudo apt-get install --only-upgrade -y python3 python3-venv
+      sudo apt-get update && sudo apt-get install --only-upgrade -y python3 python3-pip
     else
       printf '%s\n' 'No compatible Python was found; installing Python through apt…'
-      sudo apt-get update && sudo apt-get install -y python3 python3-venv
+      sudo apt-get update && sudo apt-get install -y python3 python3-pip
     fi
   elif command -v dnf >/dev/null 2>&1; then
     if [[ "$action" == update ]]; then
@@ -130,7 +137,7 @@ install_or_update_python() {
       sudo zypper refresh && sudo zypper update -y python3
     else
       printf '%s\n' 'No compatible Python was found; installing Python through zypper…'
-      sudo zypper refresh && sudo zypper install -y python3 python3-venv
+      sudo zypper refresh && sudo zypper install -y python3 python3-pip
     fi
   else
     printf '%s\n' 'No supported Python package manager was found. Existing Python was not replaced; no second installation was attempted.' >&2
@@ -162,45 +169,53 @@ fi
 }
 PYTHON="$(sed -n '1p' <<<"$python_info")"
 PYTHON_VERSION="$(sed -n '2p' <<<"$python_info")"
-VENV_DIR="$VENV_ROOT/py$PYTHON_VERSION"
-VENV_PYTHON="$VENV_DIR/bin/python"
-
-if [[ ! -x "$VENV_PYTHON" ]]; then
-  "$PYTHON" -m venv "$VENV_DIR" >> "$STARTUP_LOG" 2>&1 || {
-    write_error "Could not create private Python environment for Python $PYTHON_VERSION"
-    printf 'Could not create a private Python environment. Install venv support for Python %s and retry.\n' "$PYTHON_VERSION" >&2
-    exit 1
-  }
-fi
 
 PROBE='import PyQt6, PIL, pillow_heif, piexif'
-if ! "$VENV_PYTHON" -c "$PROBE" >/dev/null 2>&1 || ((UPDATE_PACKAGES)); then
-  if ((!UPDATE_PACKAGES)); then
-    printf 'MediaForge needs PyQt6, Pillow, pillow-heif and piexif in its private environment.\n'
-    read -r -p 'Install the missing Python packages now? [Y/n] ' answer || answer='n'
-    case "$answer" in
-      ''|y|Y|yes|YES|Yes) ;;
-      *) printf 'Installation cancelled. No packages were installed.\n'; exit 1 ;;
-    esac
+if ! "$PYTHON" -m pip --version >/dev/null 2>&1; then
+  if ! "$PYTHON" -m ensurepip --upgrade --user >> "$STARTUP_LOG" 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      sudo apt-get update && sudo apt-get install -y python3-pip >> "$STARTUP_LOG" 2>&1 || true
+    elif command -v dnf >/dev/null 2>&1; then
+      sudo dnf install -y python3-pip >> "$STARTUP_LOG" 2>&1 || true
+    elif command -v pacman >/dev/null 2>&1; then
+      sudo pacman -S --needed python-pip >> "$STARTUP_LOG" 2>&1 || true
+    elif command -v zypper >/dev/null 2>&1; then
+      sudo zypper refresh && sudo zypper install -y python3-pip >> "$STARTUP_LOG" 2>&1 || true
+    fi
   fi
-  log 'Installing/updating app-local Python packages'
-  "$VENV_PYTHON" -m pip install --upgrade pip PyQt6 Pillow pillow-heif piexif >> "$STARTUP_LOG" 2>&1 || {
-    write_error 'Python package installation failed'
-    printf 'Package installation failed. See %s\n' "$STARTUP_LOG" >&2
+  if ! "$PYTHON" -m pip --version >/dev/null 2>&1; then
+    write_error "pip is unavailable for shared Python $PYTHON_VERSION"
+    printf 'pip is not available for Python %s. Install pip for this Python runtime, then rerun MediaForge.\n' "$PYTHON_VERSION" >&2
     exit 1
-  }
+  fi
 fi
-
-"$VENV_PYTHON" -c "$PROBE" >/dev/null || {
-  write_error 'Required Python packages could not be verified after installation'
+PIP_HELP="$("$PYTHON" -m pip install --help 2>/dev/null || true)"
+PIP_ARGS=(install --user --upgrade)
+if [[ "$PIP_HELP" == *--break-system-packages* ]]; then PIP_ARGS+=(--break-system-packages); fi
+PIP_ARGS+=(PyQt6 Pillow pillow-heif piexif)
+if ((UPDATE_PACKAGES)); then
+  log 'User requested an additional shared Python package refresh'
+else
+  log 'Checking/updating shared user Python packages at startup'
+fi
+if ! "$PYTHON" -m pip "${PIP_ARGS[@]}" >> "$STARTUP_LOG" 2>&1; then
+  if ! "$PYTHON" -c "$PROBE" >/dev/null 2>&1; then
+    write_error 'Python package update failed and required shared packages are unavailable'
+    printf 'Python package update failed and required packages are unavailable. See %s\n' "$STARTUP_LOG" >&2
+    exit 1
+  fi
+  write_warning 'Shared Python package update failed; continuing with already installed packages'
+fi
+"$PYTHON" -c "$PROBE" >/dev/null || {
+  write_error 'Required Python packages could not be verified after the startup update'
   printf 'Required Python packages could not be verified. See %s\n' "$STARTUP_LOG" >&2
   exit 1
 }
 log "Starting MediaForge with Python $PYTHON_VERSION"
 if command -v nohup >/dev/null 2>&1; then
-  nohup "$VENV_PYTHON" "$APP_FILE" "$@" </dev/null >> "$STARTUP_LOG" 2>&1 &
+  nohup "$PYTHON" "$APP_FILE" "$@" </dev/null >> "$STARTUP_LOG" 2>&1 &
 else
-  "$VENV_PYTHON" "$APP_FILE" "$@" </dev/null >> "$STARTUP_LOG" 2>&1 &
+  "$PYTHON" "$APP_FILE" "$@" </dev/null >> "$STARTUP_LOG" 2>&1 &
 fi
 APP_PID=$!
 if command -v disown >/dev/null 2>&1; then disown "$APP_PID" 2>/dev/null || true; fi
