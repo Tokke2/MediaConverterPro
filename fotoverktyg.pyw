@@ -6624,5 +6624,5 @@ if __name__ == '__main__':
             window.library_pending_selection = launch_path
         window.tabs.setCurrentWidget(window.library_tab)
         window.scan_image_library()
-    window.show()
+    window.showMinimized()
     sys.exit(app.exec())

@@ -15,7 +15,7 @@ Copyright © 2026 Rickard Längkvist.
 
 ## Autostart
 
-Choose **Tools → Start automatically at sign-in** to turn autostart on or off for the current user. MediaForge uses a Windows Startup-folder shortcut with the MediaForge ICO, a macOS LaunchAgent, or the Linux XDG autostart entry with the PNG icon. It launches through the platform launcher rather than registering the `.pyw` file directly, avoiding Python's file-association icon. Autostart opens the app window only; it does not start a conversion or download job.
+MediaForge starts minimized; restore it from the taskbar (or the system tray where available). Launching it again activates the existing window rather than opening another instance. Choose **Tools → Start automatically at sign-in** to turn autostart on or off for the current user. MediaForge uses a Windows Startup-folder shortcut with the MediaForge ICO, a macOS LaunchAgent, or the Linux XDG autostart entry with the PNG icon. It launches through the platform launcher rather than registering the `.pyw` file directly, avoiding Python's file-association icon. Autostart does not start a conversion or download job.
 
 ## Install and run
 
@@ -102,7 +102,7 @@ Copyright © 2026 Rickard Längkvist.
 
 ## Autostart
 
-Välj **Verktyg → Starta automatiskt vid inloggning** för att slå på eller av autostart för ditt användarkonto. MediaForge använder en genväg i Windows Start-mappen med MediaForge-ICO, en LaunchAgent på macOS eller Linux XDG-autostart med PNG-ikonen. Appen startas via plattformsstartaren, inte genom direktregistrering av `.pyw`, så Python-filassociationens ikon används inte. Autostart öppnar bara appfönstret – den startar inte konvertering eller nedladdning.
+MediaForge startar alltid minimerat; återställ fönstret från aktivitetsfältet (eller systemfältet där det finns). Om appen startas igen aktiveras det befintliga fönstret i stället för att en ny instans öppnas. Välj **Verktyg → Starta automatiskt vid inloggning** för att slå på eller av autostart för ditt användarkonto. MediaForge använder en genväg i Windows Start-mappen med MediaForge-ICO, en LaunchAgent på macOS eller Linux XDG-autostart med PNG-ikonen. Appen startas via plattformsstartaren, inte genom direktregistrering av `.pyw`, så Python-filassociationens ikon används inte. Autostart startar inte konvertering eller nedladdning.
 
 ## Installera och starta
 
