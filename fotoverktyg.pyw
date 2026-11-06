@@ -91,7 +91,7 @@ except OSError:
     LOGGER.addHandler(logging.NullHandler())
 LOGGER.info('Applikationen startar')
 
-from PyQt6 import QtCore, QtGui, QtWidgets, QtPrintSupport
+from PyQt6 import QtCore, QtGui, QtWidgets, QtPrintSupport, QtNetwork
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 Image.MAX_IMAGE_PIXELS = 150_000_000
@@ -6496,6 +6496,93 @@ class Window(QtWidgets.QMainWindow):
         event.accept()
 
 
+class SingleInstanceGuard:
+    """Own a per-user app lock and forward repeat launches to the active window."""
+
+    def __init__(self):
+        user = os.environ.get('USER') or os.environ.get('USERNAME') or str(os.getuid() if hasattr(os, 'getuid') else 'default')
+        user_key = hashlib.sha256(user.casefold().encode('utf-8')).hexdigest()[:16]
+        self.server_name = f'MediaForge-{user_key}'
+        lock_path = Path(tempfile.gettempdir()) / f'{self.server_name}.lock'
+        self.lock = QtCore.QLockFile(str(lock_path))
+        self.lock.setStaleLockTime(0)
+        self.server = None
+        self.window = None
+        self.owns_lock = False
+
+    def acquire(self):
+        if not self.lock.tryLock(0):
+            if self.activate_existing():
+                return False
+            # A primary process may hold the lock while it is still initializing.
+            # Never start a second GUI just because its local socket is not ready yet.
+            language = QtCore.QSettings(str(SETTINGS_FILE), QtCore.QSettings.Format.IniFormat).value('language', 'sv')
+            message = (
+                'MediaForge is already running, but its window could not be activated. Try again in a moment.'
+                if language == 'en' else
+                'MediaForge körs redan, men fönstret kunde inte aktiveras. Försök igen om en stund.'
+            )
+            QtWidgets.QMessageBox.warning(None, 'MediaForge', message)
+            return False
+
+        self.owns_lock = True
+        QtNetwork.QLocalServer.removeServer(self.server_name)
+        self.server = QtNetwork.QLocalServer()
+        try:
+            self.server.setSocketOptions(QtNetwork.QLocalServer.SocketOption.UserAccessOption)
+        except (AttributeError, TypeError, RuntimeError):
+            pass
+        if not self.server.listen(self.server_name):
+            error = self.server.errorString()
+            self.server.close()
+            QtNetwork.QLocalServer.removeServer(self.server_name)
+            self.lock.unlock()
+            self.owns_lock = False
+            raise RuntimeError(f'Could not create the MediaForge single-instance server: {error}')
+        self.server.newConnection.connect(self._accept_connections)
+        return True
+
+    def activate_existing(self):
+        for _ in range(20):
+            socket = QtNetwork.QLocalSocket()
+            socket.connectToServer(self.server_name)
+            if socket.waitForConnected(150):
+                socket.write(b'1')
+                socket.waitForBytesWritten(500)
+                socket.disconnectFromServer()
+                return True
+            socket.abort()
+            time.sleep(0.1)
+        return False
+
+    def set_window(self, window):
+        self.window = window
+
+    def _accept_connections(self):
+        while self.server and self.server.hasPendingConnections():
+            socket = self.server.nextPendingConnection()
+            if socket is None:
+                continue
+            socket.readyRead.connect(lambda current=socket: self._read_request(current))
+            socket.disconnected.connect(socket.deleteLater)
+            if socket.bytesAvailable():
+                self._read_request(socket)
+
+    def _read_request(self, socket):
+        request = bytes(socket.readAll())
+        if request and self.window is not None:
+            QtCore.QTimer.singleShot(0, self.window.show_from_system_tray)
+
+    def release(self):
+        if self.server is not None:
+            self.server.close()
+            self.server = None
+            QtNetwork.QLocalServer.removeServer(self.server_name)
+        if self.owns_lock:
+            self.lock.unlock()
+            self.owns_lock = False
+
+
 if __name__ == '__main__':
     def log_uncaught(exc_type, exc_value, exc_tb):
         LOGGER.critical('Ohanterat fel', exc_info=(exc_type, exc_value, exc_tb))
@@ -6510,7 +6597,17 @@ if __name__ == '__main__':
             LOGGER.warning('Kunde inte ange MediaForge-appens aktivitetsfälts-ID: %s', exc)
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(brand_icon())
+    single_instance = SingleInstanceGuard()
+    try:
+        if not single_instance.acquire():
+            sys.exit(0)
+    except RuntimeError as exc:
+        LOGGER.critical('Could not establish single-instance guard: %s', exc)
+        QtWidgets.QMessageBox.critical(None, 'MediaForge', str(exc))
+        sys.exit(1)
     window = Window()
+    single_instance.set_window(window)
+    app.aboutToQuit.connect(single_instance.release)
     launch_path = None
     if len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
         candidate = Path(sys.argv[1]).expanduser()

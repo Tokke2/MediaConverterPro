@@ -52,6 +52,8 @@ The in-app updater checks the latest published GitHub Release and fetches its Gi
 
 ## Batch estimates and keyboard shortcuts
 
+MediaForge allows one running app instance per user. Launching it again brings the existing window to the front instead of opening another one.
+
 For the main folder-processing job, **Estimate time and disk space** scans the selected files and shows file count, total input size, approximate required space and free space on the destination drive. In overwrite mode the estimate is the largest temporary copy; in copy modes it uses the total source size. Actual output can vary. During processing, a remaining-time estimate appears after the first file and refines from observed throughput. Shortcuts are shown in the **File** menu: **Ctrl/Cmd+O** choose source, **Ctrl/Cmd+Shift+O** choose archive, **Ctrl/Cmd+Enter** start the folder job, **F1** open Help & Support, and **Ctrl/Cmd+Q** quit. **Ctrl+Tab** and **Ctrl+Shift+Tab** switch tabs.
 
 ## Photo tools
@@ -96,7 +98,7 @@ Copyright © 2026 Rickard Längkvist.
 - Språk, arbetsläge, tema, senaste mappar och vanliga bearbetningsinställningar sparas lokalt.
 - Flikar är dolda som standard. I menyn **Flikar** kryssar du i en flik för att visa den och avmarkerar för att dölja den; **Visa alla flikar** och **Dölj alla flikar** finns också. Dra synliga flikar för att ändra ordningen. Flikar utanför valt foto-/videoarbetsläge är inaktiverade i menyn. Menyn **Visa** styr textstorlek och tema. Fönsterstorlek, flikval och textstorlek sparas mellan starter.
 - **Verktyg** samlar Python-/pakethantering, autostart, tyst uppdateringssökning och Ko-fi utanför arbetsytan. **Hjälp → Sök efter uppdatering…** kontrollerar senaste GitHub-releasen. **Hjälp → Hjälp och support** innehåller snabbhjälp, integritetssäker diagnostik, genväg till felloggen och länk till projektets ärendehantering. Diagnostik laddas aldrig upp automatiskt; se [SUPPORT.md](SUPPORT.md) för rapporteringsråd.
-- MediaForge-ikonen används i apphuvudet, fönstret/aktivitetsfältet, flikarna, knapparna, Linux-autostart och Windows-autostartgenvägen. Behåll `fotoverktyg_icon.png` och matchande flerupplöst ICO bredvid appen; ICO-filen kan även användas för andra Windows-genvägar och EXE-paketering.
+- MediaForge-ikonen används i apphuvudet, fönstret/aktivitetsfältet, systemfältet, flikarna, knapparna, Linux-autostart och Windows-autostartgenvägen. Behåll `fotoverktyg_icon.png` och matchande flerupplöst ICO bredvid appen; ICO-filen kan även användas för andra Windows-genvägar och EXE-paketering. Windows aktivitetshanterares processvy visar fortfarande `pythonw.exe`-ikonen eftersom appen körs genom Python-tolken; själva appfönstret och aktivitetsfältet använder MediaForge-ikonen och app-ID:t.
 
 ## Autostart
 
@@ -134,6 +136,8 @@ All lokalt skapad appdata och standardutdata sparas i `MediaForge_Data/` under a
 Den inbyggda uppdateraren kontrollerar den senaste publicerade GitHub-releasen och hämtar dess Git-tagg (för närvarande **0.0.2**), inte commits från `main` eller binärfiler från releasen. Välj **Hjälp → Sök efter uppdatering…** eller använd systemfältsmenyn. Uppdateraren jämför commit-ID och ändrade filer och frågar före installation. En ren Git-kopia snabbspolas när det går; om grenen skiljer sig från releasen växlar uppdateraren arbetskopian till releasetaggen i frikopplat läge, medan den ursprungliga grenen och dess commits behålls. Om kopian redan innehåller release-committen görs ingen nedgradering. Källkodsarkiv utan `.git` kan också uppdateras från samma release; endast appfiler ersätts, befintliga filer säkerhetskopieras och appdata lämnas orörd. **Sök tyst efter nya versioner (2 ggr/dygn)** är aktiverat som standard, kontrollerar högst var tolfte timme medan MediaForge är öppet och är tyst när ingen ny release finns. Kontroller körs inte när appen är stängd.
 
 ## Uppskattning av mappjobb och tangentbordsgenvägar
+
+MediaForge kör endast en programinstans per användare. Om du startar igen aktiveras det redan öppna fönstret i stället för att öppna ett till.
 
 I huvudfönstrets mappjobb visar **Beräkna tid och diskutrymme** antal filer, total indatastorlek, uppskattat utrymmesbehov och ledigt utrymme på målenheten. Vid överskrivning räknas ungefär största temporära filen; i kopieringslägen används källornas totala storlek. Verklig utdata kan avvika. Under bearbetning visas en återstående tidsprognos efter första filen och den justeras efter uppmätt hastighet. Genvägarna visas även i menyn **Fil**: **Ctrl/Cmd+O** välj källmapp, **Ctrl/Cmd+Shift+O** välj arkivmapp, **Ctrl/Cmd+Enter** starta mappjobbet, **F1** öppna Hjälp och support och **Ctrl/Cmd+Q** avsluta. **Ctrl+Tab** och **Ctrl+Shift+Tab** byter flik.
 
