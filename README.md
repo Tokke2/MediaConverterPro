@@ -19,7 +19,7 @@ MediaForge starts minimized; restore it from the taskbar (or the system tray whe
 
 ## Install and run
 
-Python 3.10 or later must already be installed as a system Python; MediaForge never installs a separate runtime.
+Python 3.10 or later (including 3.15) must already be installed as a system Python; MediaForge never installs a separate runtime. The launchers have no upper-version check, and pip resolves the current shared packages for the selected interpreter.
 
 ### Windows
 
@@ -106,7 +106,7 @@ MediaForge startar alltid minimerat; återställ fönstret från aktivitetsfält
 
 ## Installera och starta
 
-Python 3.10 eller senare måste redan finnas som systemets Python; MediaForge installerar ingen egen runtime.
+Python 3.10 eller senare (även 3.15) måste redan finnas som systemets Python; MediaForge installerar ingen egen runtime. Startarna har ingen övre versionsgräns, och pip väljer aktuella gemensamma paket för den hittade tolken.
 
 ### Windows
 
