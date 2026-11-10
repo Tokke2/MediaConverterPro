@@ -163,17 +163,43 @@ function Find-BasePython([string]$preferredVersion = '') {
             & $addCandidate $command.Source ([string[]]@())
         }
     }
+
+    # Cover default python.org and Python Install Manager locations when Python
+    # is installed but its installer did not add it to PATH or the registry.
+    $pythonRoots = @()
+    if ($env:LOCALAPPDATA) {
+        $pythonRoots += (Join-Path $env:LOCALAPPDATA 'Programs\Python')
+        $pythonRoots += (Join-Path $env:LOCALAPPDATA 'Python')
+    }
+    if ($env:ProgramFiles) { $pythonRoots += (Join-Path $env:ProgramFiles 'Python') }
+    if (${env:ProgramFiles(x86)}) { $pythonRoots += (Join-Path ${env:ProgramFiles(x86)} 'Python') }
+    foreach ($root in $pythonRoots) {
+        if (-not (Test-Path -LiteralPath $root -PathType Container)) { continue }
+        $directories = @()
+        try { $directories = @(Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue) } catch { }
+        foreach ($directory in $directories) {
+            & $addCandidate (Join-Path $directory.FullName 'python.exe') ([string[]]@())
+        }
+        & $addCandidate (Join-Path $root 'python.exe') ([string[]]@())
+    }
+
     $versionCode = 'import sys; print("%d.%d" % sys.version_info[:2]); print(getattr(sys, "_base_executable", sys.executable)); raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'
     foreach ($candidate in $candidates) {
         try {
             $commandArgs = @($candidate.Args) + @('-c', $versionCode)
             $probeOutput = @(& $candidate.File @commandArgs 2>$null)
-            if ($LASTEXITCODE -eq 0 -and $probeOutput.Count -ge 2) {
+            $probeExitCode = $LASTEXITCODE
+            if ($probeExitCode -eq 0 -and $probeOutput.Count -ge 2) {
                 $runtimePath = $probeOutput[-1].ToString().Trim()
+                Write-StartupLog "Found compatible system Python $($probeOutput[0]) at $runtimePath"
                 return @{ File = $runtimePath; Args = @(); Version = $probeOutput[0].ToString().Trim(); Executable = $runtimePath }
             }
-        } catch { }
+            Write-StartupLog "Python candidate was not compatible or could not be probed: $($candidate.File) $($candidate.Args -join ' ') (exit $probeExitCode)"
+        } catch {
+            Write-StartupLog "Python candidate probe failed: $($candidate.File) $($candidate.Args -join ' ') ($($_.Exception.Message))"
+        }
     }
+    Write-StartupLog "No compatible Python found after checking $($candidates.Count) candidate(s)."
     return $null
 }
 function Invoke-Python([string]$executable, [string[]]$prefixArgs, [string[]]$arguments) {
@@ -189,7 +215,7 @@ try {
 
     $basePython = Find-BasePython
     if (-not $basePython) {
-        throw 'No compatible system Python 3.10+ was found. MediaForge will not install its own Python. Install Python for your user or system with your preferred method, then run this launcher again.'
+        throw 'No compatible system Python 3.10+ was detected. MediaForge will not install its own Python. The launcher checks the Python launcher, registry, PATH, and common user/system install folders. In Command Prompt, run `py -0p` to verify that Python 3.10+ is listed. If it is listed but MediaForge still cannot start, share Logs/launcher.log and Logs/errors.log with support.'
     }
     if ($UpdateSystemPython) {
         if (-not (Ask "Update the existing winget-managed system Python $($basePython.Version)? MediaForge will not install another Python runtime." 'Python runtime')) {

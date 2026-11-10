@@ -16,8 +16,8 @@ MediaForge does not upload diagnostic information or logs automatically.
 
 ## Common requirements
 
-- Start the app with the provided platform launcher. Python 3.10 or later is required.
+- Start the app with the provided platform launcher. Python 3.10 or later is required. On Windows, if the launcher says Python was not found, run `py -0p` in Command Prompt to see which installations the Python launcher detects. If Python 3.10+ appears there, but MediaForge still cannot find it, review `Logs/launcher.log` and `Logs/errors.log` and share a sanitized excerpt with support.
 - FFmpeg is required for video conversion, stabilization, audio tools, codec reports, and slideshow export.
 - ExifTool is recommended for broad EXIF and media metadata support. Without it, metadata support is limited to supported JPEG/TIFF operations through `piexif`.
 
-Settings, cache, and the private Python environment are stored under `MediaForge_Data/` next to the application. Logs are stored in the sibling `Logs/` subfolder. Keep both app-folder locations writable.
+Settings, package cache, and temporary files are stored under `MediaForge_Data/` next to the application. MediaForge uses an existing system Python and shared user-level packages; it does not create a private Python environment. Logs are stored in the sibling `Logs/` subfolder. Keep both app-folder locations writable.
