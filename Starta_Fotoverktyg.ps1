@@ -18,8 +18,6 @@ $cacheDir = Join-Path $dataDir 'PipCache'
 $tempDir = Join-Path $dataDir 'Temp'
 $startupLog = Join-Path $logDir 'launcher.log'
 $errorLog = Join-Path $logDir 'errors.log'
-$pythonPackageCheckFile = Join-Path $settingsDir 'PythonPackagesLastCheck.txt'
-
 foreach ($directory in @($settingsDir, $logDir, $archiveDir, $cacheDir, $tempDir)) {
     New-Item -ItemType Directory -Path $directory -Force | Out-Null
 }
@@ -61,29 +59,6 @@ function Wait-ForParent([int]$pidToWaitFor) {
         try { Get-Process -Id $pidToWaitFor -ErrorAction Stop | Out-Null; Start-Sleep -Milliseconds 400 }
         catch { break }
     }
-}
-function Get-PythonPackageScheduledTime {
-    $now = Get-Date
-    $daysSinceMonday = (([int]$now.DayOfWeek + 6) % 7)
-    $scheduled = $now.Date.AddDays(-$daysSinceMonday).AddHours(8)
-    if ($now -lt $scheduled) { $scheduled = $scheduled.AddDays(-7) }
-    return $scheduled
-}
-function Test-PythonPackageRefreshDue {
-    if (-not (Test-Path -LiteralPath $pythonPackageCheckFile -PathType Leaf)) { return $true }
-    try {
-        $lastText = Get-Content -LiteralPath $pythonPackageCheckFile -Raw -ErrorAction Stop
-        $lastCheck = [DateTimeOffset]::Parse($lastText, [Globalization.CultureInfo]::InvariantCulture)
-        return $lastCheck.LocalDateTime -lt (Get-PythonPackageScheduledTime)
-    } catch { return $true }
-}
-function Record-PythonPackageRefreshAttempt {
-    $now = Get-Date
-    $slot = Get-PythonPackageScheduledTime
-    if ($now.DayOfWeek -eq [DayOfWeek]::Sunday -or ($now.DayOfWeek -eq [DayOfWeek]::Monday -and $now.TimeOfDay -lt [TimeSpan]::FromHours(8))) {
-        $slot = $slot.AddDays(7)
-    }
-    ([DateTimeOffset]$slot).ToString('o') | Set-Content -LiteralPath $pythonPackageCheckFile -Encoding ASCII
 }
 function Update-SystemPython([hashtable]$ExistingPython) {
     if (-not $ExistingPython) {
@@ -251,16 +226,15 @@ try {
     $probeArgs = @($basePython.Args) + @('-c', $probeCode)
     & $basePython.File @probeArgs 2>$null
     $packagesAvailable = ($LASTEXITCODE -eq 0)
-    $refreshDue = $UpdatePackages -or (-not $packagesAvailable) -or (Test-PythonPackageRefreshDue)
+    $refreshDue = $UpdatePackages -or (-not $packagesAvailable)
     if ($refreshDue) {
-        Record-PythonPackageRefreshAttempt
         $pipHelpArgs = @($basePython.Args) + @('-m', 'pip', 'install', '--help')
         $pipHelp = (& $basePython.File @pipHelpArgs 2>$null | Out-String)
         $pipArgs = @($basePython.Args) + @('-m', 'pip', 'install', '--user', '--upgrade')
         if ($pipHelp -match '--break-system-packages') { $pipArgs += '--break-system-packages' }
         $pipArgs += @('PyQt6', 'Pillow', 'pillow-heif', 'piexif')
         if ($UpdatePackages) { Write-StartupLog 'User requested a shared Python package refresh' }
-        else { Write-StartupLog 'Weekly shared Python package refresh due (Monday 08:00 local time)' }
+        else { Write-StartupLog 'Required shared Python packages are missing; installing them for this user' }
         & $basePython.File @pipArgs >> $startupLog 2>&1
         $packageUpdateExitCode = $LASTEXITCODE
         & $basePython.File @probeArgs 2>$null
@@ -270,10 +244,10 @@ try {
             if (-not $packagesAvailable) { throw "Python package update failed and required packages are unavailable (exit code $packageUpdateExitCode). See $startupLog" }
             Write-StartupLog 'Continuing with the already installed packages.'
         } elseif (-not $packagesAvailable) {
-            throw 'Required Python packages could not be verified after the scheduled update.'
+            throw 'Required Python packages could not be verified after package installation.'
         }
     } else {
-        Write-StartupLog 'Skipping shared Python package refresh; the weekly Monday 08:00 local-time window has not arrived.'
+        Write-StartupLog 'Skipping shared Python package refresh; required packages are available and no manual refresh was requested.'
     }
 
     $pythonw = Join-Path (Split-Path -Parent $basePython.Executable) 'pythonw.exe'
