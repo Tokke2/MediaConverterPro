@@ -151,7 +151,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'AVIF/HEIC → JPEG': 'AVIF/HEIC → JPEG',
  'Fotoredigerare': 'Photo editor',
  'Kontrollera/installera Python-tillägg…': 'Check/install Python packages…',
- 'Uppdatera/installera Python…': 'Update/install Python…',
+ 'Uppdatera systemets Python…': 'Update system Python…',
     'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
     'Sök tyst efter nya versioner (2 ggr/dygn)': 'Silently check for updates twice a day',
     'Installerar release…': 'Installing release…',
@@ -172,7 +172,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Den lokala grenen skiljer sig från releasen. Uppdateringen växlar arbetskopian till releasetaggen i frikopplat läge. Din nuvarande gren och dess commits behålls.': 'This branch differs from the release. Updating switches this working copy to the release tag in detached-HEAD mode. Your current branch and its commits are preserved.',
  'Detta stänger MediaForge och uppdaterar paketen i den gemensamma Python-installationen för ditt användarkonto. Andra program som använder samma Python kan också påverkas. Fortsätta?': 'This closes MediaForge and updates packages in the shared Python installation for your user account. Other programs using the same Python may also be affected. Continue?',
  'Sök efter uppdatering…': 'Check for updates…',
- 'Detta stänger MediaForge och startar Python-uppdateringen. Fortsätta?': 'This will close MediaForge and start the Python update flow. Continue?',
+ 'Detta stänger MediaForge och försöker uppdatera befintlig system-Python via systemets pakethanterare. En ny Python installeras inte. Fortsätta?': 'This will close MediaForge and try to update the existing system Python through its system package manager. No new Python runtime will be installed. Continue?',
  'Söker efter senaste release…': 'Checking for the latest release…',
  'MediaForge är redan uppdaterat.': 'MediaForge is already up to date.',
  'Kan inte uppdatera säkert eftersom den lokala grenen inte kan snabbspolas till releasen.': 'Cannot update safely because the local branch cannot fast-forward to the release.',
@@ -879,7 +879,7 @@ UI_TRANSLATIONS.update({
     'Loggar och integritet': 'Logs and privacy',
     'Kopiera diagnostik för support': 'Copy diagnostics for support',
     'GitHub-sidan kunde inte öppnas.': 'Could not open the GitHub page.',
-    'Installera Python 3.10 eller senare via den medföljande startaren.': 'Install Python 3.10 or later using the provided launcher.',
+    'MediaForge behöver systemets Python 3.10 eller senare. Appen installerar inte en egen Python-runtime.': 'MediaForge needs system Python 3.10 or later. The app does not install its own Python runtime.',
     'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.': 'Video, slideshow, and audio tools require FFmpeg. ExifTool is recommended for broad metadata support.',
     'Fellogg finns under Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.': 'The error log is under Logs/errors.log. Review logs before sharing; they may contain file paths and ad IDs.',
     'Diagnostik innehåller bara versions- och miljöinformation, inte dina filer eller logginnehåll.': 'Diagnostics contain only version and environment information, not your files or log contents.',
@@ -3445,7 +3445,7 @@ class Window(QtWidgets.QMainWindow):
         self.tab_visibility_menu.setTitle(self.translated('Flikar'))
         self.tools_menu.setTitle(self.translated('Verktyg'))
         self.deps_action.setText(self.translated('Kontrollera/installera Python-tillägg…'))
-        self.python_update_action.setText(self.translated('Uppdatera/installera Python…'))
+        self.python_update_action.setText(self.translated('Uppdatera systemets Python…'))
         self.packages_update_action.setText(self.translated('Uppdatera alla Python-paket (starta om)…'))
         self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         self.autostart_action.setText(self.translated('Starta automatiskt vid inloggning'))
@@ -5057,7 +5057,7 @@ class Window(QtWidgets.QMainWindow):
         self.close()
 
     def update_python_runtime(self):
-        prompt = self.translated('Detta stänger MediaForge och startar Python-uppdateringen. Fortsätta?')
+        prompt = self.translated('Detta stänger MediaForge och försöker uppdatera befintlig system-Python via systemets pakethanterare. En ny Python installeras inte. Fortsätta?')
         if QtWidgets.QMessageBox.question(
             self, self.translated('Python-uppdatering'), prompt,
             QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
@@ -5065,7 +5065,7 @@ class Window(QtWidgets.QMainWindow):
         ) != QtWidgets.QMessageBox.StandardButton.Yes:
             return
         try:
-            self.launch_maintenance_launcher(['-InstallLatestPython'], ['--install-latest-python'])
+            self.launch_maintenance_launcher(['-UpdateSystemPython'], ['--update-system-python'])
         except Exception as exc:
             LOGGER.exception('Could not start Python runtime update')
             self.show_message('critical', 'Python-uppdatering', str(exc))
@@ -6020,7 +6020,7 @@ class Window(QtWidgets.QMainWindow):
         quick_help = QtWidgets.QGroupBox(self.translated('Snabbhjälp'))
         help_layout = QtWidgets.QVBoxLayout(quick_help)
         for title, text in (
-            ('Kom igång', 'Installera Python 3.10 eller senare via den medföljande startaren.'),
+            ('Kom igång', 'MediaForge behöver systemets Python 3.10 eller senare. Appen installerar inte en egen Python-runtime.'),
             ('Krav och verktyg', 'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.'),
             ('Tangentbordsgenvägar', self.translated('{modifier}+O väljer källmapp; {modifier}+Shift+O väljer arkivmapp; {modifier}+Enter startar mappjobbet; F1 öppnar hjälp; {modifier}+Q avslutar. Ctrl+Tab och Ctrl+Shift+Tab växlar flik.').format(modifier='⌘' if sys.platform == 'darwin' else 'Ctrl')),
             ('Loggar och integritet', 'Fellogg finns under Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.'),

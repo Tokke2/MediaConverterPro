@@ -1,8 +1,8 @@
-# Windows launcher for MediaForge. App data and pip cache stay under the app folder;
-# Python packages are shared through the current user's Python installation.
+# Windows launcher for MediaForge. Uses an existing system Python; it never installs
+# a Python runtime or creates an app-private environment. Python packages are shared per user.
 param(
     [switch]$UpdatePackages,
-    [switch]$InstallLatestPython,
+    [Alias('InstallLatestPython')][switch]$UpdateSystemPython,
     [int]$WaitForPid = 0,
     [string]$OpenPath = ''
 )
@@ -85,71 +85,83 @@ function Record-PythonPackageRefreshAttempt {
     }
     ([DateTimeOffset]$slot).ToString('o') | Set-Content -LiteralPath $pythonPackageCheckFile -Encoding ASCII
 }
-function Find-LatestWingetPythonId {
-    $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
-    if (-not $winget) { return $null }
-    $searchText = (& $winget.Source search --query 'Python.Python.3.' --source winget --accept-source-agreements 2>$null | Out-String)
-    $matches = [regex]::Matches($searchText, 'Python\.Python\.(\d+\.\d+)')
-    $versions = @{}
-    foreach ($match in $matches) {
-        $versionText = $match.Groups[1].Value
-        try { $versions[$versionText] = [version]$versionText } catch { }
+function Update-SystemPython([hashtable]$ExistingPython) {
+    if (-not $ExistingPython) {
+        throw 'No compatible system Python was found. MediaForge will not install a separate Python runtime.'
     }
-    $latest = $versions.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1
-    if ($latest) { return "Python.Python.$($latest.Key)" }
-    return $null
-}
-function Install-LatestPython([hashtable]$ExistingPython = $null) {
     $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
     if (-not $winget) {
-        if ($ExistingPython) {
-            throw "Python $($ExistingPython.Version) is already installed, but winget is unavailable. It was left unchanged; no second Python installation was attempted."
-        }
-        Start-Process 'https://www.python.org/downloads/windows/'
-        throw 'No compatible Python is installed and winget is unavailable. The official Python download page was opened; install Python 3.10 or later and run the launcher again.'
+        throw "Python $($ExistingPython.Version) is already installed, but winget is unavailable. It was left unchanged."
     }
-
-    if ($ExistingPython) {
-        $packageId = "Python.Python.$($ExistingPython.Version)"
-        $listedPackages = & $winget.Source list --id $packageId --exact --source winget --accept-source-agreements 2>$null | Out-String
-        if ($LASTEXITCODE -ne 0 -or $listedPackages -notmatch [regex]::Escape($packageId)) {
-            throw "Python $($ExistingPython.Version) is installed but is not managed by winget. It was left unchanged; no second Python installation was attempted."
-        }
-        Write-StartupLog "Updating existing Python package $packageId"
-        $upgradeArgs = @('upgrade', '--id', $packageId, '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements')
-        & $winget.Source @upgradeArgs >> $startupLog 2>&1
-        $upgradeExitCode = $LASTEXITCODE
-        $wingetCode = ([BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$upgradeExitCode), 0)).ToString('X8')
-        if ($upgradeExitCode -ne 0 -and $wingetCode -eq '8A15002B') {
-            Write-StartupLog "No newer $packageId version is available; keeping Python $($ExistingPython.Version)."
-            return $ExistingPython.Version
-        }
-        if ($upgradeExitCode -ne 0 -and $wingetCode -eq '8A15010C') {
-            Write-WarningLog "The Python installer was cancelled; keeping existing Python $($ExistingPython.Version)."
-            return $ExistingPython.Version
-        }
-        if ($upgradeExitCode -ne 0) { throw "winget could not update existing $packageId (exit code $upgradeExitCode). No new Python installation was attempted. See $startupLog" }
+    $packageId = "Python.Python.$($ExistingPython.Version)"
+    $listedPackages = & $winget.Source list --id $packageId --exact --source winget --accept-source-agreements 2>$null | Out-String
+    if ($LASTEXITCODE -ne 0 -or $listedPackages -notmatch [regex]::Escape($packageId)) {
+        throw "Python $($ExistingPython.Version) is installed but is not managed by winget. It was left unchanged; no other Python was installed."
+    }
+    Write-StartupLog "Updating existing system Python package $packageId"
+    $upgradeArgs = @('upgrade', '--id', $packageId, '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements')
+    & $winget.Source @upgradeArgs >> $startupLog 2>&1
+    $upgradeExitCode = $LASTEXITCODE
+    $wingetCode = ([BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$upgradeExitCode), 0)).ToString('X8')
+    if ($upgradeExitCode -ne 0 -and $wingetCode -eq '8A15002B') {
+        Write-StartupLog "No newer $packageId version is available; keeping system Python $($ExistingPython.Version)."
         return $ExistingPython.Version
     }
-
-    $packageId = Find-LatestWingetPythonId
-    if (-not $packageId) { throw 'Could not find the latest stable Python package in winget.' }
-    Write-StartupLog "Installing Python package $packageId because no compatible Python is installed"
-    $installArgs = @('install', '--id', $packageId, '--exact', '--source', 'winget', '--scope', 'user', '--accept-package-agreements', '--accept-source-agreements')
-    & $winget.Source @installArgs >> $startupLog 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "winget could not install $packageId (exit code $LASTEXITCODE). See $startupLog" }
-    return ($packageId -replace '^Python\.Python\.', '')
+    if ($upgradeExitCode -ne 0 -and $wingetCode -eq '8A15010C') {
+        Write-WarningLog "The Python installer was cancelled; keeping existing system Python $($ExistingPython.Version)."
+        return $ExistingPython.Version
+    }
+    if ($upgradeExitCode -ne 0) { throw "winget could not update existing $packageId (exit code $upgradeExitCode). The existing Python was not replaced. See $startupLog" }
+    return $ExistingPython.Version
 }
 function Find-BasePython([string]$preferredVersion = '') {
-    $candidates = @()
+    $candidates = [System.Collections.Generic.List[object]]::new()
+    $seen = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $addCandidate = {
+        param([string]$candidateFile, [string[]]$candidateArgs)
+        if ([string]::IsNullOrWhiteSpace($candidateFile)) { return }
+        $candidateFile = $candidateFile.Trim().Trim('"')
+        $key = $candidateFile + '|' + ($candidateArgs -join ' ')
+        if ((Test-Path -LiteralPath $candidateFile -PathType Leaf) -and $seen.Add($key)) {
+            $candidates.Add(@{ File = $candidateFile; Args = @($candidateArgs) })
+        }
+    }
+
     $py = Get-Command 'py.exe' -ErrorAction SilentlyContinue
     if ($py) {
-        if ($preferredVersion) { $candidates += ,@{ File = $py.Source; Args = @("-$preferredVersion") } }
-        $candidates += ,@{ File = $py.Source; Args = @('-3') }
+        if ($preferredVersion) { & $addCandidate $py.Source ([string[]]@("-$preferredVersion")) }
+        foreach ($line in @(& $py.Source -0p 2>$null)) {
+            $match = [regex]::Match($line.ToString(), '(?i)([A-Z]:\\.*?python(?:w)?\.exe)\s*$')
+            if ($match.Success) { & $addCandidate $match.Groups[1].Value ([string[]]@()) }
+        }
+        & $addCandidate $py.Source ([string[]]@('-3'))
     }
+
+    foreach ($registryRoot in @(
+        'HKCU:\Software\Python\PythonCore',
+        'HKLM:\Software\Python\PythonCore',
+        'HKLM:\Software\WOW6432Node\Python\PythonCore'
+    )) {
+        if (-not (Test-Path -LiteralPath $registryRoot)) { continue }
+        foreach ($versionKey in (Get-ChildItem -LiteralPath $registryRoot -ErrorAction SilentlyContinue | Sort-Object Name -Descending)) {
+            $installKeyPath = Join-Path $versionKey.PSPath 'InstallPath'
+            try {
+                $installKey = Get-Item -LiteralPath $installKeyPath -ErrorAction Stop
+                $pythonExe = [string]$installKey.GetValue('ExecutablePath')
+                if ([string]::IsNullOrWhiteSpace($pythonExe)) {
+                    $installDirectory = [string]$installKey.GetValue('')
+                    if ($installDirectory) { $pythonExe = Join-Path $installDirectory 'python.exe' }
+                }
+                & $addCandidate $pythonExe ([string[]]@())
+            } catch { }
+        }
+    }
+
     foreach ($name in @('python.exe', 'python3.exe')) {
-        $candidate = Get-Command $name -ErrorAction SilentlyContinue
-        if ($candidate) { $candidates += ,@{ File = $candidate.Source; Args = @() } }
+        $command = Get-Command $name -ErrorAction SilentlyContinue
+        if ($command -and $command.Source -notmatch '(?i)\\Microsoft\\WindowsApps\\') {
+            & $addCandidate $command.Source ([string[]]@())
+        }
     }
     $versionCode = 'import sys; print("%d.%d" % sys.version_info[:2]); print(getattr(sys, "_base_executable", sys.executable)); raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'
     foreach ($candidate in $candidates) {
@@ -157,7 +169,8 @@ function Find-BasePython([string]$preferredVersion = '') {
             $commandArgs = @($candidate.Args) + @('-c', $versionCode)
             $probeOutput = @(& $candidate.File @commandArgs 2>$null)
             if ($LASTEXITCODE -eq 0 -and $probeOutput.Count -ge 2) {
-                return @{ File = $probeOutput[-1].ToString().Trim(); Args = @(); Version = $probeOutput[0].ToString().Trim(); Executable = $probeOutput[-1].ToString().Trim() }
+                $runtimePath = $probeOutput[-1].ToString().Trim()
+                return @{ File = $runtimePath; Args = @(); Version = $probeOutput[0].ToString().Trim(); Executable = $runtimePath }
             }
         } catch { }
     }
@@ -175,27 +188,18 @@ try {
     Wait-ForParent $WaitForPid
 
     $basePython = Find-BasePython
-    if ($InstallLatestPython) {
-        if (-not (Ask 'Update the installed Python through winget, or install Python only if no compatible version is present? MediaForge will use the resulting runtime.' 'Python runtime')) {
-            Write-StartupLog 'Python runtime update/install cancelled by user'
+    if (-not $basePython) {
+        throw 'No compatible system Python 3.10+ was found. MediaForge will not install its own Python. Install Python for your user or system with your preferred method, then run this launcher again.'
+    }
+    if ($UpdateSystemPython) {
+        if (-not (Ask "Update the existing winget-managed system Python $($basePython.Version)? MediaForge will not install another Python runtime." 'Python runtime')) {
+            Write-StartupLog 'System Python update cancelled by user'
             exit
         }
-        $preferredVersion = Install-LatestPython $basePython
+        $preferredVersion = Update-SystemPython $basePython
         $basePython = Find-BasePython $preferredVersion
         if (-not $basePython) {
-            Notice 'The Python runtime was updated or installed, but this launcher could not detect it yet. Run the launcher again after signing out and back in if needed.' 'Python runtime'
-            exit
-        }
-    } elseif (-not $basePython) {
-        if (-not (Ask 'Python 3.10 or later is required. Install the latest stable Python available through winget?' 'Install Python')) {
-            Write-StartupLog 'Python installation declined'
-            exit
-        }
-        $preferredVersion = Install-LatestPython $basePython
-        $basePython = Find-BasePython $preferredVersion
-        if (-not $basePython) {
-            Notice 'Python was installed. Run this launcher again; Windows may need a new sign-in to refresh PATH.' 'Python runtime'
-            exit
+            throw 'The existing system Python could not be found after the update attempt. No replacement Python was installed.'
         }
     }
 
