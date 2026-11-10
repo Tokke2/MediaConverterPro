@@ -129,12 +129,10 @@ function Find-BasePython([string]$preferredVersion = '') {
 
     $py = Get-Command 'py.exe' -ErrorAction SilentlyContinue
     if ($py) {
-        if ($preferredVersion) { & $addCandidate $py.Source ([string[]]@("-$preferredVersion")) }
         foreach ($line in @(& $py.Source -0p 2>$null)) {
             $match = [regex]::Match($line.ToString(), '(?i)([A-Z]:\\.*?python(?:w)?\.exe)\s*$')
             if ($match.Success) { & $addCandidate $match.Groups[1].Value ([string[]]@()) }
         }
-        & $addCandidate $py.Source ([string[]]@('-3'))
     }
 
     foreach ($registryRoot in @(
@@ -183,22 +181,34 @@ function Find-BasePython([string]$preferredVersion = '') {
         & $addCandidate (Join-Path $root 'python.exe') ([string[]]@())
     }
 
-    $versionCode = 'import sys; print("%d.%d" % sys.version_info[:2]); print(getattr(sys, "_base_executable", sys.executable)); raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'
+    $firstCompatiblePython = $null
     foreach ($candidate in $candidates) {
         try {
-            $commandArgs = @($candidate.Args) + @('-c', $versionCode)
-            $probeOutput = @(& $candidate.File @commandArgs 2>$null)
+            # Avoid `python -c`: legacy Windows PowerShell quoting can corrupt
+            # embedded Python source before it reaches the interpreter.
+            $commandArgs = @($candidate.Args) + @('--version')
+            $probeOutput = @(& $candidate.File @commandArgs 2>&1 | ForEach-Object { $_.ToString() })
             $probeExitCode = $LASTEXITCODE
-            if ($probeExitCode -eq 0 -and $probeOutput.Count -ge 2) {
-                $runtimePath = $probeOutput[-1].ToString().Trim()
-                Write-StartupLog "Found compatible system Python $($probeOutput[0]) at $runtimePath"
-                return @{ File = $runtimePath; Args = @(); Version = $probeOutput[0].ToString().Trim(); Executable = $runtimePath }
+            $probeText = $probeOutput -join "`n"
+            $versionMatch = [regex]::Match($probeText, '(?im)\bPython\s+(\d+)\.(\d+)')
+            if ($probeExitCode -eq 0 -and $versionMatch.Success) {
+                $version = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value)"
+                $major = [int]$versionMatch.Groups[1].Value
+                $minor = [int]$versionMatch.Groups[2].Value
+                if ($major -gt 3 -or ($major -eq 3 -and $minor -ge 10)) {
+                    $runtimePath = $candidate.File
+                    Write-StartupLog "Found compatible system Python $version at $runtimePath"
+                    $compatiblePython = @{ File = $runtimePath; Args = @(); Version = $version; Executable = $runtimePath }
+                    if (-not $preferredVersion -or $version -eq $preferredVersion) { return $compatiblePython }
+                    if (-not $firstCompatiblePython) { $firstCompatiblePython = $compatiblePython }
+                }
             }
-            Write-StartupLog "Python candidate was not compatible or could not be probed: $($candidate.File) $($candidate.Args -join ' ') (exit $probeExitCode)"
+            Write-StartupLog "Python candidate was not compatible or could not be probed: $($candidate.File) $($candidate.Args -join ' ') (exit $probeExitCode; output: $probeText)"
         } catch {
             Write-StartupLog "Python candidate probe failed: $($candidate.File) $($candidate.Args -join ' ') ($($_.Exception.Message))"
         }
     }
+    if ($firstCompatiblePython) { return $firstCompatiblePython }
     Write-StartupLog "No compatible Python found after checking $($candidates.Count) candidate(s)."
     return $null
 }
