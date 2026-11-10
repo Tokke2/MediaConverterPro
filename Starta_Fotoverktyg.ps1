@@ -111,21 +111,31 @@ function Install-LatestPython([hashtable]$ExistingPython = $null) {
 
     if ($ExistingPython) {
         $packageId = "Python.Python.$($ExistingPython.Version)"
-        $listedPackages = & $winget.Source list --id $packageId --exact --accept-source-agreements 2>$null | Out-String
+        $listedPackages = & $winget.Source list --id $packageId --exact --source winget --accept-source-agreements 2>$null | Out-String
         if ($LASTEXITCODE -ne 0 -or $listedPackages -notmatch [regex]::Escape($packageId)) {
             throw "Python $($ExistingPython.Version) is installed but is not managed by winget. It was left unchanged; no second Python installation was attempted."
         }
         Write-StartupLog "Updating existing Python package $packageId"
-        $upgradeArgs = @('upgrade', '--id', $packageId, '--exact', '--accept-package-agreements', '--accept-source-agreements')
+        $upgradeArgs = @('upgrade', '--id', $packageId, '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements')
         & $winget.Source @upgradeArgs >> $startupLog 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "winget could not update existing $packageId (exit code $LASTEXITCODE). No new Python installation was attempted. See $startupLog" }
+        $upgradeExitCode = $LASTEXITCODE
+        $wingetCode = ([BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$upgradeExitCode), 0)).ToString('X8')
+        if ($upgradeExitCode -ne 0 -and $wingetCode -eq '8A15002B') {
+            Write-StartupLog "No newer $packageId version is available; keeping Python $($ExistingPython.Version)."
+            return $ExistingPython.Version
+        }
+        if ($upgradeExitCode -ne 0 -and $wingetCode -eq '8A15010C') {
+            Write-WarningLog "The Python installer was cancelled; keeping existing Python $($ExistingPython.Version)."
+            return $ExistingPython.Version
+        }
+        if ($upgradeExitCode -ne 0) { throw "winget could not update existing $packageId (exit code $upgradeExitCode). No new Python installation was attempted. See $startupLog" }
         return $ExistingPython.Version
     }
 
     $packageId = Find-LatestWingetPythonId
     if (-not $packageId) { throw 'Could not find the latest stable Python package in winget.' }
     Write-StartupLog "Installing Python package $packageId because no compatible Python is installed"
-    $installArgs = @('install', '--id', $packageId, '--exact', '--scope', 'user', '--accept-package-agreements', '--accept-source-agreements')
+    $installArgs = @('install', '--id', $packageId, '--exact', '--source', 'winget', '--scope', 'user', '--accept-package-agreements', '--accept-source-agreements')
     & $winget.Source @installArgs >> $startupLog 2>&1
     if ($LASTEXITCODE -ne 0) { throw "winget could not install $packageId (exit code $LASTEXITCODE). See $startupLog" }
     return ($packageId -replace '^Python\.Python\.', '')

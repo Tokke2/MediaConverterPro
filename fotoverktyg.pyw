@@ -1209,6 +1209,7 @@ class ReleaseUpdateWorker(QtCore.QThread):
         self.apply_update = apply_update
         self.cancelled = False
         self.process = None
+        self.git_executable = None
 
     def cancel(self):
         self.cancelled = True
@@ -1222,10 +1223,14 @@ class ReleaseUpdateWorker(QtCore.QThread):
     def git(self, *args, allow_failure=False, timeout=45):
         if self.cancelled:
             raise InterruptedError('Update check was cancelled.')
-        process = subprocess.Popen(
-            ['git', '-C', str(APP_DIR), *args], stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace',
-        )
+        executable = self.git_executable or ('git.exe' if os.name == 'nt' else 'git')
+        try:
+            process = subprocess.Popen(
+                [executable, '-C', str(APP_DIR), *args], stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace',
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError(f'Git executable could not be started ({executable}). Install Git or add git.exe to PATH.') from exc
         self.process = process
         deadline = time.monotonic() + timeout
         while process.poll() is None:
@@ -1410,7 +1415,9 @@ class ReleaseUpdateWorker(QtCore.QThread):
                 tag = self.latest_release_tag()
                 self.run_archive_update(tag)
                 return
-            if not shutil.which('git'):
+            git_command = 'git.exe' if os.name == 'nt' else 'git'
+            self.git_executable = shutil.which(git_command)
+            if not self.git_executable:
                 self.result_ready.emit({'status': 'skipped', 'reason': 'git_unavailable'})
                 return
             local, reason = self.check_worktree()
