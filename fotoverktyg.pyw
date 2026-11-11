@@ -1017,6 +1017,8 @@ UI_TRANSLATIONS.update({
     'JPEG (vit bakgrund)': 'JPEG (white background)',
     'Kvalitet (lägre = mindre fil)': 'Quality (lower = smaller file)',
     'Skriva över {path}?': 'Overwrite {path}?',
+    'Kopia sparad: {path}': 'Copy saved: {path}',
+    'Källfilen flyttades till papperskorgen. Den mindre versionen finns här: {path}': 'The source was moved to the trash. The smaller version is here: {path}',
     'Kopian blev {percent:.1f}% mindre ({before} → {after}).': 'The copy is {percent:.1f}% smaller ({before} → {after}).',
     'Ingen storleksminskning': 'No size reduction',
     'Den komprimerade kopian blev inte mindre än originalet. Originalet har inte ändrats; kopian finns i {path}.': 'The compressed copy is not smaller than the original. The original is unchanged; the copy is at {path}.',
@@ -1038,6 +1040,7 @@ UI_TRANSLATIONS.update({
     'Källfilen ändrades; den har inte flyttats till papperskorgen.': 'The source file changed; it was not moved to the trash.'
 })
 
+UI_TRANSLATIONS.update({
  'Kontrollera att källfilen fortfarande finns och går att läsa; kör sedan om skanningen eller jobbet.': 'Check that the source file still exists and is readable, then rescan or rerun the job.',
  'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH; öppna sedan appen igen.': 'Check that FFmpeg/ffprobe is installed and available on PATH, then reopen the app.',
  'Kontrollera att filen inte är skadad och att formatet stöds; prova en annan fil eller uppdatera FFmpeg via systemets vanliga metod.': 'Check that the file is not damaged and that its format is supported; try another file or update FFmpeg using your usual system method.',
@@ -1605,8 +1608,7 @@ UI_TRANSLATIONS.update({
                                                              'Linux.',
  'Output folder restricted': 'Output folder restricted',
  'Utdata måste sparas under MediaForge-appens mapp.': 'All generated files must be saved inside the '
-                                                      'MediaForge application folder.'}
-
+                                                      'MediaForge application folder.'})
 
 UI_TRANSLATIONS.update({
     'Dubblettfinnare': 'Duplicate finder',
@@ -7867,7 +7869,7 @@ class Window(QtWidgets.QMainWindow):
             self.library_status.setText(self.translated('Kopia sparad: {path}').format(path=target))
             self.append_main_log(f'Skarpare bildkopia sparad: {target}')
             LOGGER.info('Sharpened image copy saved: %s', target)
-            self.show_message('information', 'Klart', 'Kopia sparad: {path}'.format(path=target))
+            self.show_message('information', 'Klart', self.translated('Kopia sparad: {path}').format(path=target))
         except Exception as exc:
             LOGGER.exception('Sharpening image failed: %s', path)
             self.show_message('warning', 'Fel', str(exc))
@@ -7905,11 +7907,11 @@ class Window(QtWidgets.QMainWindow):
                     self.library_keep_exif.isChecked(), quality)
             target_bytes = target.stat().st_size
             if path.stat().st_mtime_ns != original_stat.st_mtime_ns or path.stat().st_size != original_stat.st_size:
-                self.show_message('warning', 'Källfilen ändrades', 'Källfilen ändrades under komprimeringen. Originalet har inte ersatts; den nya kopian finns i {path}.'.format(path=target))
+                self.show_message('warning', 'Källfilen ändrades', self.translated('Källfilen ändrades under komprimeringen. Originalet har inte ersatts; den nya kopian finns i {path}.').format(path=target))
                 return
             saved_bytes = source_bytes - target_bytes
             if saved_bytes <= 0:
-                self.show_message('information', 'Ingen storleksminskning', 'Den komprimerade kopian blev inte mindre än originalet. Originalet har inte ändrats; kopian finns i {path}.'.format(path=target))
+                self.show_message('information', 'Ingen storleksminskning', self.translated('Den komprimerade kopian blev inte mindre än originalet. Originalet har inte ändrats; kopian finns i {path}.').format(path=target))
                 return
             percent = 100.0 * saved_bytes / max(1, source_bytes)
             summary = self.translated('Kopian blev {percent:.1f}% mindre ({before} → {after}).').format(
@@ -7923,7 +7925,7 @@ class Window(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
                 QtWidgets.QMessageBox.StandardButton.No)
             if replace != QtWidgets.QMessageBox.StandardButton.Yes:
-                self.show_message('information', 'Klart', 'Kopia sparad: {path}'.format(path=target))
+                self.show_message('information', 'Klart', self.translated('Kopia sparad: {path}').format(path=target))
                 return
             replacement = path.with_name(f'{path.stem}_compressed{suffix}')
             index = 2
@@ -7944,7 +7946,7 @@ class Window(QtWidgets.QMainWindow):
             except OSError:
                 LOGGER.warning('Komprimerad mellan-/utdatakopia kunde inte tas bort: %s', target, exc_info=True)
             self.scan_image_library()
-            self.show_message('information', 'Klart', 'Källfilen flyttades till papperskorgen. Den mindre versionen finns här: {path}'.format(path=replacement))
+            self.show_message('information', 'Klart', self.translated('Källfilen flyttades till papperskorgen. Den mindre versionen finns här: {path}').format(path=replacement))
         except Exception as exc:
             LOGGER.exception('Image compression failed: %s', path)
             self.show_message('warning', 'Fel', str(exc))
