@@ -98,6 +98,11 @@ Image.MAX_IMAGE_PIXELS = 150_000_000
 PHOTO = {'.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.bmp'}
 MEDIA = PHOTO | {'.heic', '.heif', '.dng', '.cr2', '.cr3', '.nef', '.arw', '.raf', '.orf', '.rw2', '.mp4', '.mov', '.m4v', '.avi', '.mkv', '.mts', '.m2ts', '.ts', '.webm', '.wmv', '.3gp', '.mpeg', '.mpg', '.mxf', '.gif'}
 VIDEO = {'.mp4', '.mov', '.m4v', '.avi', '.mkv', '.mts', '.m2ts', '.ts', '.webm', '.wmv', '.3gp', '.mpeg', '.mpg', '.mxf'}
+VIEWER_IMAGE_EXTENSIONS = PHOTO | {'.gif', '.heic', '.heif', '.avif', '.svg'}
+VIEWER_MIME_TYPES = (
+    'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff', 'image/webp',
+    'image/heic', 'image/heif', 'image/avif', 'image/svg+xml',
+)
 AUDIO_FILE_EXTENSIONS = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg', '.opus', '.wma', '.aiff', '.aif'}
 IMAGE_COLOR_PROFILES = {'sRGB': 'SRgb', 'Display P3': 'DisplayP3', 'Adobe RGB (1998)': 'AdobeRgb'}
 UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
@@ -187,9 +192,58 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Blocket → JPEG': 'Blocket → JPEG',
  'AVIF/HEIC → JPEG': 'AVIF/HEIC → JPEG',
  'Fotoredigerare': 'Photo editor',
+ 'Öppna ett foto. Dra över förhandsvisningen för att markera ett område att beskära, korrigera röda ögon eller sudda ut.': 'Open a photo. Drag over the preview to select an area to crop, correct red-eye, or blur.',
+ 'Positiva värden roterar moturs; negativa värden roterar medurs.': 'Positive values rotate counter-clockwise; negative values rotate clockwise.',
+
+ 'Räta upp (grader)': 'Straighten (degrees)',
+ 'Räta upp': 'Straighten',
+ 'Ta bort röda ögon i markering': 'Remove red-eye in selection',
+ 'Gör markering suddig (valfritt)': 'Blur selection (optional)',
+ 'Välj ett område i bilden först.': 'Select an area in the image first.',
+ 'Markera ett litet område runt de röda ögonen.': 'Select a small area around the red eyes.',
+ 'Markera området som ska suddas ut.': 'Select the area to blur.',
+ 'Röda ögon korrigerade:': 'Red-eye corrected:',
+ 'Område suddat ut:': 'Area blurred:',
+ 'Horisonten justerad {angle}°:': 'Horizon adjusted by {angle}°:',
+ 'Sök i hjälpen…': 'Search help…',
+ 'Ingen hjälptext matchar sökningen.': 'No help text matches your search.',
+        'Guide steg {current} av {total}': 'Guide step {current} of {total}',
+        'Guiden visar hur du hittar ett verktyg, väljer material och följer ett jobb. Den startar inget jobb och ändrar inga filer.': 'This guide shows how to find a tool, choose media, and follow a job. It does not start a job or change files.',
+        'Interaktiv guide…': 'Interactive guide…',
+ 'Välkommen till MediaForge': 'Welcome to MediaForge',
+ 'Välj arbetsläge och verktyg': 'Choose a mode and tool',
+ 'Välj indata och utdata': 'Choose input and output',
+ 'Granska inställningar och starta': 'Review settings and start',
+ 'Följ resultatet och kontrollera loggen': 'Follow progress and review the log',
+ 'Stäng guiden': 'Finish guide',
+ 'Öppna valt verktyg': 'Open selected tool',
+ 'Välj Foto, Video eller Alla högst upp. Flikar kan visas och döljas från Visa → Flikar.': 'Choose Photo, Video, or All at the top. Show or hide tabs from View → Tabs.',
+ 'Välj en lämplig flik. Bildbibliotek och fotoredigerare öppnar källor utan att ändra dem. Bearbetningsverktyg skapar resultatkopior om inte ett särskilt läge säger annat.': 'Choose a suitable tab. The photo library and editor open sources without changing them. Processing tools create output copies unless a specific mode says otherwise.',
+ 'Välj en fil eller mapp och granska målplatsen. Kontrollera att det finns tillräckligt med utrymme innan ett stort jobb.': 'Choose a file or folder and review the destination. Check available space before a large job.',
+ 'Kontrollera format, kvalitet och metadataalternativ. Kör ett litet jobb först om du är osäker på resultatet.': 'Check format, quality, and metadata options. Try a small job first if you are unsure about the result.',
+ 'Följ förloppet och läs aktivitetsloggen. Fel visar ofta ett förslag på nästa steg; avbrutna original ska förbli orörda.': 'Follow progress and read the activity log. Errors often include a suggested next step; source originals should remain untouched.',
  'Kontrollera/installera Python-tillägg…': 'Check/install Python packages…',
  'Uppdatera systemets Python…': 'Update system Python…',
-    'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
+ 'Visa MediaForge i Utforskaren (högerklicksmeny)': 'Add MediaForge to File Explorer (right-click menu)',
+ 'Registrera MediaForge som bildvisare': 'Register MediaForge as an image viewer',
+ 'Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.': 'The default app is not changed. Choose MediaForge manually in your operating system settings.',
+ 'Håll datorn vaken under jobb': 'Keep the computer awake during jobs',
+ 'Bevaka källmappen och fråga innan nya filer behandlas': 'Watch the source folder and ask before processing new files',
+ 'MediaForge bevakar källmappen. Nya filer bearbetas aldrig utan bekräftelse.': 'MediaForge is watching the source folder. New files are never processed without confirmation.',
+ 'Hittade {count} nya mediefiler i den bevakade mappen. Vill du bearbeta bara dessa filer nu?': 'Found {count} new media files in the watched folder. Process only these files now?',
+ 'Bevakningen kunde inte startas: {error}': 'Could not start watching: {error}',
+ 'Bevakningen av källmappen är avstängd.': 'Source folder watching is off.',
+ 'Välj en giltig källmapp innan du aktiverar bevakning.': 'Choose a valid source folder before enabling watch mode.',
+ 'Nya filer hittades': 'New files found',
+ 'Mappbevakning': 'Folder watch',
+ 'Den bevakade källmappen finns inte längre.': 'The watched source folder no longer exists.',
+ 'Inga nya filer': 'No new files',
+ 'Inga av de nya filerna kan bearbetas med de valda inställningarna.': 'None of the new files can be processed with the current settings.',
+ 'Efter bearbetning': 'After processing',
+ 'Behåll vald mappstruktur': 'Keep the selected folder structure',
+ 'Sortera i Bilder och Videor': 'Organize into Images and Videos',
+ 'Arbetsflöde: bearbeta och sortera resultaten i Bilder/Videor.': 'Workflow: process, then organize results into Images/Videos.',
+ 'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
     'Sök tyst efter nya versioner (2 ggr/dygn)': 'Silently check for updates twice a day',
     'Installerar release…': 'Installing release…',
     'Bearbetar %p% (%v/%m)': 'Processing %p% (%v/%m)',
@@ -698,8 +752,13 @@ UI_TRANSLATIONS.update({
     'Välj skanningsmapp': 'Choose scan folder',
     'Likhetströskel (0–20; lägre = striktare)': 'Similarity threshold (0–20; lower is stricter)',
     'Välj minst en fil att behålla i varje grupp. Omarkerade kopior flyttas till appens karantänmapp; inget raderas permanent.': 'Choose at least one file to keep in each group. Unchecked copies are moved to the app quarantine; nothing is permanently deleted.',
-    'Skanna efter dubbletter': 'Scan for duplicates',
-    'Avbryt skanning': 'Cancel scan',
+ 'Skanna efter dubbletter': 'Scan for duplicates',
+ 'Skanna datorn efter bild-/videodubbletter…': 'Scan the computer for image/video duplicates…',
+ 'INFO: Letar efter bild- och videofiler i de valda diskarna…': 'INFO: Searching selected drives for image and video files…',
+ 'Skanna alla tillgängliga diskar efter bild- och videofiler? Stora diskar kan ta lång tid. Skanningen läser filer men ändrar ingenting.': 'Scan all available drives for image and video files? Large drives may take a long time. Scanning reads files but changes nothing.',
+ 'Hittade inga tillgängliga diskar att skanna.': 'No available drives were found to scan.',
+ 'Tillgängliga rötter: {roots}': 'Available roots: {roots}',
+ 'Avbryt skanning': 'Cancel scan',
     'Flytta omarkerade till karantän…': 'Move unchecked files to quarantine…',
     'Avbryt flytt': 'Cancel move',
     'Skannar filer…': 'Scanning files…',
@@ -816,7 +875,7 @@ UI_TRANSLATIONS.update({
     'Kunde inte skriva ut bilden:': 'Could not print image:',
     'Skickat till skrivaren: {name}': 'Sent to printer: {name}',
     'Välj en giltig bildmapp.': 'Choose a valid image folder.',
-    'Bildformat som stöds: JPEG, PNG, WEBP, TIFF, BMP, GIF och (med pillow-heif) HEIC/HEIF/AVIF.': 'Supported formats: JPEG, PNG, WEBP, TIFF, BMP, GIF, and (with pillow-heif) HEIC/HEIF/AVIF.',
+    'Bildformat som stöds: JPEG, PNG, WEBP, TIFF, BMP, GIF, SVG samt HEIC/HEIF/AVIF med pillow-heif.': 'Supported formats: JPEG, PNG, WEBP, TIFF, BMP, GIF, SVG, and HEIC/HEIF/AVIF with pillow-heif.',
 })
 
 UI_TRANSLATIONS.update({
@@ -1013,6 +1072,15 @@ def set_fs_date(path, dt):
         subprocess.run(['SetFile', '-d', dt.strftime('%m/%d/%Y %H:%M:%S'), str(path)], check=True, timeout=20)
 
 
+def folder_pipeline_relative_path(source, root, preserve_structure, pipeline):
+    source, root = Path(source), Path(root)
+    relative = source.relative_to(root) if preserve_structure else Path(source.name)
+    if pipeline == 'media_type':
+        category = 'Videos' if source.suffix.lower() in VIDEO else 'Images'
+        relative = Path(category) / relative
+    return relative
+
+
 def enhance(source, target, factor, sharp, color, clarity, keep_exif):
     with Image.open(source) as original:
         image = ImageOps.exif_transpose(original)
@@ -1068,7 +1136,8 @@ class Worker(QtCore.QThread):
             temporary_target = None
             original_signature = None
             try:
-                relative = source.relative_to(root) if s['structure'] else Path(source.name)
+                pipeline = s.get('folder_pipeline', 'standard') if output_mode == 'archive' else 'standard'
+                relative = folder_pipeline_relative_path(source, root, s['structure'], pipeline)
                 if output_mode == 'same_folder':
                     target = source.with_name(f'{source.stem}_rensad{source.suffix}')
                 elif output_mode == 'overwrite':
@@ -1182,7 +1251,36 @@ def register_modern_formats():
 
 
 def image_file_to_qimage(path, maximum_size=None):
-    """Load a Pillow-supported image into an owned QImage, respecting EXIF rotation."""
+    """Load a common raster/vector image into an owned QImage, respecting EXIF rotation."""
+    path = Path(path)
+    if path.suffix.lower() == '.svg':
+        try:
+            from PyQt6.QtSvg import QSvgRenderer
+        except ImportError as exc:
+            raise RuntimeError('SVG-preview support from QtSvg is unavailable in this Python installation.') from exc
+        renderer = QSvgRenderer(str(path))
+        if not renderer.isValid():
+            raise ValueError('The SVG file is invalid or could not be rendered.')
+        size = renderer.defaultSize()
+        if not size.isValid() or size.isEmpty():
+            view_box = renderer.viewBoxF()
+            width, height = max(1, int(view_box.width())), max(1, int(view_box.height()))
+        else:
+            width, height = size.width(), size.height()
+        dimensions = (width, height)
+        scale = 1.0
+        if maximum_size and width > 0 and height > 0:
+            scale = min(1.0, maximum_size[0] / width, maximum_size[1] / height)
+        if width > 0 and height > 0 and width * height * scale * scale > 30_000_000:
+            scale = min(scale, (30_000_000 / (width * height)) ** 0.5)
+        output_width = max(1, min(12000, round(width * scale)))
+        output_height = max(1, min(12000, round(height * scale)))
+        qimage = QtGui.QImage(output_width, output_height, QtGui.QImage.Format.Format_ARGB32_Premultiplied)
+        qimage.fill(QtCore.Qt.GlobalColor.transparent)
+        painter = QtGui.QPainter(qimage)
+        renderer.render(painter, QtCore.QRectF(0, 0, output_width, output_height))
+        painter.end()
+        return qimage, dimensions
     with Image.open(path) as source:
         image = ImageOps.exif_transpose(source)
         image.load()
@@ -1206,7 +1304,7 @@ class ImageLibraryScanWorker(QtCore.QThread):
     scan_completed = QtCore.pyqtSignal(object, bool)
     message = QtCore.pyqtSignal(str)
 
-    IMAGE_EXTENSIONS = PHOTO | {'.gif', '.heic', '.heif', '.avif'}
+    IMAGE_EXTENSIONS = VIEWER_IMAGE_EXTENSIONS
     MODERN_EXTENSIONS = {'.heic', '.heif', '.avif'}
     SKIP_DIRS = {'.git', '.venv', '__pycache__', 'node_modules'}
 
@@ -2293,13 +2391,17 @@ class DuplicateScanWorker(QtCore.QThread):
     scan_completed = QtCore.pyqtSignal(object, bool)
 
     IMAGE_EXTENSIONS = PHOTO | {'.heic', '.heif', '.avif', '.gif'}
-    SKIP_DIRS = {'.git', '.venv', '__pycache__', 'MediaForge_Data', 'node_modules'}
+    SKIP_DIRS = {'.git', '.venv', '__pycache__', 'MediaForge_Data', 'node_modules', '.cache', '$RECYCLE.BIN', 'System Volume Information'}
+    SYSTEM_SCAN_SKIP_DIRS = {'proc', 'sys', 'dev', 'run', 'System', 'Library', 'Windows', 'Program Files', 'Program Files (x86)', 'ProgramData'}
 
-    def __init__(self, source, recursive=True, threshold=6):
+    def __init__(self, source, recursive=True, threshold=6, media_only=False):
         super().__init__()
-        self.source = Path(source)
+        sources = source if isinstance(source, (list, tuple, set)) else [source]
+        self.sources = sorted({Path(path).expanduser().resolve() for path in sources}, key=lambda path: str(path).casefold())
+        self.source = self.sources[0] if self.sources else Path.cwd()
         self.recursive = recursive
         self.threshold = int(threshold)
+        self.media_only = bool(media_only)
         self.cancelled = False
 
     @staticmethod
@@ -2335,24 +2437,50 @@ class DuplicateScanWorker(QtCore.QThread):
         return value | (average << 64)
 
     def run(self):
-        files = []
-        if self.recursive:
-            for current, directories, names in os.walk(self.source):
-                if self.cancelled:
-                    self.scan_completed.emit([], True)
-                    return
-                directories[:] = sorted(name for name in directories if name not in self.SKIP_DIRS)
-                files.extend(Path(current) / name for name in names)
-        else:
-            try:
-                files = [path for path in self.source.iterdir() if path.is_file()]
-            except OSError as exc:
-                self.message.emit(f'FEL: Kunde inte läsa mappen: {exc}')
-                self.scan_completed.emit([], False)
+        candidates = set()
+        media_extensions = self.IMAGE_EXTENSIONS | VIDEO
+        if self.media_only:
+            self.message.emit('INFO: Letar efter bild- och videofiler i de valda diskarna…')
+            self.progress.emit(0, 0)
+        skipped_directory_names = {name.casefold() for name in self.SKIP_DIRS}
+        system_scan_skips = {name.casefold() for name in self.SYSTEM_SCAN_SKIP_DIRS}
+        for source in self.sources:
+            if self.cancelled:
+                self.scan_completed.emit([], True)
                 return
-        files = sorted(path for path in files if path.is_file())
+            if not source.exists() or not source.is_dir():
+                self.message.emit(f'INFO: Skanningsrot saknas eller kan inte läsas: {source}')
+                continue
+            if self.recursive:
+                def report_walk_error(exc):
+                    self.message.emit(f'INFO: Hoppade över en mapp som inte kunde läsas: {exc.filename or exc}')
+                for current, directories, names in os.walk(source, onerror=report_walk_error):
+                    if self.cancelled:
+                        self.scan_completed.emit([], True)
+                        return
+                    at_root = Path(current) == source
+                    directories[:] = sorted(
+                        name for name in directories
+                        if name.casefold() not in skipped_directory_names
+                        and not (at_root and name.casefold() in system_scan_skips)
+                    )
+                    for name in names:
+                        path = Path(current) / name
+                        if self.media_only and path.suffix.lower() not in media_extensions:
+                            continue
+                        if path.is_file():
+                            candidates.add(path)
+            else:
+                try:
+                    candidates.update(
+                        path for path in source.iterdir()
+                        if path.is_file() and (not self.media_only or path.suffix.lower() in media_extensions)
+                    )
+                except OSError as exc:
+                    self.message.emit(f'INFO: Kunde inte läsa mappen {source}: {exc}')
+        files = sorted(candidates, key=lambda path: str(path).casefold())
         if not files:
-            self.message.emit('INFO: Inga filer hittades i mappen.')
+            self.message.emit('INFO: Inga bild-, video- eller andra stödda filer hittades i skanningsmapparna.')
             self.scan_completed.emit([], False)
             return
         supports_modern = register_modern_formats()
@@ -2458,7 +2586,9 @@ class DuplicateQuarantineWorker(QtCore.QThread):
 
     def __init__(self, source, paths, quarantine, expected_hashes=None):
         super().__init__()
-        self.source = Path(source)
+        sources = source if isinstance(source, (list, tuple, set)) else [source]
+        self.sources = [Path(path).expanduser().resolve() for path in sources]
+        self.source = self.sources[0] if self.sources else Path.cwd()
         self.paths = [Path(path) for path in paths]
         self.quarantine = Path(quarantine)
         self.expected_hashes = expected_hashes or {}
@@ -2480,8 +2610,22 @@ class DuplicateQuarantineWorker(QtCore.QThread):
                             digest.update(block)
                     if digest.hexdigest() != expected:
                         raise RuntimeError('File changed since the duplicate scan; it was not moved.')
-                relative = source.relative_to(self.source)
-                target = self.quarantine / relative
+                relative = None
+                matched_root = None
+                for root in self.sources:
+                    try:
+                        relative = source.relative_to(root)
+                        matched_root = root
+                        break
+                    except ValueError:
+                        continue
+                if relative is None:
+                    raise RuntimeError('File is outside the scanned folders; it was not moved.')
+                if len(self.sources) > 1:
+                    root_label = (matched_root.anchor.strip('\\/') or matched_root.name or 'root').replace(':', '')
+                    target = self.quarantine / root_label / relative
+                else:
+                    target = self.quarantine / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
                 stem, suffix = target.stem, target.suffix
                 number = 2
@@ -2899,6 +3043,59 @@ class PhotoCanvas(QtWidgets.QWidget):
         return (left, top, right, bottom) if right > left and bottom > top else None
 
 
+def straighten_photo(image, angle):
+    """Rotate a photo by a small horizon correction, keeping the whole frame."""
+    if image.mode == 'RGBA':
+        fill = (0, 0, 0, 0)
+    elif image.mode == 'LA':
+        fill = (0, 0)
+    elif image.mode == 'RGB':
+        fill = (255, 255, 255)
+    elif image.mode == 'L':
+        fill = 255
+    else:
+        image = image.convert('RGBA' if 'transparency' in image.info else 'RGB')
+        fill = (0, 0, 0, 0) if image.mode == 'RGBA' else (255, 255, 255)
+    return image.rotate(float(angle), resample=Image.Resampling.BICUBIC, expand=True, fillcolor=fill)
+
+
+def blur_photo_region(image, box):
+    """Blur a user-selected rectangular area; never changes the source file."""
+    left, top, right, bottom = map(int, box)
+    left, top = max(0, left), max(0, top)
+    right, bottom = min(image.width, right), min(image.height, bottom)
+    if right - left < 3 or bottom - top < 3:
+        raise ValueError('Selected area is too small to blur.')
+    radius = max(6.0, min(right - left, bottom - top) / 8)
+    result = image.copy()
+    region = result.crop((left, top, right, bottom)).filter(ImageFilter.GaussianBlur(radius))
+    result.paste(region, (left, top))
+    return result
+
+
+def remove_red_eye_region(image, box):
+    """Conservatively neutralize strongly red pixels inside a user-selected eye area."""
+    left, top, right, bottom = map(int, box)
+    left, top = max(0, left), max(0, top)
+    right, bottom = min(image.width, right), min(image.height, bottom)
+    if right - left < 2 or bottom - top < 2:
+        raise ValueError('Selected area is too small for red-eye correction.')
+    has_alpha = 'A' in image.getbands()
+    rgba = image.convert('RGBA')
+    pixels = rgba.load()
+    corrected = 0
+    for y in range(top, bottom):
+        for x in range(left, right):
+            red, green, blue, alpha = pixels[x, y]
+            if alpha and red >= 55 and red > green * 1.35 and red > blue * 1.35:
+                neutral = max(0, min(255, round((green + blue) / 2)))
+                pixels[x, y] = (neutral, green, blue, alpha)
+                corrected += 1
+    if corrected == 0:
+        raise ValueError('No strongly red pixels were found in the selected area.')
+    return (rgba if has_alpha else rgba.convert('RGB')), corrected
+
+
 def brand_icon():
     """Load the installed MediaForge icon, then draw a compact fallback if missing."""
     for icon_name in ('fotoverktyg_icon.png', 'fotoverktyg_icon.ico'):
@@ -2977,6 +3174,194 @@ def autostart_enabled():
     if not autostart_supported():
         return False
     return startup_file().exists()
+
+
+def windows_context_menu_enabled():
+    if sys.platform != 'win32':
+        return False
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Classes\SystemFileAssociations\image\shell\MediaForge'):
+            return True
+    except OSError:
+        return False
+
+
+def set_windows_context_menu(enabled):
+    if sys.platform != 'win32':
+        raise RuntimeError('Windows Explorer integration is only available on Windows.')
+    import winreg
+    app_dir = Path(__file__).resolve().parent
+    launcher = app_dir / 'Starta_Fotoverktyg.vbs'
+    if not launcher.is_file():
+        raise FileNotFoundError(launcher)
+    keys = (
+        r'Software\Classes\SystemFileAssociations\image\shell\MediaForge',
+        r'Software\Classes\SystemFileAssociations\video\shell\MediaForge',
+        r'Software\Classes\Directory\shell\MediaForge',
+    )
+    if enabled:
+        command = subprocess.list2cmdline(['wscript.exe', str(launcher)]) + ' "%1"'
+        icon = str(app_dir / 'fotoverktyg_icon.ico')
+        for relative_key in keys:
+            with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, relative_key, 0, winreg.KEY_SET_VALUE) as key:
+                winreg.SetValueEx(key, '', 0, winreg.REG_SZ, 'Open with MediaForge')
+                winreg.SetValueEx(key, 'Icon', 0, winreg.REG_SZ, icon)
+            with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, relative_key + r'\command', 0, winreg.KEY_SET_VALUE) as key:
+                winreg.SetValueEx(key, '', 0, winreg.REG_SZ, command)
+    else:
+        for relative_key in keys:
+            try:
+                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, relative_key + r'\command')
+            except OSError:
+                pass
+            try:
+                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, relative_key)
+            except OSError:
+                pass
+    LOGGER.info('Windows Explorer context-menu integration %s', 'enabled' if enabled else 'removed')
+
+
+def image_viewer_integration_supported():
+    return sys.platform in {'win32', 'darwin'} or sys.platform.startswith('linux')
+
+
+def image_viewer_integration_enabled():
+    if sys.platform == 'win32':
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\RegisteredApplications') as key:
+                winreg.QueryValueEx(key, 'MediaForge')
+            return True
+        except OSError:
+            return False
+    if sys.platform == 'darwin':
+        return (Path.home() / 'Applications' / 'MediaForge.app' / 'Contents' / 'Resources' / '.mediaforge-managed').is_file()
+    if sys.platform.startswith('linux'):
+        data_home = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))).expanduser()
+        return (data_home / 'applications' / 'mediaforge-viewer.desktop').is_file()
+    return False
+
+
+def _delete_registry_tree(winreg, root, key_path):
+    try:
+        with winreg.OpenKey(root, key_path, 0, winreg.KEY_READ | winreg.KEY_WRITE) as key:
+            while True:
+                try:
+                    child = winreg.EnumKey(key, 0)
+                except OSError:
+                    break
+                _delete_registry_tree(winreg, root, key_path + '\\' + child)
+        winreg.DeleteKey(root, key_path)
+    except OSError:
+        pass
+
+
+def set_image_viewer_integration(enabled):
+    """Register MediaForge with the OS as an Open With candidate; never set it as default."""
+    if not image_viewer_integration_supported():
+        raise RuntimeError('Open With integration is not supported on this operating system.')
+    app_dir = Path(__file__).resolve().parent
+    extensions = sorted(VIEWER_IMAGE_EXTENSIONS)
+    if sys.platform == 'win32':
+        import winreg
+        if enabled:
+            launcher = app_dir / 'Starta_Fotoverktyg.vbs'
+            if not launcher.is_file():
+                raise FileNotFoundError(launcher)
+            progid = r'Software\Classes\MediaForge.Image'
+            command = subprocess.list2cmdline(['wscript.exe', str(launcher)]) + ' "%1"'
+            icon = str(app_dir / 'fotoverktyg_icon.ico')
+            registrations = (
+                (progid, {'': 'MediaForge image'}),
+                (progid + r'\DefaultIcon', {'': icon}),
+                (progid + r'\shell\open\command', {'': command}),
+                (r'Software\MediaForge\Capabilities', {'ApplicationName': 'MediaForge', 'ApplicationDescription': 'Open image files with MediaForge', 'ApplicationIcon': icon}),
+                (r'Software\MediaForge\Capabilities\FileAssociations', {extension: 'MediaForge.Image' for extension in extensions}),
+            )
+            for key_path, values in registrations:
+                with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE) as key:
+                    for name, value in values.items():
+                        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
+            with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, r'Software\RegisteredApplications', 0, winreg.KEY_SET_VALUE) as key:
+                winreg.SetValueEx(key, 'MediaForge', 0, winreg.REG_SZ, r'Software\MediaForge\Capabilities')
+        else:
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\RegisteredApplications', 0, winreg.KEY_SET_VALUE) as key:
+                    winreg.DeleteValue(key, 'MediaForge')
+            except OSError:
+                pass
+            _delete_registry_tree(winreg, winreg.HKEY_CURRENT_USER, r'Software\MediaForge')
+            _delete_registry_tree(winreg, winreg.HKEY_CURRENT_USER, r'Software\Classes\MediaForge.Image')
+    elif sys.platform == 'darwin':
+        import plistlib
+        import shlex
+        bundle = Path.home() / 'Applications' / 'MediaForge.app'
+        contents = bundle / 'Contents'
+        executable = contents / 'MacOS' / 'MediaForge'
+        resources = contents / 'Resources'
+        marker = resources / '.mediaforge-managed'
+        if enabled:
+            if bundle.exists() and not marker.is_file():
+                raise FileExistsError(f'Refusing to replace an unmanaged app bundle: {bundle}')
+            resources.mkdir(parents=True, exist_ok=True)
+            executable.parent.mkdir(parents=True, exist_ok=True)
+            executable.write_text(
+                '#!/bin/sh\nexec /bin/bash ' + shlex.quote(str(app_dir / 'start_mediaforge.sh')) + ' "$@"\n',
+                encoding='utf-8',
+            )
+            executable.chmod(0o755)
+            document_types = [{
+                'CFBundleTypeName': f'MediaForge {extension.lstrip(".").upper()} image',
+                'CFBundleTypeExtensions': [extension.lstrip('.')],
+                'CFBundleTypeRole': 'Viewer', 'LSHandlerRank': 'Alternate',
+            } for extension in extensions]
+            info = {
+                'CFBundleDevelopmentRegion': 'en', 'CFBundleExecutable': 'MediaForge',
+                'CFBundleIdentifier': 'se.tokke.mediaforge.viewer', 'CFBundleName': 'MediaForge',
+                'CFBundlePackageType': 'APPL', 'CFBundleVersion': APP_VERSION,
+                'CFBundleDocumentTypes': document_types,
+            }
+            (contents / 'Info.plist').write_bytes(plistlib.dumps(info))
+            marker.write_text('Managed by MediaForge.\n', encoding='utf-8')
+            lsregister = Path('/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister')
+            if lsregister.is_file():
+                subprocess.run([str(lsregister), '-f', str(bundle)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        elif marker.is_file():
+            for path in (executable, contents / 'Info.plist', marker):
+                path.unlink(missing_ok=True)
+            for directory in (executable.parent, resources, contents, bundle):
+                try:
+                    directory.rmdir()
+                except OSError:
+                    break
+    else:
+        data_home = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))).expanduser()
+        desktop_file = data_home / 'applications' / 'mediaforge-viewer.desktop'
+        if enabled:
+            launcher = app_dir / 'start_mediaforge.sh'
+            if not launcher.is_file():
+                raise FileNotFoundError(launcher)
+            def desktop_quote(value):
+                value = str(value).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+                return '"' + value + '"'
+            desktop_file.parent.mkdir(parents=True, exist_ok=True)
+            exec_line = f'{desktop_quote("/bin/bash")} {desktop_quote(launcher)} %f'
+            mime_types = ';'.join(VIEWER_MIME_TYPES) + ';'
+            desktop_file.write_text(
+                '[Desktop Entry]\nType=Application\nName=MediaForge\nComment=Browse images with MediaForge\n'
+                f'Exec={exec_line}\nIcon={app_dir / "fotoverktyg_icon.png"}\nTerminal=false\n'
+                f'MimeType={mime_types}\nCategories=Graphics;Viewer;\n', encoding='utf-8',
+            )
+            database = shutil.which('update-desktop-database')
+            if database:
+                subprocess.run([database, str(desktop_file.parent)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        else:
+            desktop_file.unlink(missing_ok=True)
+            database = shutil.which('update-desktop-database')
+            if database and desktop_file.parent.exists():
+                subprocess.run([database, str(desktop_file.parent)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    LOGGER.info('Image viewer Open With integration %s', 'registered' if enabled else 'removed')
 
 
 def set_autostart(enabled):
@@ -3334,11 +3719,24 @@ class Window(QtWidgets.QMainWindow):
         self.output_mode_hint = QtWidgets.QLabel()
         self.output_mode_hint.setWordWrap(True)
         form.addWidget(self.output_mode_hint, 4, 0, 1, 3)
+        self.pipeline_label = QtWidgets.QLabel('Efter bearbetning')
+        form.addWidget(self.pipeline_label, 5, 0)
+        self.folder_pipeline = QtWidgets.QComboBox()
+        self.folder_pipeline.addItem('Behåll vald mappstruktur', 'standard')
+        self.folder_pipeline.addItem('Sortera i Bilder och Videor', 'media_type')
+        self.folder_pipeline.setToolTip('Arbetsflöde: bearbeta och sortera resultaten i Bilder/Videor.')
+        form.addWidget(self.folder_pipeline, 5, 1, 1, 2)
         self.output_mode.currentIndexChanged.connect(self.update_processing_output_mode)
+        self.folder_pipeline.currentIndexChanged.connect(self.update_processing_output_mode)
         self.output_mode.currentIndexChanged.connect(self.invalidate_batch_estimate)
         self.source.textChanged.connect(self.invalidate_batch_estimate)
         self.archive.textChanged.connect(self.invalidate_batch_estimate)
         self.recursive.toggled.connect(self.invalidate_batch_estimate)
+        self.watch_folder_checkbox = QtWidgets.QCheckBox('Bevaka källmappen och fråga innan nya filer behandlas')
+        self.watch_folder_checkbox.setToolTip('Nya filer identifieras och MediaForge frågar innan något bearbetas.')
+        self.watch_folder_checkbox.setAccessibleDescription(self.watch_folder_checkbox.toolTip())
+        self.watch_folder_checkbox.toggled.connect(self.toggle_folder_watch)
+        processing_layout.addWidget(self.watch_folder_checkbox)
         buttons = QtWidgets.QHBoxLayout()
         processing_layout.addLayout(buttons)
         export = QtWidgets.QPushButton('Exportera logg')
@@ -3350,7 +3748,7 @@ class Window(QtWidgets.QMainWindow):
         self.estimate_button.setAccessibleName(self.translated('Beräkna tid och diskutrymme'))
         buttons.addWidget(self.estimate_button)
         self.go = QtWidgets.QPushButton('Bearbeta alla filer i mappen')
-        self.go.clicked.connect(self.start)
+        self.go.clicked.connect(lambda: self.start())
         buttons.addWidget(self.go)
         self.stop = QtWidgets.QPushButton('Avbryt')
         self.stop.setEnabled(False)
@@ -3401,6 +3799,24 @@ class Window(QtWidgets.QMainWindow):
         self._git_update_restart_pending = False
         self.setup_system_tray()
         self.setup_menu_bar()
+        self.folder_watch = QtCore.QFileSystemWatcher(self)
+        self.folder_watch.directoryChanged.connect(self.schedule_folder_watch_scan)
+        self.folder_watch_debounce = QtCore.QTimer(self)
+        self.folder_watch_debounce.setSingleShot(True)
+        self.folder_watch_debounce.timeout.connect(self.scan_watched_folder)
+        self.folder_watch_poll = QtCore.QTimer(self)
+        self.folder_watch_poll.setInterval(15000)
+        self.folder_watch_poll.timeout.connect(self.scan_watched_folder)
+        self.watched_folder_root = None
+        self.watched_folder_snapshot = {}
+        self.watched_folder_pending = {}
+        self.keep_awake_process = None
+        self.keep_awake_active = False
+        self.keep_awake_timer = QtCore.QTimer(self)
+        self.keep_awake_timer.setInterval(1000)
+        self.keep_awake_timer.timeout.connect(self.update_keep_awake_state)
+        if self.keep_awake_action.isChecked():
+            self.keep_awake_timer.start()
         self.apply_accessibility_labels()
         self.schedule_auto_update_check(initial=True)
         LOGGER.info('Fönstret öppnat; loggfil: %s', LOG_FILE)
@@ -3419,7 +3835,7 @@ class Window(QtWidgets.QMainWindow):
         self.file_menu.addAction(self.choose_archive_action)
         self.process_folder_action = QtGui.QAction('', self)
         self.process_folder_action.setShortcut(QtGui.QKeySequence(f'{self.shortcut_modifier}+Return'))
-        self.process_folder_action.triggered.connect(self.start)
+        self.process_folder_action.triggered.connect(lambda: self.start())
         self.file_menu.addAction(self.process_folder_action)
         self.file_menu.addSeparator()
         self.file_exit_action = QtGui.QAction('', self)
@@ -3474,6 +3890,27 @@ class Window(QtWidgets.QMainWindow):
             self.autostart_action.setToolTip(self.translated('Autostart is supported on Windows, macOS and Linux only.'))
         self.autostart_action.toggled.connect(self.change_autostart)
         self.tools_menu.addAction(self.autostart_action)
+        self.windows_context_action = QtGui.QAction('', self)
+        self.windows_context_action.setCheckable(True)
+        self.windows_context_action.setChecked(windows_context_menu_enabled())
+        self.windows_context_action.setEnabled(sys.platform == 'win32')
+        if sys.platform != 'win32':
+            self.windows_context_action.setToolTip(self.translated('Windows Explorer integration is only available on Windows.'))
+        self.windows_context_action.toggled.connect(self.change_windows_context_menu)
+        self.tools_menu.addAction(self.windows_context_action)
+        self.viewer_integration_action = QtGui.QAction('', self)
+        self.viewer_integration_action.setCheckable(True)
+        self.viewer_integration_action.setChecked(image_viewer_integration_enabled())
+        self.viewer_integration_action.setEnabled(image_viewer_integration_supported())
+        self.viewer_integration_action.setToolTip(self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
+        self.viewer_integration_action.toggled.connect(self.change_image_viewer_integration)
+        self.tools_menu.addAction(self.viewer_integration_action)
+        self.keep_awake_action = QtGui.QAction('', self)
+        self.keep_awake_action.setCheckable(True)
+        self.keep_awake_action.setChecked(self.ui_settings.value('keepAwakeDuringJobs', False, type=bool))
+        self.keep_awake_action.setEnabled(sys.platform in {'win32', 'darwin'} or sys.platform.startswith('linux'))
+        self.keep_awake_action.toggled.connect(self.change_keep_awake)
+        self.tools_menu.addAction(self.keep_awake_action)
         self.auto_update_action = QtGui.QAction('', self)
         self.auto_update_action.setCheckable(True)
         self.auto_update_action.setChecked(self.ui_settings.value('autoUpdateCheck', True, type=bool))
@@ -3489,6 +3926,9 @@ class Window(QtWidgets.QMainWindow):
         self.support_action.setShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.HelpContents))
         self.support_action.triggered.connect(self.open_support_page)
         self.help_menu.addAction(self.support_action)
+        self.tutorial_action = QtGui.QAction('', self)
+        self.tutorial_action.triggered.connect(self.show_guided_tutorial)
+        self.help_menu.addAction(self.tutorial_action)
         self.release_update_action = QtGui.QAction('', self)
         self.release_update_action.triggered.connect(self.check_release_update)
         self.help_menu.addAction(self.release_update_action)
@@ -3527,10 +3967,15 @@ class Window(QtWidgets.QMainWindow):
         self.packages_update_action.setText(self.translated('Uppdatera alla Python-paket (starta om)…'))
         self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         self.autostart_action.setText(self.translated('Starta automatiskt vid inloggning'))
+        self.windows_context_action.setText(self.translated('Visa MediaForge i Utforskaren (högerklicksmeny)'))
+        self.viewer_integration_action.setText(self.translated('Registrera MediaForge som bildvisare'))
+        self.viewer_integration_action.setToolTip(self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
+        self.keep_awake_action.setText(self.translated('Håll datorn vaken under jobb'))
         self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
         self.donate_action.setText(self.translated('Stöd utvecklingen · Ko-fi'))
         self.help_menu.setTitle(self.translated('Hjälp'))
         self.support_action.setText(self.translated('Hjälp och support'))
+        self.tutorial_action.setText(self.translated('Interaktiv guide…'))
         self.error_log_action.setText(self.translated('Öppna fellogg'))
         self.refresh_tab_visibility_menu()
 
@@ -3708,10 +4153,10 @@ class Window(QtWidgets.QMainWindow):
 
     def build_duplicate_tab(self):
         tab = QtWidgets.QWidget()
-        tab.setProperty('mediaMode', 'photo')
+        tab.setProperty('mediaMode', 'both')
         self.tabs.addTab(tab, 'Dubblettfinnare')
         layout = QtWidgets.QVBoxLayout(tab)
-        layout.addWidget(QtWidgets.QLabel('Hitta identiska filer med SHA-256 och visuellt liknande bilder med perceptuell hash. Inga filer ändras under skanningen.'))
+        layout.addWidget(QtWidgets.QLabel('Hitta identiska filer och videor med SHA-256 samt visuellt liknande bilder med perceptuell hash. Inga filer ändras under skanningen.'))
         form = QtWidgets.QGridLayout()
         layout.addLayout(form)
         self.duplicate_source = QtWidgets.QLineEdit(str(self.ui_settings.value('duplicateSourceFolder', '')))
@@ -3735,8 +4180,11 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(QtWidgets.QLabel('Välj minst en fil att behålla i varje grupp. Omarkerade kopior flyttas till appens karantänmapp; inget raderas permanent.'))
         row = QtWidgets.QHBoxLayout()
         self.duplicate_scan_button = QtWidgets.QPushButton('Skanna efter dubbletter')
-        self.duplicate_scan_button.clicked.connect(self.start_duplicate_scan)
+        self.duplicate_scan_button.clicked.connect(lambda: self.start_duplicate_scan())
         row.addWidget(self.duplicate_scan_button)
+        self.duplicate_computer_scan_button = QtWidgets.QPushButton('Skanna datorn efter bild-/videodubbletter…')
+        self.duplicate_computer_scan_button.clicked.connect(self.scan_computer_duplicates)
+        row.addWidget(self.duplicate_computer_scan_button)
         self.duplicate_cancel_button = QtWidgets.QPushButton('Avbryt skanning')
         self.duplicate_cancel_button.setEnabled(False)
         self.duplicate_cancel_button.clicked.connect(self.cancel_duplicate_scan)
@@ -3772,27 +4220,79 @@ class Window(QtWidgets.QMainWindow):
         self.duplicate_log.setMaximumHeight(90)
         layout.addWidget(self.duplicate_log)
         self.duplicate_groups = []
+        self.duplicate_scan_roots = []
+        self.duplicate_scan_media_only = False
 
-    def start_duplicate_scan(self):
-        if not self.duplicate_source.text().strip():
-            self.show_message('warning', 'Ogiltig mapp', 'Välj en giltig mapp att skanna.')
+    def available_duplicate_scan_roots(self):
+        if sys.platform == 'win32':
+            roots = []
+            try:
+                drive_mask = __import__('ctypes').windll.kernel32.GetLogicalDrives()
+            except (AttributeError, OSError):
+                drive_mask = 0
+            for index, letter in enumerate('ABCDEFGHIJKLMNOPQRSTUVWXYZ'):
+                if drive_mask & (1 << index):
+                    candidate = Path(f'{letter}:\\')
+                    if candidate.is_dir():
+                        roots.append(candidate)
+            return roots
+        root = Path('/')
+        roots = [root] if root.is_dir() else [Path.home()]
+        if sys.platform.startswith('linux'):
+            for mount_root in (Path('/mnt'), Path('/media'), Path('/run/media')):
+                if mount_root.is_dir():
+                    roots.append(mount_root)
+        return list(dict.fromkeys(roots))
+
+    def scan_computer_duplicates(self):
+        roots = self.available_duplicate_scan_roots()
+        if not roots:
+            self.show_message('warning', 'Dubblettfinnare', self.translated('Hittade inga tillgängliga diskar att skanna.'))
             return
-        source = Path(self.duplicate_source.text()).expanduser().resolve()
-        if not source.is_dir():
-            self.show_message('warning', 'Ogiltig mapp', 'Välj en giltig mapp att skanna.')
+        prompt = self.translated('Skanna alla tillgängliga diskar efter bild- och videofiler? Stora diskar kan ta lång tid. Skanningen läser filer men ändrar ingenting.')
+        prompt += '\n\n' + self.translated('Tillgängliga rötter: {roots}').format(roots=', '.join(map(str, roots)))
+        if QtWidgets.QMessageBox.question(
+            self, self.translated('Skanna hela datorn'), prompt,
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No,
+        ) != QtWidgets.QMessageBox.StandardButton.Yes:
             return
+        self.start_duplicate_scan(roots=roots, media_only=True)
+
+    def start_duplicate_scan(self, roots=None, media_only=False):
         if getattr(self, 'duplicate_scan_worker', None) and self.duplicate_scan_worker.isRunning():
             return
+        if roots is None:
+            if not self.duplicate_source.text().strip():
+                self.show_message('warning', 'Ogiltig mapp', 'Välj en giltig mapp att skanna.')
+                return
+            scan_roots = [Path(self.duplicate_source.text()).expanduser().resolve()]
+        else:
+            scan_roots = [Path(root).expanduser().resolve() for root in roots]
+        scan_roots = list(dict.fromkeys(scan_roots))
+        if not scan_roots or any(not root.is_dir() for root in scan_roots):
+            self.show_message('warning', 'Ogiltig mapp', 'Välj en giltig mapp att skanna.')
+            return
+        self.duplicate_scan_roots = scan_roots
+        self.duplicate_scan_media_only = bool(media_only)
+        if not media_only and len(scan_roots) == 1:
+            self.ui_settings.setValue('duplicateSourceFolder', str(scan_roots[0]))
         self.duplicate_groups = []
         self.duplicate_table.setRowCount(0)
         self.duplicate_compare_button.setEnabled(False)
         self.duplicate_move_button.setEnabled(False)
         self.duplicate_scan_button.setEnabled(False)
+        self.duplicate_computer_scan_button.setEnabled(False)
         self.duplicate_cancel_button.setEnabled(True)
         self.duplicate_progress.setValue(0)
         self.duplicate_status.setText(self.translated('Skannar filer…'))
-        self.duplicate_log.appendPlainText(f'Skannar {source}')
-        self.duplicate_scan_worker = DuplicateScanWorker(source, self.duplicate_recursive.isChecked(), self.duplicate_threshold.value())
+        label = ', '.join(map(str, scan_roots))
+        self.duplicate_log.appendPlainText(f'{self.translated("Skannar filer…")} {label}')
+        worker_source = scan_roots if len(scan_roots) > 1 else scan_roots[0]
+        self.duplicate_scan_worker = DuplicateScanWorker(
+            worker_source, self.duplicate_recursive.isChecked(), self.duplicate_threshold.value(),
+            media_only=media_only,
+        )
         self.duplicate_scan_worker.message.connect(self.append_duplicate_message)
         self.duplicate_scan_worker.message.connect(self.record)
         self.duplicate_scan_worker.progress.connect(lambda done, total: (self.duplicate_progress.setMaximum(total), self.duplicate_progress.setValue(done)))
@@ -3807,6 +4307,7 @@ class Window(QtWidgets.QMainWindow):
 
     def duplicate_scan_finished(self, groups, cancelled):
         self.duplicate_scan_button.setEnabled(True)
+        self.duplicate_computer_scan_button.setEnabled(True)
         self.duplicate_cancel_button.setEnabled(False)
         self.duplicate_table.setRowCount(0)
         if cancelled:
@@ -3969,12 +4470,13 @@ class Window(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
                 QtWidgets.QMessageBox.StandardButton.No) != QtWidgets.QMessageBox.StandardButton.Yes:
             return
-        source = Path(self.duplicate_source.text()).expanduser().resolve()
+        source_roots = self.duplicate_scan_roots or [Path(self.duplicate_source.text()).expanduser().resolve()]
         self.duplicate_move_button.setEnabled(False)
         self.duplicate_scan_button.setEnabled(False)
+        self.duplicate_computer_scan_button.setEnabled(False)
         self.duplicate_cancel_move_button.setEnabled(True)
         self.duplicate_progress.setValue(0)
-        self.duplicate_move_worker = DuplicateQuarantineWorker(source, remove, target, remove_hashes)
+        self.duplicate_move_worker = DuplicateQuarantineWorker(source_roots, remove, target, remove_hashes)
         self.duplicate_move_worker.message.connect(self.append_duplicate_message)
         self.duplicate_move_worker.message.connect(self.record)
         self.duplicate_move_worker.progress.connect(lambda done, total: (self.duplicate_progress.setMaximum(total), self.duplicate_progress.setValue(done)))
@@ -3990,12 +4492,15 @@ class Window(QtWidgets.QMainWindow):
     def duplicate_move_finished(self, moved, failed):
         self.duplicate_cancel_move_button.setEnabled(False)
         self.duplicate_scan_button.setEnabled(True)
+        self.duplicate_computer_scan_button.setEnabled(True)
         self.duplicate_move_button.setEnabled(False)
         text = self.translated('Flytt till karantän klar: {moved} flyttade, {failed} fel.').format(moved=moved, failed=failed)
         self.duplicate_status.setText(text)
         self.duplicate_log.appendPlainText(text)
         if moved:
-            QtCore.QTimer.singleShot(150, self.start_duplicate_scan)
+            roots = list(self.duplicate_scan_roots)
+            media_only = self.duplicate_scan_media_only
+            QtCore.QTimer.singleShot(150, lambda: self.start_duplicate_scan(roots=roots, media_only=media_only))
 
     def apply_image_preset(self, _index=None):
         preset = self.image_preset_combo.currentData()
@@ -5323,6 +5828,112 @@ class Window(QtWidgets.QMainWindow):
             self.autostart_action.blockSignals(False)
             self.show_message('warning', 'Autostart kunde inte ändras', str(exc))
 
+    def change_windows_context_menu(self, enabled):
+        if sys.platform != 'win32':
+            return
+        try:
+            set_windows_context_menu(enabled)
+        except Exception as exc:
+            LOGGER.exception('Windows Explorer context-menu integration could not be changed')
+            self.windows_context_action.blockSignals(True)
+            self.windows_context_action.setChecked(not enabled)
+            self.windows_context_action.blockSignals(False)
+            self.show_message('warning', 'Windows Explorer', str(exc))
+
+    def change_image_viewer_integration(self, enabled):
+        try:
+            set_image_viewer_integration(enabled)
+            if enabled:
+                self.show_message('information', 'MediaForge', self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
+        except Exception as exc:
+            LOGGER.exception('Image viewer integration could not be changed')
+            self.viewer_integration_action.blockSignals(True)
+            self.viewer_integration_action.setChecked(not enabled)
+            self.viewer_integration_action.blockSignals(False)
+            self.show_message('warning', 'MediaForge', str(exc))
+
+    def change_keep_awake(self, enabled):
+        self.ui_settings.setValue('keepAwakeDuringJobs', bool(enabled))
+        self.ui_settings.sync()
+        if enabled:
+            self.keep_awake_timer.start()
+            self.update_keep_awake_state()
+        else:
+            self.keep_awake_timer.stop()
+            self.set_system_awake(False)
+
+    def _has_active_job_worker(self):
+        for name, worker in vars(self).items():
+            if name == 'git_update_worker' or not isinstance(worker, QtCore.QThread):
+                continue
+            try:
+                if worker.isRunning():
+                    return True
+            except RuntimeError:
+                continue
+        return False
+
+    def update_keep_awake_state(self):
+        enabled = bool(getattr(self, 'keep_awake_action', None) and self.keep_awake_action.isChecked())
+        self.set_system_awake(enabled and self._has_active_job_worker())
+
+    def _stop_keep_awake_process(self):
+        process = self.keep_awake_process
+        self.keep_awake_process = None
+        if process is None or process.poll() is not None:
+            return
+        try:
+            process.terminate()
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=2)
+        except OSError:
+            LOGGER.warning('Could not stop the keep-awake helper process', exc_info=True)
+
+    def set_system_awake(self, active):
+        active = bool(active)
+        if active == self.keep_awake_active:
+            return
+        if sys.platform == 'win32':
+            try:
+                import ctypes
+                continuous = 0x80000000
+                system_required = 0x00000001
+                state = continuous | system_required if active else continuous
+                if not ctypes.windll.kernel32.SetThreadExecutionState(state):
+                    raise ctypes.WinError()
+            except Exception:
+                LOGGER.exception('Could not update Windows sleep-inhibition state')
+                return
+        elif sys.platform == 'darwin':
+            if active:
+                executable = shutil.which('caffeinate')
+                if not executable:
+                    LOGGER.warning('caffeinate is unavailable; cannot keep macOS awake')
+                    return
+                self.keep_awake_process = subprocess.Popen([executable, '-is'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif self.keep_awake_process is not None:
+                self._stop_keep_awake_process()
+        elif sys.platform.startswith('linux'):
+            if active:
+                executable = shutil.which('systemd-inhibit')
+                sleep = shutil.which('sleep')
+                if not executable or not sleep:
+                    LOGGER.warning('systemd-inhibit is unavailable; cannot keep Linux awake')
+                    return
+                self.keep_awake_process = subprocess.Popen(
+                    [executable, '--what=sleep', '--who=MediaForge', '--why=Media processing is active', '--mode=block', sleep, 'infinity'],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            elif self.keep_awake_process is not None:
+                self._stop_keep_awake_process()
+        else:
+            LOGGER.warning('Keep-awake protection is unsupported on %s', sys.platform)
+            return
+        self.keep_awake_active = active
+        LOGGER.info('Keep-awake protection %s', 'active' if active else 'released')
+
     def launch_maintenance_launcher(self, windows_flags, unix_flags):
         if sys.platform == 'win32':
             launcher = APP_DIR / 'Starta_Fotoverktyg.ps1'
@@ -5955,7 +6566,7 @@ class Window(QtWidgets.QMainWindow):
         self.library_grid.verticalScrollBar().valueChanged.connect(self.schedule_library_thumbnail_batch)
         self.library_grid.horizontalScrollBar().valueChanged.connect(self.schedule_library_thumbnail_batch)
         layout.addWidget(splitter, 1)
-        self.library_status = QtWidgets.QLabel('Bildformat som stöds: JPEG, PNG, WEBP, TIFF, BMP, GIF och (med pillow-heif) HEIC/HEIF/AVIF.')
+        self.library_status = QtWidgets.QLabel('Bildformat som stöds: JPEG, PNG, WEBP, TIFF, BMP, GIF, SVG samt HEIC/HEIF/AVIF med pillow-heif.')
         self.library_status.setWordWrap(True)
         layout.addWidget(self.library_status)
         self.library_previous_button.setEnabled(False)
@@ -5969,6 +6580,28 @@ class Window(QtWidgets.QMainWindow):
         if folder:
             self.library_source.setText(folder)
             self.scan_image_library()
+
+    def open_external_path(self, path, activate=True):
+        candidate = Path(path).expanduser()
+        if not candidate.exists() or not (candidate.is_dir() or candidate.suffix.lower() in ImageLibraryScanWorker.IMAGE_EXTENSIONS):
+            if activate:
+                self.show_from_system_tray()
+            return False
+        candidate = candidate.resolve()
+        photo_mode_index = self.mode_combo.findData('photo')
+        if photo_mode_index >= 0:
+            self.mode_combo.setCurrentIndex(photo_mode_index)
+        if candidate.is_dir():
+            self.library_source.setText(str(candidate))
+            self.library_pending_selection = None
+        else:
+            self.library_source.setText(str(candidate.parent))
+            self.library_pending_selection = candidate
+        self.tabs.setCurrentWidget(self.library_tab)
+        self.scan_image_library()
+        if activate:
+            self.show_from_system_tray()
+        return True
 
     def scan_image_library(self):
         raw_folder = self.library_source.text().strip()
@@ -6174,7 +6807,7 @@ class Window(QtWidgets.QMainWindow):
         tab.setProperty('mediaMode', 'photo')
         self.tabs.addTab(tab, 'Fotoredigerare')
         layout = QtWidgets.QVBoxLayout(tab)
-        layout.addWidget(QtWidgets.QLabel('Öppna ett foto. Dra över förhandsvisningen för att markera ett område att klippa ut.'))
+        layout.addWidget(QtWidgets.QLabel('Öppna ett foto. Dra över förhandsvisningen för att markera ett område att beskära, korrigera röda ögon eller sudda ut.'))
         self.canvas = PhotoCanvas()
         layout.addWidget(self.canvas, 1)
         row = QtWidgets.QHBoxLayout()
@@ -6183,13 +6816,35 @@ class Window(QtWidgets.QMainWindow):
             button = QtWidgets.QPushButton(text)
             button.clicked.connect(action)
             row.addWidget(button)
-        layout.addWidget(QtWidgets.QLabel('Spara kopia använder förstoring, skärpa, färg och klarhet från fliken Bildförbättring. Originalet påverkas inte.'))
+        correction_row = QtWidgets.QHBoxLayout()
+        self.editor_angle_label = QtWidgets.QLabel('Räta upp (grader)')
+        correction_row.addWidget(self.editor_angle_label)
+        self.editor_angle = QtWidgets.QDoubleSpinBox()
+        self.editor_angle.setRange(-15.0, 15.0)
+        self.editor_angle.setDecimals(1)
+        self.editor_angle.setSingleStep(0.1)
+        self.editor_angle.setSuffix('°')
+        self.editor_angle.setToolTip('Positiva värden roterar moturs; negativa värden roterar medurs.')
+        self.editor_angle.setAccessibleDescription(self.editor_angle.toolTip())
+        correction_row.addWidget(self.editor_angle)
+        straighten_button = QtWidgets.QPushButton('Räta upp')
+        straighten_button.clicked.connect(self.straighten_editor)
+        correction_row.addWidget(straighten_button)
+        red_eye_button = QtWidgets.QPushButton('Ta bort röda ögon i markering')
+        red_eye_button.clicked.connect(self.red_eye_editor)
+        correction_row.addWidget(red_eye_button)
+        blur_button = QtWidgets.QPushButton('Gör markering suddig (valfritt)')
+        blur_button.clicked.connect(self.blur_editor_selection)
+        correction_row.addWidget(blur_button)
+        layout.addLayout(correction_row)
+        layout.addWidget(QtWidgets.QLabel('Röda ögon och suddning kräver en markerad del av bilden. Spara kopia använder inställningarna från Bildförbättring; originalet påverkas inte.'))
 
     def show_editor_image(self):
         self.canvas.set_image(self.editor_image)
 
     def open_editor(self):
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, self.translated('Öppna foto'), '', 'Bilder (*.jpg *.jpeg *.png *.webp *.tif *.tiff *.bmp)')
+        register_modern_formats()
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, self.translated('Öppna foto'), '', 'Bilder (*.jpg *.jpeg *.png *.webp *.tif *.tiff *.bmp *.gif *.heic *.heif *.avif)')
         if not path:
             return
         try:
@@ -6210,6 +6865,63 @@ class Window(QtWidgets.QMainWindow):
         self.editor_image = self.editor_image.rotate(angle, expand=True)
         LOGGER.info('Foto roterat %s grader: %s', angle, self.editor_source)
         self.show_editor_image()
+
+    def straighten_editor(self):
+        if self.editor_image is None:
+            self.show_message('information', 'Välj foto', 'Öppna ett foto först.')
+            return
+        angle = self.editor_angle.value()
+        if abs(angle) < 0.05:
+            self.show_message('information', 'Räta upp', 'Ange en vinkel som inte är noll.')
+            return
+        try:
+            self.editor_history.append(self.editor_image.copy())
+            self.editor_image = straighten_photo(self.editor_image, angle)
+            self.show_editor_image()
+            self.append_main_log(self.translated('Horisonten justerad {angle}°:').format(angle=f'{angle:g}') + f' {self.editor_source}')
+            LOGGER.info('Horizon correction %.1f degrees: %s', angle, self.editor_source)
+        except Exception as exc:
+            if self.editor_history:
+                self.editor_history.pop()
+            self.show_message('warning', 'Fel', str(exc))
+
+    def red_eye_editor(self):
+        if self.editor_image is None:
+            self.show_message('information', 'Välj foto', 'Öppna ett foto först.')
+            return
+        box = self.canvas.crop_box()
+        if box is None:
+            self.show_message('information', 'Röda ögon', self.translated('Markera ett litet område runt de röda ögonen.'))
+            return
+        try:
+            self.editor_history.append(self.editor_image.copy())
+            self.editor_image, corrected = remove_red_eye_region(self.editor_image, box)
+            self.show_editor_image()
+            self.append_main_log(self.translated('Röda ögon korrigerade:') + f' {corrected} px · {self.editor_source}')
+            LOGGER.info('Red-eye correction changed %d pixels in %s', corrected, self.editor_source)
+        except Exception as exc:
+            if self.editor_history:
+                self.editor_history.pop()
+            self.show_message('information', 'Röda ögon', str(exc))
+
+    def blur_editor_selection(self):
+        if self.editor_image is None:
+            self.show_message('information', 'Välj foto', 'Öppna ett foto först.')
+            return
+        box = self.canvas.crop_box()
+        if box is None:
+            self.show_message('information', 'Suddning', self.translated('Markera området som ska suddas ut.'))
+            return
+        try:
+            self.editor_history.append(self.editor_image.copy())
+            self.editor_image = blur_photo_region(self.editor_image, box)
+            self.show_editor_image()
+            self.append_main_log(self.translated('Område suddat ut:') + f' {box} · {self.editor_source}')
+            LOGGER.info('Blurred selected region %s in %s', box, self.editor_source)
+        except Exception as exc:
+            if self.editor_history:
+                self.editor_history.pop()
+            self.show_message('warning', 'Fel', str(exc))
 
     def crop_editor(self):
         if self.editor_image is None:
@@ -6295,6 +7007,132 @@ class Window(QtWidgets.QMainWindow):
         if hasattr(self, 'theme_action'):
             self.theme_action.setChecked(self.dark)
 
+    def toggle_folder_watch(self, enabled):
+        if not enabled:
+            self.folder_watch_poll.stop()
+            self.folder_watch_debounce.stop()
+            watched = self.folder_watch.directories()
+            if watched:
+                self.folder_watch.removePaths(watched)
+            self.watched_folder_root = None
+            self.watched_folder_snapshot.clear()
+            self.watched_folder_pending.clear()
+            self.append_main_log(self.translated('Bevakningen av källmappen är avstängd.'))
+            return
+        source_text = self.source.text().strip()
+        root = Path(source_text).expanduser().resolve() if source_text else None
+        if root is None or not root.is_dir():
+            self.watch_folder_checkbox.blockSignals(True)
+            self.watch_folder_checkbox.setChecked(False)
+            self.watch_folder_checkbox.blockSignals(False)
+            self.show_message('warning', 'Ogiltig mapp', self.translated('Välj en giltig källmapp innan du aktiverar bevakning.'))
+            return
+        self.watched_folder_root = root
+        self.watched_folder_snapshot = self.snapshot_watched_folder(root)
+        self.watched_folder_pending.clear()
+        self.refresh_watched_directories()
+        self.folder_watch_poll.start()
+        self.append_main_log(self.translated('MediaForge bevakar källmappen. Nya filer bearbetas aldrig utan bekräftelse.') + f' {root}')
+        LOGGER.info('Folder watch enabled for %s', root)
+
+    def snapshot_watched_folder(self, root):
+        paths = root.rglob('*') if self.recursive.isChecked() else root.iterdir()
+        snapshot = {}
+        try:
+            archive = Path(self.archive.text()).expanduser().resolve() if self.archive.text().strip() else None
+            for path in paths:
+                try:
+                    if not path.is_file() or path.suffix.lower() not in MEDIA:
+                        continue
+                    relative = path.relative_to(root)
+                    if any(part.startswith('.') for part in relative.parts):
+                        continue
+                    if archive is not None and archive in (path, *path.parents):
+                        continue
+                    if self.output_mode.currentData() == 'same_folder' and path.stem.lower().endswith('_rensad'):
+                        continue
+                    stat_result = path.stat()
+                    snapshot[path] = (stat_result.st_size, stat_result.st_mtime_ns)
+                except OSError:
+                    continue
+        except OSError as exc:
+            LOGGER.warning('Could not scan watched folder %s: %s', root, exc)
+        return snapshot
+
+    def refresh_watched_directories(self):
+        root = self.watched_folder_root
+        if root is None or not root.is_dir():
+            return
+        directories = [root]
+        if self.recursive.isChecked():
+            try:
+                directories.extend(path for path in root.rglob('*') if path.is_dir() and not any(part.startswith('.') for part in path.relative_to(root).parts))
+            except OSError as exc:
+                LOGGER.warning('Could not enumerate watched subfolders: %s', exc)
+        desired = {str(path) for path in directories if path.is_dir()}
+        existing = set(self.folder_watch.directories())
+        stale = list(existing - desired)
+        if stale:
+            self.folder_watch.removePaths(stale)
+        missing = sorted(desired - existing)
+        failed = self.folder_watch.addPaths(missing) if missing else []
+        if failed:
+            LOGGER.warning('Could not watch %d directories; periodic scanning remains enabled', len(failed))
+
+    def schedule_folder_watch_scan(self, *_args):
+        if self.watch_folder_checkbox.isChecked():
+            self.folder_watch_debounce.start(700)
+
+    def scan_watched_folder(self):
+        if not self.watch_folder_checkbox.isChecked() or self.watched_folder_root is None:
+            return
+        if self.worker and self.worker.isRunning():
+            self.folder_watch_debounce.start(2000)
+            return
+        try:
+            current_root = Path(self.source.text()).expanduser().resolve()
+        except OSError:
+            current_root = None
+        if current_root != self.watched_folder_root:
+            self.watch_folder_checkbox.setChecked(False)
+            self.show_message('information', 'Mappbevakning', self.translated('Bevakningen av källmappen är avstängd.'))
+            return
+        if not self.watched_folder_root.is_dir():
+            self.watch_folder_checkbox.setChecked(False)
+            self.show_message('warning', 'Mappbevakning', 'Den bevakade källmappen finns inte längre.')
+            return
+        self.refresh_watched_directories()
+        current = self.snapshot_watched_folder(self.watched_folder_root)
+        new_files = []
+        for path, signature in current.items():
+            if path in self.watched_folder_snapshot:
+                self.watched_folder_snapshot[path] = signature
+                self.watched_folder_pending.pop(path, None)
+            elif self.watched_folder_pending.get(path) == signature:
+                new_files.append(path)
+                self.watched_folder_snapshot[path] = signature
+                self.watched_folder_pending.pop(path, None)
+            else:
+                self.watched_folder_pending[path] = signature
+        for path in list(self.watched_folder_snapshot):
+            if path not in current:
+                self.watched_folder_snapshot.pop(path, None)
+                self.watched_folder_pending.pop(path, None)
+        for path in list(self.watched_folder_pending):
+            if path not in current:
+                self.watched_folder_pending.pop(path, None)
+        if self.watched_folder_pending:
+            self.folder_watch_debounce.start(1500)
+        if not new_files:
+            return
+        prompt = self.translated('Hittade {count} nya mediefiler i den bevakade mappen. Vill du bearbeta bara dessa filer nu?').format(count=len(new_files))
+        if QtWidgets.QMessageBox.question(
+            self, self.translated('Nya filer hittades'), prompt,
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No,
+        ) == QtWidgets.QMessageBox.StandardButton.Yes:
+            self.start(only_files=new_files)
+
     def browse(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(self, self.translated('Välj källmapp'))
         if path:
@@ -6318,6 +7156,43 @@ class Window(QtWidgets.QMainWindow):
             entries.append(f'{name}: {state}')
         return '\n'.join(entries)
 
+    def show_guided_tutorial(self):
+        wizard = QtWidgets.QWizard(self)
+        wizard.setWindowTitle(self.translated('Interaktiv guide…'))
+        wizard.setWindowIcon(self.brand)
+        wizard.setMinimumWidth(520)
+        wizard.setWizardStyle(QtWidgets.QWizard.WizardStyle.ModernStyle)
+        steps = [
+            ('Välkommen till MediaForge', 'Guiden visar hur du hittar ett verktyg, väljer material och följer ett jobb. Den startar inget jobb och ändrar inga filer.', None),
+            ('Välj arbetsläge och verktyg', 'Välj Foto, Video eller Alla högst upp. Flikar kan visas och döljas från Visa → Flikar.', 'tool'),
+            ('Välj indata och utdata', 'Välj en fil eller mapp och granska målplatsen. Kontrollera att det finns tillräckligt med utrymme innan ett stort jobb.', None),
+            ('Granska inställningar och starta', 'Kontrollera format, kvalitet och metadataalternativ. Kör ett litet jobb först om du är osäker på resultatet.', None),
+            ('Följ resultatet och kontrollera loggen', 'Följ förloppet och läs aktivitetsloggen. Fel visar ofta ett förslag på nästa steg; avbrutna original ska förbli orörda.', None),
+        ]
+        for index, (title, body, special) in enumerate(steps):
+            page = QtWidgets.QWizardPage()
+            page.setTitle(self.translated(title))
+            page.setSubTitle(self.translated('Guide steg {current} av {total}').format(current=index + 1, total=len(steps)))
+            page_layout = QtWidgets.QVBoxLayout(page)
+            description = QtWidgets.QLabel(self.translated(body))
+            description.setWordWrap(True)
+            page_layout.addWidget(description)
+            if special == 'tool':
+                tool_row = QtWidgets.QHBoxLayout()
+                tool_combo = QtWidgets.QComboBox()
+                for tab_index in range(self.tabs.count()):
+                    if self.tabs.isTabVisible(tab_index):
+                        tool_combo.addItem(self.tabs.tabText(tab_index), tab_index)
+                tool_row.addWidget(tool_combo, 1)
+                open_tool = QtWidgets.QPushButton(self.translated('Öppna valt verktyg'))
+                open_tool.clicked.connect(lambda _checked=False, combo=tool_combo: self.tabs.setCurrentIndex(combo.currentData()))
+                tool_row.addWidget(open_tool)
+                page_layout.addLayout(tool_row)
+            page_layout.addStretch()
+            wizard.addPage(page)
+        wizard.setButtonText(QtWidgets.QWizard.WizardButton.FinishButton, self.translated('Stäng guiden'))
+        wizard.exec()
+
     def open_support_page(self):
         dialog = QtWidgets.QDialog(self)
         dialog.setWindowTitle(self.translated('Hjälp och support'))
@@ -6327,8 +7202,13 @@ class Window(QtWidgets.QMainWindow):
         heading = QtWidgets.QLabel(self.translated('Support för MediaForge'))
         heading.setStyleSheet('font-size:18px;font-weight:700')
         layout.addWidget(heading)
+        help_search = QtWidgets.QLineEdit()
+        help_search.setPlaceholderText(self.translated('Sök i hjälpen…'))
+        help_search.setAccessibleName(self.translated('Sök i hjälpen…'))
+        layout.addWidget(help_search)
         quick_help = QtWidgets.QGroupBox(self.translated('Snabbhjälp'))
         help_layout = QtWidgets.QVBoxLayout(quick_help)
+        help_labels = []
         for title, text in (
             ('Kom igång', 'MediaForge behöver systemets Python 3.10 eller senare. Appen installerar inte en egen Python-runtime.'),
             ('Krav och verktyg', 'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.'),
@@ -6338,7 +7218,21 @@ class Window(QtWidgets.QMainWindow):
             label = QtWidgets.QLabel(f'<b>{self.translated(title)}</b><br>{self.translated(text)}')
             label.setWordWrap(True)
             label.setTextFormat(QtCore.Qt.TextFormat.RichText)
+            label.setProperty('_mediaforgeHelpSearchText', f'{title} {text} {self.translated(title)} {self.translated(text)}'.casefold())
             help_layout.addWidget(label)
+            help_labels.append(label)
+        no_help_match = QtWidgets.QLabel(self.translated('Ingen hjälptext matchar sökningen.'))
+        no_help_match.hide()
+        help_layout.addWidget(no_help_match)
+        def filter_help(query):
+            query = query.strip().casefold()
+            visible_count = 0
+            for label in help_labels:
+                matches = not query or query in label.property('_mediaforgeHelpSearchText')
+                label.setVisible(matches)
+                visible_count += bool(matches)
+            no_help_match.setVisible(bool(query) and not visible_count)
+        help_search.textChanged.connect(filter_help)
         layout.addWidget(quick_help)
         diagnostics_group = QtWidgets.QGroupBox(self.translated('Kopiera diagnostik för support'))
         diagnostics_layout = QtWidgets.QVBoxLayout(diagnostics_group)
@@ -6351,6 +7245,9 @@ class Window(QtWidgets.QMainWindow):
         diagnostics_layout.addWidget(diagnostic_view)
         layout.addWidget(diagnostics_group)
         buttons = QtWidgets.QHBoxLayout()
+        tutorial = QtWidgets.QPushButton(self.translated('Interaktiv guide…'))
+        tutorial.clicked.connect(self.show_guided_tutorial)
+        buttons.addWidget(tutorial)
         open_log = QtWidgets.QPushButton(self.translated('Öppna fellogg'))
         open_log.clicked.connect(self.open_error_log)
         buttons.addWidget(open_log)
@@ -6429,6 +7326,9 @@ class Window(QtWidgets.QMainWindow):
             hint = 'Alla stödda bild- och videofiler i källmappen bearbetas. Originalen lämnas orörda; kopior sparas i arkivmappen.'
         self.overwrite.setEnabled(mode != 'overwrite')
         self.files_group.setTitle(self.translated(title))
+        self.folder_pipeline.setEnabled(mode == 'archive')
+        if mode == 'archive' and self.folder_pipeline.currentData() == 'media_type':
+            hint += '\n' + self.translated('Arbetsflöde: bearbeta och sortera resultaten i Bilder/Videor.')
         self.output_mode_hint.setText(self.translated(hint))
         self.enhance_box.setToolTip(self.translated('Bildförbättring används bara när resultatet sparas i arkivmappen.'))
         if hasattr(self, 'go'):
@@ -6599,13 +7499,19 @@ class Window(QtWidgets.QMainWindow):
         self.batch_eta_status = None
         self.render_batch_estimate()
 
-    def start(self):
+    def start(self, only_files=None):
         if self.worker and self.worker.isRunning():
             return
         plan = self.collect_batch_plan()
         if plan is None:
             return
         root, archive, mode, output_location, items, skipped_symlinks = plan
+        if only_files is not None:
+            selected = {Path(path).expanduser().resolve() for path in only_files}
+            items = [path for path in items if path.resolve() in selected]
+            if not items:
+                self.show_message('information', 'Inga nya filer', 'Inga av de nya filerna kan bearbetas med de valda inställningarna.')
+                return
         if skipped_symlinks:
             LOGGER.warning('Överskrivning hoppade över %d symboliska länkar', skipped_symlinks)
         self.update_batch_estimate(items, output_location, mode)
@@ -6623,7 +7529,7 @@ class Window(QtWidgets.QMainWindow):
         if self.sign.currentIndex():
             delta = -delta
         output_location = archive if mode == 'archive' else root
-        settings = dict(root=root, archive=output_location, output_mode=mode, structure=self.structure.isChecked(), overwrite=self.overwrite.isChecked(), enhance=self.enhance_box.isChecked() and mode == 'archive', factor=self.factor.currentIndex()+1, sharp=self.sliders['Skärpa'].value(), color=self.sliders['Färgstyrka'].value(), clarity=self.sliders['Klarhet/kontrast'].value(), keep_exif=self.keep_exif.isChecked(), offset=self.offset.isChecked(), delta=delta, date=self.date_edit.dateTime().toPyDateTime(), metadata=self.meta.isChecked(), filesystem=self.fs.isChecked(), strip=self.strip.isChecked(), remove_all=self.remove_all.isChecked())
+        settings = dict(root=root, archive=output_location, output_mode=mode, folder_pipeline=self.folder_pipeline.currentData(), structure=self.structure.isChecked(), overwrite=self.overwrite.isChecked(), enhance=self.enhance_box.isChecked() and mode == 'archive', factor=self.factor.currentIndex()+1, sharp=self.sliders['Skärpa'].value(), color=self.sliders['Färgstyrka'].value(), clarity=self.sliders['Klarhet/kontrast'].value(), keep_exif=self.keep_exif.isChecked(), offset=self.offset.isChecked(), delta=delta, date=self.date_edit.dateTime().toPyDateTime(), metadata=self.meta.isChecked(), filesystem=self.fs.isChecked(), strip=self.strip.isChecked(), remove_all=self.remove_all.isChecked())
         self.worker = Worker(items, settings)
         self.worker.message.connect(self.append_batch_message)
         self.worker.message.connect(self.record)
@@ -6690,7 +7596,7 @@ class Window(QtWidgets.QMainWindow):
         for key, label in slider_keys.items():
             if label in self.sliders:
                 self.sliders[label].setValue(int(self.ui_settings.value(key, self.sliders[label].value())))
-        for key, attribute in {'scaleFactor': 'factor', 'videoSizeLimit': 'video_size', 'audioFormat': 'audio_format', 'processingOutputMode': 'output_mode', 'colorSourceProfile': 'color_source_profile', 'colorTargetProfile': 'color_target_profile', 'stabilizeStrength': 'stabilize_strength', 'webQuality': 'web_quality', 'adQuality': 'ad_quality', 'jpegQuality': 'jpeg_quality', 'videoCrf': 'video_crf'}.items():
+        for key, attribute in {'scaleFactor': 'factor', 'videoSizeLimit': 'video_size', 'audioFormat': 'audio_format', 'processingOutputMode': 'output_mode', 'folderPipeline': 'folder_pipeline', 'colorSourceProfile': 'color_source_profile', 'colorTargetProfile': 'color_target_profile', 'stabilizeStrength': 'stabilize_strength', 'webQuality': 'web_quality', 'adQuality': 'ad_quality', 'jpegQuality': 'jpeg_quality', 'videoCrf': 'video_crf'}.items():
             widget = getattr(self, attribute, None)
             if widget is not None:
                 value = int(self.ui_settings.value(key, widget.currentIndex() if isinstance(widget, QtWidgets.QComboBox) else widget.value()))
@@ -6755,7 +7661,7 @@ class Window(QtWidgets.QMainWindow):
                 self.ui_settings.setValue(key, widget.isChecked())
         for key, label in {'sharpness': 'Skärpa', 'colorStrength': 'Färgstyrka', 'clarity': 'Klarhet/kontrast'}.items():
             self.ui_settings.setValue(key, self.sliders[label].value())
-        for key, attribute in {'scaleFactor': 'factor', 'videoSizeLimit': 'video_size', 'audioFormat': 'audio_format', 'processingOutputMode': 'output_mode', 'colorSourceProfile': 'color_source_profile', 'colorTargetProfile': 'color_target_profile', 'stabilizeStrength': 'stabilize_strength', 'webQuality': 'web_quality', 'adQuality': 'ad_quality', 'jpegQuality': 'jpeg_quality', 'videoCrf': 'video_crf'}.items():
+        for key, attribute in {'scaleFactor': 'factor', 'videoSizeLimit': 'video_size', 'audioFormat': 'audio_format', 'processingOutputMode': 'output_mode', 'folderPipeline': 'folder_pipeline', 'colorSourceProfile': 'color_source_profile', 'colorTargetProfile': 'color_target_profile', 'stabilizeStrength': 'stabilize_strength', 'webQuality': 'web_quality', 'adQuality': 'ad_quality', 'jpegQuality': 'jpeg_quality', 'videoCrf': 'video_crf'}.items():
             widget = getattr(self, attribute, None)
             if widget is not None:
                 self.ui_settings.setValue(key, widget.currentIndex() if isinstance(widget, QtWidgets.QComboBox) else widget.value())
@@ -6807,6 +7713,15 @@ class Window(QtWidgets.QMainWindow):
             if worker and worker.isRunning():
                 cancel_method()
                 worker.wait()
+        if hasattr(self, 'folder_watch_poll'):
+            self.folder_watch_poll.stop()
+            self.folder_watch_debounce.stop()
+            watched = self.folder_watch.directories()
+            if watched:
+                self.folder_watch.removePaths(watched)
+        if hasattr(self, 'keep_awake_timer'):
+            self.keep_awake_timer.stop()
+        self.set_system_awake(False)
         self.save_preferences()
         LOGGER.info('Applikationen stängs')
         LOGGER.removeHandler(self.qt_log_handler)
@@ -6827,9 +7742,9 @@ class SingleInstanceGuard:
         self.window = None
         self.owns_lock = False
 
-    def acquire(self):
+    def acquire(self, request=b'1'):
         if not self.lock.tryLock(0):
-            if self.activate_existing():
+            if self.activate_existing(request):
                 return False
             # A primary process may hold the lock while it is still initializing.
             # Never start a second GUI just because its local socket is not ready yet.
@@ -6859,12 +7774,12 @@ class SingleInstanceGuard:
         self.server.newConnection.connect(self._accept_connections)
         return True
 
-    def activate_existing(self):
+    def activate_existing(self, request=b'1'):
         for _ in range(20):
             socket = QtNetwork.QLocalSocket()
             socket.connectToServer(self.server_name)
             if socket.waitForConnected(150):
-                socket.write(b'1')
+                socket.write(request or b'1')
                 socket.waitForBytesWritten(500)
                 socket.disconnectFromServer()
                 return True
@@ -6887,7 +7802,19 @@ class SingleInstanceGuard:
 
     def _read_request(self, socket):
         request = bytes(socket.readAll())
-        if request and self.window is not None:
+        if not request or self.window is None:
+            return
+        path = None
+        try:
+            payload = json.loads(request.decode('utf-8'))
+            candidate = payload.get('path') if isinstance(payload, dict) else None
+            if candidate:
+                path = str(Path(candidate).expanduser())
+        except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
+            pass
+        if path:
+            QtCore.QTimer.singleShot(0, lambda current=path: self.window.open_external_path(current, activate=True))
+        else:
             QtCore.QTimer.singleShot(0, self.window.show_from_system_tray)
 
     def release(self):
@@ -6914,9 +7841,15 @@ if __name__ == '__main__':
             LOGGER.warning('Kunde inte ange MediaForge-appens aktivitetsfälts-ID: %s', exc)
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(brand_icon())
+    requested_path = None
+    if len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
+        candidate = Path(sys.argv[1]).expanduser()
+        if candidate.exists() and (candidate.is_dir() or candidate.suffix.lower() in ImageLibraryScanWorker.IMAGE_EXTENSIONS):
+            requested_path = candidate.resolve()
+    request_payload = json.dumps({'path': str(requested_path)}).encode('utf-8') if requested_path else b'1'
     single_instance = SingleInstanceGuard()
     try:
-        if not single_instance.acquire():
+        if not single_instance.acquire(request_payload):
             sys.exit(0)
     except RuntimeError as exc:
         LOGGER.critical('Could not establish single-instance guard: %s', exc)
@@ -6925,22 +7858,8 @@ if __name__ == '__main__':
     window = Window()
     single_instance.set_window(window)
     app.aboutToQuit.connect(single_instance.release)
-    launch_path = None
-    if len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
-        candidate = Path(sys.argv[1]).expanduser()
-        if candidate.exists() and (candidate.is_dir() or candidate.suffix.lower() in ImageLibraryScanWorker.IMAGE_EXTENSIONS):
-            launch_path = candidate.resolve()
-    if launch_path is not None:
-        photo_mode_index = window.mode_combo.findData('photo')
-        if photo_mode_index >= 0:
-            window.mode_combo.setCurrentIndex(photo_mode_index)
-        if launch_path.is_dir():
-            window.library_source.setText(str(launch_path))
-        else:
-            window.library_source.setText(str(launch_path.parent))
-            window.library_pending_selection = launch_path
-        window.tabs.setCurrentWidget(window.library_tab)
-        window.scan_image_library()
+    if requested_path is not None:
+        window.open_external_path(requested_path, activate=False)
     # Set the initial state before entering the event loop, then re-apply it
     # once Qt has created the native window. Some window managers ignore an
     # early minimize request while the window is still being constructed.

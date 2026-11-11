@@ -53,6 +53,7 @@ trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 UPDATE_PACKAGES=0
 UPDATE_SYSTEM_PYTHON=0
 WAIT_FOR_PID=0
+APP_ARGS=()
 while (($#)); do
   case "$1" in
     --update-packages) UPDATE_PACKAGES=1 ;;
@@ -62,7 +63,8 @@ while (($#)); do
       [[ $# -gt 0 ]] || { write_error 'Missing PID after --wait-for-pid'; printf '%s\n' 'Missing PID after --wait-for-pid.' >&2; exit 2; }
       WAIT_FOR_PID="$1"
       ;;
-    *) write_error "Unknown launcher option: $1"; printf 'Unknown option: %s\n' "$1" >&2; exit 2 ;;
+    -* ) write_error "Unknown launcher option: $1"; printf 'Unknown option: %s\n' "$1" >&2; exit 2 ;;
+    *) APP_ARGS+=("$1") ;;
   esac
   shift
 done
@@ -189,9 +191,9 @@ fi
 }
 log "Starting MediaForge with Python $PYTHON_VERSION"
 if command -v nohup >/dev/null 2>&1; then
-  nohup "$PYTHON" "$APP_FILE" "$@" </dev/null >> "$STARTUP_LOG" 2>&1 &
+  nohup "$PYTHON" "$APP_FILE" "${APP_ARGS[@]}" </dev/null >> "$STARTUP_LOG" 2>&1 &
 else
-  "$PYTHON" "$APP_FILE" "$@" </dev/null >> "$STARTUP_LOG" 2>&1 &
+  "$PYTHON" "$APP_FILE" "${APP_ARGS[@]}" </dev/null >> "$STARTUP_LOG" 2>&1 &
 fi
 APP_PID=$!
 if command -v disown >/dev/null 2>&1; then disown "$APP_PID" 2>/dev/null || true; fi
