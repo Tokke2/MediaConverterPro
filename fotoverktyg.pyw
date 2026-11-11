@@ -139,7 +139,44 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Beräknad återstående tid: {duration}': 'Estimated time remaining: {duration}',
  'Jobbet är klart': 'Job complete',
  'Tangentbordsgenvägar': 'Keyboard shortcuts',
- '{modifier}+O väljer källmapp; {modifier}+Shift+O väljer arkivmapp; {modifier}+Enter startar mappjobbet; F1 öppnar hjälp; {modifier}+Q avslutar. Ctrl+Tab och Ctrl+Shift+Tab växlar flik.': '{modifier}+O selects the source folder; {modifier}+Shift+O selects the archive folder; {modifier}+Enter starts the folder job; F1 opens help; {modifier}+Q exits. Ctrl+Tab and Ctrl+Shift+Tab switch tabs.',
+ '{modifier}+O väljer källmapp; {modifier}+Shift+O väljer arkivmapp; {modifier}+Enter startar mappjobbet; F1 öppnar hjälp; {modifier}+Q avslutar. Ctrl+Tab och Ctrl+Shift+Tab växlar flik. {modifier}+1–9 väljer en av de första nio synliga flikarna.': '{modifier}+O selects the source folder; {modifier}+Shift+O selects the archive folder; {modifier}+Enter starts the folder job; F1 opens help; {modifier}+Q exits. Ctrl+Tab and Ctrl+Shift+Tab switch tabs. {modifier}+1–9 selects one of the first nine visible tabs.',
+ 'Välj flik': 'Select tab',
+ 'Flik {index}': 'Tab {index}',
+ 'Snabbinställning:': 'Preset:',
+ 'Manuell (anpassa själv)': 'Manual (custom)',
+ 'Webbpublicering · 1×': 'Web publishing · 1×',
+ 'Sociala medier · 2×': 'Social media · 2×',
+ 'Arkiv · ingen bildförbättring': 'Archive · no image enhancement',
+ 'Välj en bildförinställning och justera sedan inställningarna vid behov.': 'Choose an image preset, then adjust the settings as needed.',
+ 'Webb · mindre fil': 'Web · smaller file',
+ 'Sociala medier · 1080p': 'Social media · 1080p',
+ 'Arkiv · full upplösning': 'Archive · full resolution',
+ 'Välj en videoförinställning och justera sedan inställningarna vid behov.': 'Choose a video preset, then adjust the settings as needed.',
+ 'Förinställning för bildförbättring': 'Image enhancement preset',
+ 'Förinställning för videokonvertering': 'Video conversion preset',
+ 'MediaForge för bearbetning av foto och video': 'MediaForge for photo and video processing',
+ 'Huvudmeny': 'Main menu',
+ 'Arbetsflikar': 'Tool tabs',
+ 'Använd piltangenterna eller Ctrl+Tab för att växla mellan synliga verktygsflikar.': 'Use the arrow keys or Ctrl+Tab to move between visible tool tabs.',
+ 'Flikraden': 'Tab bar',
+ 'Logg': 'Log',
+ 'Mappjobb-logg': 'Folder job log',
+ 'Logg för {tool}': '{tool} log',
+ 'Använd vänster/höger piltangent för att justera värdet.': 'Use the left/right arrow keys to adjust the value.',
+ 'Nästa steg:': 'Next step:',
+ 'Frigör diskutrymme eller välj en annan målmapp med mer ledigt utrymme och försök igen.': 'Free disk space or choose another destination with more available space, then retry.',
+ 'Stäng program som kan ha filen öppen, kontrollera skrivbehörighet och välj vid behov en annan målmapp.': 'Close programs that may have the file open, check write permissions, and choose another destination if needed.',
+ 'Stäng andra tunga program eller bearbeta färre filer åt gången och försök igen.': 'Close other resource-intensive programs or process fewer files at a time, then retry.',
+
+ 'Kontrollera att källfilen fortfarande finns och går att läsa; kör sedan om skanningen eller jobbet.': 'Check that the source file still exists and is readable, then rescan or rerun the job.',
+ 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH; öppna sedan appen igen.': 'Check that FFmpeg/ffprobe is installed and available on PATH, then reopen the app.',
+ 'Kontrollera att filen inte är skadad och att formatet stöds; prova en annan fil eller uppdatera FFmpeg via systemets vanliga metod.': 'Check that the file is not damaged and that its format is supported; try another file or update FFmpeg using your usual system method.',
+ 'Kontrollera internetanslutningen och försök igen; servern kan också begränsa eller tillfälligt neka hämtningen.': 'Check the internet connection and retry; the server may also be limiting or temporarily rejecting the download.',
+ 'Kontrollera att källfilens format stöds och att nödvändigt stöd för HEIC/HEIF/AVIF är tillgängligt.': 'Check that the source format is supported and that HEIC/HEIF/AVIF support is available when needed.',
+ 'Välj en annan målfil eller målmapp, eller slå på ersättning om du avsiktligt vill skriva över en befintlig kopia.': 'Choose another output file or folder, or enable replacement if you intentionally want to overwrite an existing copy.',
+ 'Använd Verktyg → Kontrollera/installera Python-tillägg… och kontrollera felloggen om paketet fortfarande saknas.': 'Use Tools → Check/install Python packages… and review the error log if the package is still missing.',
+ 'Kontrollera källfilen och målmappen. Detaljer finns i Logs/errors.log om felet kvarstår.': 'Check the source file and destination folder. Details are in Logs/errors.log if the error persists.',
+
  'Bildförbättring': 'Photo enhancement',
  'Datum & EXIF': 'Date & EXIF',
  'Bildoptimering': 'Image optimization',
@@ -3166,6 +3203,21 @@ class Window(QtWidgets.QMainWindow):
         self.build_log_tab()
         iv = QtWidgets.QVBoxLayout(image_tab)
         iv.addWidget(QtWidgets.QLabel('Förstora, förbättra färger och skärp foton. Video kopieras utan bildförbättring.'))
+        image_preset_row = QtWidgets.QHBoxLayout()
+        self.image_preset_label = QtWidgets.QLabel('Snabbinställning:')
+        image_preset_row.addWidget(self.image_preset_label)
+        self.image_preset_combo = QtWidgets.QComboBox()
+        self.image_preset_combo.addItem('Manuell (anpassa själv)', 'manual')
+        self.image_preset_combo.addItem('Webbpublicering · 1×', 'web')
+        self.image_preset_combo.addItem('Sociala medier · 2×', 'social')
+        self.image_preset_combo.addItem('Arkiv · ingen bildförbättring', 'archive')
+        self.image_preset_label.setBuddy(self.image_preset_combo)
+        self.image_preset_combo.setToolTip('Välj en bildförinställning och justera sedan inställningarna vid behov.')
+        self.image_preset_combo.setAccessibleDescription('Välj en bildförinställning och justera sedan inställningarna vid behov.')
+        self.image_preset_combo.currentIndexChanged.connect(self.apply_image_preset)
+        image_preset_row.addWidget(self.image_preset_combo)
+        image_preset_row.addStretch()
+        iv.addLayout(image_preset_row)
         self.enhance_box = QtWidgets.QCheckBox('Förbättra bilder (annars kopieras de oförändrade)')
         self.enhance_box.setChecked(True)
         iv.addWidget(self.enhance_box)
@@ -3189,6 +3241,12 @@ class Window(QtWidgets.QMainWindow):
             self.sliders[label] = slider
         self.keep_exif = QtWidgets.QCheckBox('Behåll befintlig EXIF vid export (kan innehålla GPS/programnamn)')
         iv.addWidget(self.keep_exif)
+        self._applying_image_preset = False
+        self.enhance_box.toggled.connect(self.mark_image_preset_manual)
+        self.factor.currentIndexChanged.connect(self.mark_image_preset_manual)
+        self.keep_exif.toggled.connect(self.mark_image_preset_manual)
+        for slider in self.sliders.values():
+            slider.valueChanged.connect(self.mark_image_preset_manual)
         iv.addStretch()
 
         date_tab = QtWidgets.QWidget()
@@ -3343,10 +3401,12 @@ class Window(QtWidgets.QMainWindow):
         self._git_update_restart_pending = False
         self.setup_system_tray()
         self.setup_menu_bar()
+        self.apply_accessibility_labels()
         self.schedule_auto_update_check(initial=True)
         LOGGER.info('Fönstret öppnat; loggfil: %s', LOG_FILE)
 
     def setup_menu_bar(self):
+        self.shortcut_modifier = 'Meta' if sys.platform == 'darwin' else 'Ctrl'
         bar = self.menuBar()
         self.file_menu = bar.addMenu('')
         self.choose_source_action = QtGui.QAction('', self)
@@ -3354,7 +3414,6 @@ class Window(QtWidgets.QMainWindow):
         self.choose_source_action.triggered.connect(self.browse)
         self.file_menu.addAction(self.choose_source_action)
         self.choose_archive_action = QtGui.QAction('', self)
-        self.shortcut_modifier = 'Meta' if sys.platform == 'darwin' else 'Ctrl'
         self.choose_archive_action.setShortcut(QtGui.QKeySequence(f'{self.shortcut_modifier}+Shift+O'))
         self.choose_archive_action.triggered.connect(self.browse_archive)
         self.file_menu.addAction(self.choose_archive_action)
@@ -3384,6 +3443,16 @@ class Window(QtWidgets.QMainWindow):
             self.font_size_group.addAction(action)
             self.font_size_menu.addAction(action)
             self.font_size_actions[size] = action
+        self.tab_navigation_menu = self.view_menu.addMenu('')
+        self.tab_navigation_actions = []
+        for visible_slot in range(1, 10):
+            action = QtGui.QAction(self)
+            action.setShortcut(QtGui.QKeySequence(f'{self.shortcut_modifier}+{visible_slot}'))
+            action.setShortcutContext(QtCore.Qt.ShortcutContext.WindowShortcut)
+            action.triggered.connect(lambda _checked=False, slot=visible_slot - 1: self.activate_visible_tab(slot))
+            self.addAction(action)
+            self.tab_navigation_menu.addAction(action)
+            self.tab_navigation_actions.append(action)
         self.tab_visibility_menu = bar.addMenu('')
 
         self.tools_menu = bar.addMenu('')
@@ -3428,6 +3497,12 @@ class Window(QtWidgets.QMainWindow):
         self.help_menu.addAction(self.error_log_action)
         self.retranslate_menu_bar()
 
+    def activate_visible_tab(self, visible_slot):
+        visible_indices = [index for index in range(self.tabs.count()) if self.tabs.isTabVisible(index)]
+        if 0 <= visible_slot < min(len(visible_indices), len(self.tab_navigation_actions)):
+            self.tabs.setCurrentIndex(visible_indices[visible_slot])
+            self.tabs.setFocus(QtCore.Qt.FocusReason.ShortcutFocusReason)
+
     def retranslate_menu_bar(self):
         self.file_menu.setTitle(self.translated('Fil'))
         self.choose_source_action.setText(self.translated('Välj källmapp…'))
@@ -3442,6 +3517,9 @@ class Window(QtWidgets.QMainWindow):
             key = 'Extra stor' if label == 'Extra stor' else label
             self.font_size_actions[size].setText(self.translated(key))
             self.font_size_actions[size].setChecked(self.ui_font_size == size)
+        self.tab_navigation_menu.setTitle(self.translated('Välj flik'))
+        for index, action in enumerate(self.tab_navigation_actions, 1):
+            action.setText(self.translated('Flik {index}').format(index=index))
         self.tab_visibility_menu.setTitle(self.translated('Flikar'))
         self.tools_menu.setTitle(self.translated('Verktyg'))
         self.deps_action.setText(self.translated('Kontrollera/installera Python-tillägg…'))
@@ -3475,6 +3553,9 @@ class Window(QtWidgets.QMainWindow):
             action.setToolTip(self.translated('Markera för att visa fliken; avmarkera för att dölja den.') if in_mode else self.translated('Fliken visas inte i valt arbetsläge.'))
             action.setData(key)
             action.triggered.connect(lambda checked=False, tab_key=key: self.set_user_tab_visible(tab_key, checked))
+        visible_count = sum(1 for index in range(self.tabs.count()) if self.tabs.isTabVisible(index))
+        for slot, action in enumerate(getattr(self, 'tab_navigation_actions', [])):
+            action.setEnabled(slot < visible_count)
 
     def set_user_tab_visible(self, tab_key, visible):
         if visible:
@@ -3916,6 +3997,64 @@ class Window(QtWidgets.QMainWindow):
         if moved:
             QtCore.QTimer.singleShot(150, self.start_duplicate_scan)
 
+    def apply_image_preset(self, _index=None):
+        preset = self.image_preset_combo.currentData()
+        profiles = {
+            'web': (True, 0, 48, 48, 40, False),
+            'social': (True, 1, 62, 58, 52, False),
+            'archive': (False, 0, 65, 55, 45, True),
+        }
+        profile = profiles.get(preset)
+        if profile is None:
+            return
+        self._applying_image_preset = True
+        try:
+            enhance, scale_index, sharp, color, clarity, keep_exif = profile
+            self.enhance_box.setChecked(enhance)
+            self.factor.setCurrentIndex(scale_index)
+            self.sliders['Skärpa'].setValue(sharp)
+            self.sliders['Färgstyrka'].setValue(color)
+            self.sliders['Klarhet/kontrast'].setValue(clarity)
+            self.keep_exif.setChecked(keep_exif)
+        finally:
+            self._applying_image_preset = False
+        LOGGER.info('Image enhancement preset selected: %s', preset)
+
+    def mark_image_preset_manual(self, *_args):
+        if not getattr(self, '_applying_image_preset', False) and hasattr(self, 'image_preset_combo'):
+            manual_index = self.image_preset_combo.findData('manual')
+            if manual_index >= 0 and self.image_preset_combo.currentIndex() != manual_index:
+                self.image_preset_combo.blockSignals(True)
+                self.image_preset_combo.setCurrentIndex(manual_index)
+                self.image_preset_combo.blockSignals(False)
+
+    def apply_video_preset(self, _index=None):
+        preset = self.video_preset_combo.currentData()
+        profiles = {
+            'web': (2, 26),
+            'social': (1, 22),
+            'archive': (0, 18),
+        }
+        profile = profiles.get(preset)
+        if profile is None:
+            return
+        self._applying_video_preset = True
+        try:
+            size_index, crf = profile
+            self.video_size.setCurrentIndex(size_index)
+            self.video_crf.setValue(crf)
+        finally:
+            self._applying_video_preset = False
+        LOGGER.info('Video conversion preset selected: %s', preset)
+
+    def mark_video_preset_manual(self, *_args):
+        if not getattr(self, '_applying_video_preset', False) and hasattr(self, 'video_preset_combo'):
+            manual_index = self.video_preset_combo.findData('manual')
+            if manual_index >= 0 and self.video_preset_combo.currentIndex() != manual_index:
+                self.video_preset_combo.blockSignals(True)
+                self.video_preset_combo.setCurrentIndex(manual_index)
+                self.video_preset_combo.blockSignals(False)
+
     def build_video_tab(self):
         tab = QtWidgets.QWidget()
         tab.setProperty('mediaMode', 'video')
@@ -3940,6 +4079,21 @@ class Window(QtWidgets.QMainWindow):
         self.video_recursive = QtWidgets.QCheckBox('Ta med undermappar')
         self.video_recursive.setChecked(True)
         layout.addWidget(self.video_recursive)
+        preset_row = QtWidgets.QHBoxLayout()
+        self.video_preset_label = QtWidgets.QLabel('Snabbinställning:')
+        preset_row.addWidget(self.video_preset_label)
+        self.video_preset_combo = QtWidgets.QComboBox()
+        self.video_preset_combo.addItem('Manuell (anpassa själv)', 'manual')
+        self.video_preset_combo.addItem('Webb · mindre fil', 'web')
+        self.video_preset_combo.addItem('Sociala medier · 1080p', 'social')
+        self.video_preset_combo.addItem('Arkiv · full upplösning', 'archive')
+        self.video_preset_label.setBuddy(self.video_preset_combo)
+        self.video_preset_combo.setToolTip('Välj en videoförinställning och justera sedan inställningarna vid behov.')
+        self.video_preset_combo.setAccessibleDescription('Välj en videoförinställning och justera sedan inställningarna vid behov.')
+        self.video_preset_combo.currentIndexChanged.connect(self.apply_video_preset)
+        preset_row.addWidget(self.video_preset_combo)
+        preset_row.addStretch()
+        layout.addLayout(preset_row)
         options = QtWidgets.QHBoxLayout()
         options.addWidget(QtWidgets.QLabel('Högsta upplösning'))
         self.video_size = QtWidgets.QComboBox()
@@ -3949,6 +4103,9 @@ class Window(QtWidgets.QMainWindow):
         self.video_crf = QtWidgets.QSpinBox()
         self.video_crf.setRange(18, 28)
         self.video_crf.setValue(22)
+        self._applying_video_preset = False
+        self.video_size.currentIndexChanged.connect(self.mark_video_preset_manual)
+        self.video_crf.valueChanged.connect(self.mark_video_preset_manual)
         options.addWidget(self.video_crf)
         layout.addLayout(options)
         layout.addWidget(QtWidgets.QLabel('Kräver FFmpeg i PATH. Kodning använder H.264/AAC och kan minska filstorlek, men är en omkodning med viss kvalitetsförlust.'))
@@ -4762,14 +4919,50 @@ class Window(QtWidgets.QMainWindow):
         if hasattr(self, 'activity_log'):
             self.activity_log.appendPlainText(self.localize_runtime_text(text))
 
+    def error_next_step(self, text):
+        message = text.casefold()
+        if any(token in message for token in ('no space left', 'disk full', 'winerror 112', 'not enough space')):
+            return 'Frigör diskutrymme eller välj en annan målmapp med mer ledigt utrymme och försök igen.'
+        if any(token in message for token in ('permission denied', 'access is denied', 'winerror 5', 'winerror 32', 'operation not permitted', 'permissionerror', 'being used by another process')):
+            return 'Stäng program som kan ha filen öppen, kontrollera skrivbehörighet och välj vid behov en annan målmapp.'
+        if any(token in message for token in ('out of memory', 'not enough memory', 'winerror 1455', 'memoryerror')):
+            return 'Stäng andra tunga program eller bearbeta färre filer åt gången och försök igen.'
+        missing_tool = any(token in message for token in ('not found', 'saknas', 'not recognized as an internal', 'no such file', 'winerror 2', 'cannot find the file specified'))
+        if ('ffmpeg' in message or 'ffprobe' in message) and missing_tool:
+            return 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH; öppna sedan appen igen.'
+        if any(token in message for token in ('no such file', 'file not found', 'winerror 2', 'cannot find the file specified', 'filen hittas inte', 'filen kunde inte hittas', 'filen finns inte', 'filen saknas', 'filen har flyttats', 'filen har tagits bort', 'filen kunde inte öppnas')):
+            return 'Kontrollera att källfilen fortfarande finns och går att läsa; kör sedan om skanningen eller jobbet.'
+        if any(token in message for token in ('invalid data found', 'unknown encoder', 'unknown decoder', 'codec not found', 'moov atom not found', 'unsupported codec')):
+            return 'Kontrollera att filen inte är skadad och att formatet stöds; prova en annan fil eller uppdatera FFmpeg via systemets vanliga metod.'
+        if any(token in message for token in ('timed out', 'timeout', 'urlopen error', 'connection error', 'http error 403', 'http error 429', 'network is unreachable')):
+            return 'Kontrollera internetanslutningen och försök igen; servern kan också begränsa eller tillfälligt neka hämtningen.'
+        if any(token in message for token in ('cannot identify image file', 'unidentifiedimageerror', 'truncated image', 'unsupported image format')):
+            return 'Kontrollera att källfilens format stöds och att nödvändigt stöd för HEIC/HEIF/AVIF är tillgängligt.'
+        if any(token in message for token in ('no module named', 'modulenotfounderror', 'importerror')):
+            return 'Använd Verktyg → Kontrollera/installera Python-tillägg… och kontrollera felloggen om paketet fortfarande saknas.'
+        if any(token in message for token in ('file exists', 'already exists', 'finns redan', 'fileexistserror')):
+            return 'Välj en annan målfil eller målmapp, eller slå på ersättning om du avsiktligt vill skriva över en befintlig kopia.'
+        if any(marker in message for marker in ('fel:', 'error:', 'bildfel', 'annonsfel', 'konverteringsfel', 'delvis', 'partial')):
+            return 'Kontrollera källfilen och målmappen. Detaljer finns i Logs/errors.log om felet kvarstår.'
+        return None
+
+    def format_worker_message(self, text):
+        formatted = self.localize_runtime_text(text)
+        if 'Nästa steg:' in text or 'Next step:' in text:
+            return formatted
+        guidance = self.error_next_step(text)
+        if guidance:
+            formatted += f"\n  {self.translated('Nästa steg:')} {self.translated(guidance)}"
+        return formatted
+
     def append_main_log(self, text):
         if hasattr(self, 'log'):
             self.log.show()
-            self.log.appendPlainText(self.localize_runtime_text(text))
+            self.log.appendPlainText(self.format_worker_message(text))
             self.log.ensureCursorVisible()
 
     def append_worker_message(self, target, text):
-        target.appendPlainText(self.localize_runtime_text(text))
+        target.appendPlainText(self.format_worker_message(text))
 
     @QtCore.pyqtSlot(str)
     def append_video_message(self, text):
@@ -4834,8 +5027,6 @@ class Window(QtWidgets.QMainWindow):
             'Avbrutet.': 'Cancelled.',
             'Bildoptimering avbruten.': 'Image optimization cancelled.',
             'Videokonvertering avbruten.': 'Video conversion cancelled.',
-            'Bildspel avbrutet.': 'Slideshow cancelled.',
-            'Bilderna är klara; FFmpeg skapar MP4-filen…': 'Images are ready; FFmpeg is creating the MP4…',
             'Konvertering avbruten.': 'Conversion cancelled.',
             'Inga videofiler hittades.': 'No video files found.',
             'Ljud/videojobb avbrutet.': 'Audio/video job cancelled.',
@@ -4867,10 +5058,11 @@ class Window(QtWidgets.QMainWindow):
         return text
 
     def record(self, text):
-        if text.startswith(('FEL', 'BILDFEL', 'ANNONSFEL', 'KONVERTERINGSFEL')) or 'DELVIS' in text:
-            LOGGER.error(text)
+        formatted = self.format_worker_message(text)
+        if text.startswith(('FEL', 'BILDFEL', 'ANNONSFEL', 'KONVERTERINGSFEL', 'ERROR')) or 'DELVIS' in text or 'PARTIAL' in text:
+            LOGGER.error(formatted)
         else:
-            LOGGER.info(text)
+            LOGGER.info(formatted)
 
     def show_message(self, kind, title, text, *args):
         dialog_method = getattr(QtWidgets.QMessageBox, kind)
@@ -4946,6 +5138,124 @@ class Window(QtWidgets.QMainWindow):
             self.render_batch_estimate()
         if hasattr(self, 'file_menu'):
             self.retranslate_menu_bar()
+        self.apply_accessibility_labels()
+
+    def apply_accessibility_labels(self):
+        self.setAccessibleName('MediaForge')
+        self.setAccessibleDescription(self.translated('MediaForge för bearbetning av foto och video'))
+        self.menuBar().setAccessibleName(self.translated('Huvudmeny'))
+        self.tabs.setAccessibleName(self.translated('Arbetsflikar'))
+        self.tabs.setAccessibleDescription(self.translated('Använd piltangenterna eller Ctrl+Tab för att växla mellan synliga verktygsflikar.'))
+        self.tabs.tabBar().setAccessibleName(self.translated('Flikraden'))
+        self.activity_log.setAccessibleName(self.translated('Aktivitetslogg'))
+        self.log.setAccessibleName(self.translated('Mappjobb-logg'))
+        self.mode_combo.setAccessibleName(self.mode_label.text())
+        self.language_combo.setAccessibleName(self.language_label.text())
+        self.image_preset_combo.setAccessibleName(self.translated('Förinställning för bildförbättring'))
+        image_preset_hint = self.translated('Välj en bildförinställning och justera sedan inställningarna vid behov.')
+        self.image_preset_combo.setToolTip(image_preset_hint)
+        self.image_preset_combo.setAccessibleDescription(image_preset_hint)
+        self.video_preset_combo.setAccessibleName(self.translated('Förinställning för videokonvertering'))
+        video_preset_hint = self.translated('Välj en videoförinställning och justera sedan inställningarna vid behov.')
+        self.video_preset_combo.setToolTip(video_preset_hint)
+        self.video_preset_combo.setAccessibleDescription(video_preset_hint)
+        for slider in self.sliders.values():
+            if not slider.accessibleDescription() or slider.property('_mediaforgeAutoAccessibleDescription'):
+                slider.setAccessibleDescription(self.translated('Använd vänster/höger piltangent för att justera värdet.'))
+                slider.setProperty('_mediaforgeAutoAccessibleDescription', True)
+        for index in range(self.tabs.count()):
+            page = self.tabs.widget(index)
+            page.setAccessibleName(self.tabs.tabText(index))
+            for editor in page.findChildren(QtWidgets.QPlainTextEdit):
+                if not editor.accessibleName() or editor.property('_mediaforgeAutoAccessibleName'):
+                    editor.setAccessibleName(self.translated('Logg för {tool}').format(tool=page.accessibleName()))
+                    editor.setProperty('_mediaforgeAutoAccessibleName', True)
+
+        def set_automatic_name(widget, name):
+            if name and (not widget.accessibleName() or widget.property('_mediaforgeAutoAccessibleName')):
+                widget.setAccessibleName(name)
+                widget.setProperty('_mediaforgeAutoAccessibleName', True)
+
+        for button in self.findChildren(QtWidgets.QAbstractButton):
+            if button.text().strip():
+                set_automatic_name(button, button.text().replace('&', ''))
+            if button.toolTip() and (not button.accessibleDescription() or button.property('_mediaforgeAutoAccessibleDescription')):
+                button.setAccessibleDescription(self.translated(button.toolTip()))
+                button.setProperty('_mediaforgeAutoAccessibleDescription', True)
+        for widget in self.findChildren(QtWidgets.QWidget):
+            if isinstance(widget, QtWidgets.QLineEdit):
+                placeholder = widget.placeholderText().strip()
+                if placeholder:
+                    set_automatic_name(widget, placeholder)
+            if widget.toolTip() and (not widget.accessibleDescription() or widget.property('_mediaforgeAutoAccessibleDescription')):
+                widget.setAccessibleDescription(self.translated(widget.toolTip()))
+                widget.setProperty('_mediaforgeAutoAccessibleDescription', True)
+
+        controls = (QtWidgets.QLineEdit, QtWidgets.QComboBox, QtWidgets.QSpinBox,
+                    QtWidgets.QDoubleSpinBox, QtWidgets.QSlider, QtWidgets.QPlainTextEdit,
+                    QtWidgets.QListWidget, QtWidgets.QTableWidget, QtWidgets.QProgressBar)
+
+        def assign_buddy(label, field):
+            if label is None or field is None or not label.text().strip():
+                return
+            try:
+                label.setBuddy(field)
+                set_automatic_name(field, label.text().replace('&', ''))
+            except (AttributeError, RuntimeError):
+                pass
+
+        def associate_layout(layout):
+            if isinstance(layout, QtWidgets.QFormLayout):
+                for row in range(layout.rowCount()):
+                    label_item = layout.itemAt(row, QtWidgets.QFormLayout.ItemRole.LabelRole)
+                    field_item = layout.itemAt(row, QtWidgets.QFormLayout.ItemRole.FieldRole)
+                    if label_item and field_item:
+                        assign_buddy(label_item.widget(), field_item.widget())
+            elif isinstance(layout, QtWidgets.QGridLayout):
+                labels = []
+                fields = []
+                for item_index in range(layout.count()):
+                    item = layout.itemAt(item_index)
+                    widget = item.widget()
+                    row, column, _row_span, _column_span = layout.getItemPosition(item_index)
+                    if isinstance(widget, QtWidgets.QLabel):
+                        labels.append((row, column, widget))
+                    elif isinstance(widget, controls):
+                        fields.append((row, column, widget))
+                for row, column, field in fields:
+                    candidates = [(label_column, label) for label_row, label_column, label in labels
+                                  if label_row == row and label_column < column]
+                    if candidates:
+                        assign_buddy(max(candidates, key=lambda pair: pair[0])[1], field)
+            elif isinstance(layout, QtWidgets.QBoxLayout):
+                preceding_label = None
+                for item_index in range(layout.count()):
+                    item = layout.itemAt(item_index)
+                    widget = item.widget()
+                    nested = item.layout()
+                    if isinstance(widget, QtWidgets.QLabel):
+                        preceding_label = widget
+                    elif isinstance(widget, controls):
+                        if preceding_label is not None:
+                            assign_buddy(preceding_label, widget)
+                        preceding_label = None
+                    elif widget is not None:
+                        preceding_label = None
+                    if nested is not None:
+                        preceding_label = None
+                        associate_layout(nested)
+            else:
+                for item_index in range(layout.count()):
+                    nested = layout.itemAt(item_index).layout()
+                    if nested is not None:
+                        associate_layout(nested)
+
+        if self.centralWidget() and self.centralWidget().layout():
+            associate_layout(self.centralWidget().layout())
+        for parent_widget in self.findChildren(QtWidgets.QWidget):
+            child_layout = parent_widget.layout()
+            if child_layout is not None:
+                associate_layout(child_layout)
 
     def change_ui_language(self, index):
         language = self.language_combo.itemData(index)
@@ -6022,7 +6332,7 @@ class Window(QtWidgets.QMainWindow):
         for title, text in (
             ('Kom igång', 'MediaForge behöver systemets Python 3.10 eller senare. Appen installerar inte en egen Python-runtime.'),
             ('Krav och verktyg', 'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.'),
-            ('Tangentbordsgenvägar', self.translated('{modifier}+O väljer källmapp; {modifier}+Shift+O väljer arkivmapp; {modifier}+Enter startar mappjobbet; F1 öppnar hjälp; {modifier}+Q avslutar. Ctrl+Tab och Ctrl+Shift+Tab växlar flik.').format(modifier='⌘' if sys.platform == 'darwin' else 'Ctrl')),
+            ('Tangentbordsgenvägar', self.translated('{modifier}+O väljer källmapp; {modifier}+Shift+O väljer arkivmapp; {modifier}+Enter startar mappjobbet; F1 öppnar hjälp; {modifier}+Q avslutar. Ctrl+Tab och Ctrl+Shift+Tab växlar flik. {modifier}+1–9 väljer en av de första nio synliga flikarna.').format(modifier='⌘' if sys.platform == 'darwin' else 'Ctrl')),
             ('Loggar och integritet', 'Fellogg finns under Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.'),
         ):
             label = QtWidgets.QLabel(f'<b>{self.translated(title)}</b><br>{self.translated(text)}')
