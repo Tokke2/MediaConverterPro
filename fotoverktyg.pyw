@@ -6941,5 +6941,10 @@ if __name__ == '__main__':
             window.library_pending_selection = launch_path
         window.tabs.setCurrentWidget(window.library_tab)
         window.scan_image_library()
+    # Set the initial state before entering the event loop, then re-apply it
+    # once Qt has created the native window. Some window managers ignore an
+    # early minimize request while the window is still being constructed.
+    window.setWindowState(window.windowState() | QtCore.Qt.WindowState.WindowMinimized)
     window.showMinimized()
+    QtCore.QTimer.singleShot(0, window.showMinimized)
     sys.exit(app.exec())
