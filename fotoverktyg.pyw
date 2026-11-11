@@ -42,7 +42,7 @@ KOFI_URL = ''  # Fixed app destination; configured by the maintainer, never by t
 UPDATEABLE_RELEASE_FILES = {
     '.gitignore', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
     'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs',
-    'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png',
+    'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png', 'fotoverktyg_icon.svg', 'mediaforge_logo.svg',
     'start_mediaforge.sh',
 }
 MAX_RELEASE_ARCHIVE_BYTES = 80 * 1024 * 1024
@@ -103,6 +103,7 @@ VIEWER_MIME_TYPES = (
     'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff', 'image/webp',
     'image/heic', 'image/heif', 'image/avif', 'image/svg+xml',
 )
+SIMPLE_TAB_KEYS = {'Bildförbättring', 'Fotoredigerare', 'Bildbibliotek', 'Videokonvertering', 'Dubblettfinnare', 'Aktivitetslogg'}
 AUDIO_FILE_EXTENSIONS = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg', '.opus', '.wma', '.aiff', '.aif'}
 IMAGE_COLOR_PROFILES = {'sRGB': 'SRgb', 'Display P3': 'DisplayP3', 'Adobe RGB (1998)': 'AdobeRgb'}
 UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
@@ -967,6 +968,11 @@ UI_TRANSLATIONS.update({
     'Större': 'Larger',
     'Extra stor': 'Extra large',
     'Mörkt tema': 'Dark theme',
+    'Enkelt läge – vanliga verktyg': 'Simple mode – common tools',
+    'Stäng/minimera till systemfältet': 'Close/minimize to system tray',
+    'Minimera till systemfältet': 'Minimize to system tray',
+    'Avsluta MediaForge': 'Quit MediaForge',
+    'Öppna MediaForge': 'Open MediaForge',
     'Hjälp och support': 'Help & support',
     'Support för MediaForge': 'MediaForge support',
     'Snabbhjälp': 'Quick help',
@@ -3098,7 +3104,7 @@ def remove_red_eye_region(image, box):
 
 def brand_icon():
     """Load the installed MediaForge icon, then draw a compact fallback if missing."""
-    for icon_name in ('fotoverktyg_icon.png', 'fotoverktyg_icon.ico'):
+    for icon_name in ('fotoverktyg_icon.svg', 'fotoverktyg_icon.png', 'fotoverktyg_icon.ico'):
         icon_path = Path(__file__).resolve().with_name(icon_name)
         if icon_path.is_file():
             icon = QtGui.QIcon(str(icon_path))
@@ -3466,8 +3472,7 @@ class Window(QtWidgets.QMainWindow):
         self.log_bridge.entry.connect(self.append_activity_log)
         self.qt_log_handler = QtLogHandler(self.log_bridge)
         LOGGER.addHandler(self.qt_log_handler)
-        icon_file = Path(__file__).resolve().with_name('fotoverktyg_icon.png')
-        self.brand = QtGui.QIcon(str(icon_file)) if icon_file.exists() else brand_icon()
+        self.brand = brand_icon()
         self.setWindowIcon(self.brand)
         self.resize(1100, 850)
         self.setMinimumSize(760, 560)
@@ -3476,12 +3481,12 @@ class Window(QtWidgets.QMainWindow):
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
         main = QtWidgets.QVBoxLayout(central)
-        main.setContentsMargins(14, 12, 14, 12)
-        main.setSpacing(8)
+        main.setContentsMargins(18, 14, 18, 16)
+        main.setSpacing(12)
         brand_header = QtWidgets.QHBoxLayout()
         brand_image = QtWidgets.QLabel()
-        brand_image.setPixmap(self.brand.pixmap(QtCore.QSize(40, 40)))
-        brand_image.setFixedSize(44, 44)
+        brand_image.setPixmap(self.brand.pixmap(QtCore.QSize(48, 48)))
+        brand_image.setFixedSize(52, 52)
         brand_image.setToolTip('MediaForge')
         brand_image.setAccessibleName('MediaForge logo')
         brand_header.addWidget(brand_image, 0, QtCore.Qt.AlignmentFlag.AlignVCenter)
@@ -3512,6 +3517,8 @@ class Window(QtWidgets.QMainWindow):
         self.ui_font_size = saved_font_size if saved_font_size in {11, 12, 14, 16} else 12
         saved_hidden_tabs = self.ui_settings.value('hiddenTabs', [])
         self.hidden_tabs = set(map(str, saved_hidden_tabs)) if isinstance(saved_hidden_tabs, (list, tuple, set)) else set()
+        self.simple_mode = self.ui_settings.value('simpleMode', True, type=bool)
+        self._force_close = False
         saved_geometry = self.ui_settings.value('windowGeometry')
         if saved_geometry:
             try:
@@ -3527,7 +3534,11 @@ class Window(QtWidgets.QMainWindow):
             self.ui_language = 'sv'
         if self.media_mode not in {'all', 'photo', 'video'}:
             self.media_mode = 'all'
-        preferences = QtWidgets.QHBoxLayout()
+        self.top_controls = QtWidgets.QFrame()
+        self.top_controls.setObjectName('toolbarPanel')
+        preferences = QtWidgets.QHBoxLayout(self.top_controls)
+        preferences.setContentsMargins(12, 8, 12, 8)
+        preferences.setSpacing(10)
         self.mode_label = QtWidgets.QLabel('Arbetsläge:')
         preferences.addWidget(self.mode_label)
         self.mode_combo = QtWidgets.QComboBox()
@@ -3543,7 +3554,7 @@ class Window(QtWidgets.QMainWindow):
         self.language_combo.setCurrentIndex(max(0, self.language_combo.findData(self.ui_language)))
         preferences.addWidget(self.language_combo)
         preferences.addStretch()
-        main.addLayout(preferences)
+        main.addWidget(self.top_controls)
         self.tabs = QtWidgets.QTabWidget()
         self.tabs.setDocumentMode(True)
         self.tabs.setMovable(True)
@@ -3768,10 +3779,22 @@ class Window(QtWidgets.QMainWindow):
         for index in range(self.tabs.count()):
             widget = self.tabs.widget(index)
             widget.setProperty('tabVisibilityKey', self.tabs.tabText(index))
+        all_tab_keys = {str(self.tabs.widget(index).property('tabVisibilityKey')) for index in range(self.tabs.count())}
         if not self.ui_settings.value('tabVisibilityConfigured', False, type=bool):
-            self.hidden_tabs = {str(self.tabs.widget(index).property('tabVisibilityKey')) for index in range(self.tabs.count())}
-            self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
+            # Start with a small, useful set rather than an empty window. Advanced tools
+            # remain available by turning off Simple mode or using the Tabs menu.
+            self.hidden_tabs.clear()
+            self.ui_settings.setValue('hiddenTabs', [])
             self.ui_settings.setValue('tabVisibilityConfigured', True)
+            self.ui_settings.sync()
+        elif not self.ui_settings.contains('simpleMode') and self.hidden_tabs == all_tab_keys:
+            # Older versions marked every tab hidden on first launch. Migrate that
+            # unusable default once so the new simple workspace opens with core tools.
+            self.hidden_tabs.clear()
+            self.ui_settings.setValue('hiddenTabs', [])
+            self.ui_settings.sync()
+        if not self.ui_settings.contains('simpleMode'):
+            self.ui_settings.setValue('simpleMode', self.simple_mode)
             self.ui_settings.sync()
         self.restore_tab_order()
         self.tabs.tabBar().tabMoved.connect(self.persist_tab_order)
@@ -3840,7 +3863,7 @@ class Window(QtWidgets.QMainWindow):
         self.file_menu.addSeparator()
         self.file_exit_action = QtGui.QAction('', self)
         self.file_exit_action.setShortcut(QtGui.QKeySequence(QtGui.QKeySequence.StandardKey.Quit))
-        self.file_exit_action.triggered.connect(self.close)
+        self.file_exit_action.triggered.connect(self.quit_application)
         self.file_menu.addAction(self.file_exit_action)
 
         self.view_menu = bar.addMenu('')
@@ -3848,6 +3871,11 @@ class Window(QtWidgets.QMainWindow):
         self.theme_action.setCheckable(True)
         self.theme_action.triggered.connect(self.toggle_theme)
         self.view_menu.addAction(self.theme_action)
+        self.simple_mode_action = QtGui.QAction('', self)
+        self.simple_mode_action.setCheckable(True)
+        self.simple_mode_action.setChecked(self.simple_mode)
+        self.simple_mode_action.toggled.connect(self.change_simple_mode)
+        self.view_menu.addAction(self.simple_mode_action)
         self.font_size_menu = self.view_menu.addMenu('')
         self.font_size_group = QtGui.QActionGroup(self)
         self.font_size_group.setExclusive(True)
@@ -3890,6 +3918,12 @@ class Window(QtWidgets.QMainWindow):
             self.autostart_action.setToolTip(self.translated('Autostart is supported on Windows, macOS and Linux only.'))
         self.autostart_action.toggled.connect(self.change_autostart)
         self.tools_menu.addAction(self.autostart_action)
+        self.minimize_to_tray_action = QtGui.QAction('', self)
+        self.minimize_to_tray_action.setCheckable(True)
+        self.minimize_to_tray_action.setChecked(self.ui_settings.value('minimizeToTray', False, type=bool))
+        self.minimize_to_tray_action.setEnabled(QtWidgets.QSystemTrayIcon.isSystemTrayAvailable())
+        self.minimize_to_tray_action.toggled.connect(self.change_minimize_to_tray)
+        self.tools_menu.addAction(self.minimize_to_tray_action)
         self.windows_context_action = QtGui.QAction('', self)
         self.windows_context_action.setCheckable(True)
         self.windows_context_action.setChecked(windows_context_menu_enabled())
@@ -3952,6 +3986,8 @@ class Window(QtWidgets.QMainWindow):
         self.view_menu.setTitle(self.translated('Visa'))
         self.theme_action.setText(self.translated('Mörkt tema'))
         self.theme_action.setChecked(self.dark)
+        self.simple_mode_action.setText(self.translated('Enkelt läge – vanliga verktyg'))
+        self.simple_mode_action.setChecked(self.simple_mode)
         self.font_size_menu.setTitle(self.translated('Textstorlek'))
         for size, label in ((11, 'Mindre'), (12, 'Standard'), (14, 'Större'), (16, 'Extra stor')):
             key = 'Extra stor' if label == 'Extra stor' else label
@@ -3967,6 +4003,7 @@ class Window(QtWidgets.QMainWindow):
         self.packages_update_action.setText(self.translated('Uppdatera alla Python-paket (starta om)…'))
         self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         self.autostart_action.setText(self.translated('Starta automatiskt vid inloggning'))
+        self.minimize_to_tray_action.setText(self.translated('Stäng/minimera till systemfältet'))
         self.windows_context_action.setText(self.translated('Visa MediaForge i Utforskaren (högerklicksmeny)'))
         self.viewer_integration_action.setText(self.translated('Registrera MediaForge som bildvisare'))
         self.viewer_integration_action.setToolTip(self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
@@ -4069,9 +4106,11 @@ class Window(QtWidgets.QMainWindow):
         self.tray_open_action.triggered.connect(self.show_from_system_tray)
         self.tray_update_action = self.tray_menu.addAction(self.translated('Sök efter uppdatering…'))
         self.tray_update_action.triggered.connect(self.check_release_update_from_tray)
+        self.tray_minimize_action = self.tray_menu.addAction(self.translated('Minimera till systemfältet'))
+        self.tray_minimize_action.triggered.connect(self.hide_to_system_tray)
         self.tray_menu.addSeparator()
         self.tray_quit_action = self.tray_menu.addAction(self.translated('Avsluta MediaForge'))
-        self.tray_quit_action.triggered.connect(self.close)
+        self.tray_quit_action.triggered.connect(self.quit_from_system_tray)
         self.tray_icon = QtWidgets.QSystemTrayIcon(self.brand, self)
         self.tray_icon.setToolTip('MediaForge')
         self.tray_icon.setContextMenu(self.tray_menu)
@@ -4082,6 +4121,49 @@ class Window(QtWidgets.QMainWindow):
         self.showNormal()
         self.raise_()
         self.activateWindow()
+
+    def hide_to_system_tray(self):
+        if getattr(self, 'tray_icon', None):
+            self.hide()
+            self.tray_icon.show()
+            LOGGER.info('Fönstret minimerades till systemfältet')
+
+    def quit_application(self):
+        self._force_close = True
+        try:
+            self.close()
+        finally:
+            self._force_close = False
+
+    def quit_from_system_tray(self):
+        self.quit_application()
+
+    def change_minimize_to_tray(self, enabled):
+        if enabled and not QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
+            self.minimize_to_tray_action.blockSignals(True)
+            self.minimize_to_tray_action.setChecked(False)
+            self.minimize_to_tray_action.blockSignals(False)
+            self.show_message('warning', 'Systemfältet saknas', 'Den här skrivbordsmiljön har inget tillgängligt systemfält.')
+            return
+        self.ui_settings.setValue('minimizeToTray', bool(enabled))
+        self.ui_settings.sync()
+        LOGGER.info('Minimize to system tray: %s', bool(enabled))
+
+    def change_simple_mode(self, enabled):
+        self.simple_mode = bool(enabled)
+        self.ui_settings.setValue('simpleMode', self.simple_mode)
+        self.ui_settings.sync()
+        self.apply_media_mode()
+        self.refresh_tab_visibility_menu()
+        LOGGER.info('Simple workspace mode: %s', self.simple_mode)
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        settings = getattr(self, 'ui_settings', None)
+        if (event.type() == QtCore.QEvent.Type.WindowStateChange and self.isMinimized()
+                and getattr(self, 'tray_icon', None) and settings
+                and settings.value('minimizeToTray', False, type=bool)):
+            QtCore.QTimer.singleShot(0, self.hide_to_system_tray)
 
     def check_release_update_from_tray(self):
         self.show_from_system_tray()
@@ -5632,6 +5714,7 @@ class Window(QtWidgets.QMainWindow):
         if getattr(self, 'tray_icon', None):
             self.tray_open_action.setText(self.translated('Öppna MediaForge'))
             self.tray_update_action.setText(self.translated('Sök efter uppdatering…'))
+            self.tray_minimize_action.setText(self.translated('Minimera till systemfältet'))
             self.tray_quit_action.setText(self.translated('Avsluta MediaForge'))
         if hasattr(self, 'output_mode'):
             self.update_processing_output_mode()
@@ -5785,7 +5868,8 @@ class Window(QtWidgets.QMainWindow):
             category = widget.property('mediaMode') or 'both'
             key = str(widget.property('tabVisibilityKey'))
             in_mode = self.media_mode == 'all' or category == 'both' or category == self.media_mode
-            self.tabs.setTabVisible(index, in_mode and key not in self.hidden_tabs)
+            simple_visible = not self.simple_mode or key in SIMPLE_TAB_KEYS
+            self.tabs.setTabVisible(index, in_mode and key not in self.hidden_tabs and simple_visible)
         visible = [i for i in range(self.tabs.count()) if self.tabs.isTabVisible(i)]
         has_visible_tabs = bool(visible)
         self.tabs.setVisible(has_visible_tabs)
@@ -6990,11 +7074,13 @@ class Window(QtWidgets.QMainWindow):
             QMainWindow, QWidget {background:%(bg)s; color:%(text)s; font-family:"Segoe UI",Arial,sans-serif; font-size:%(font_size)spx}
             QLabel#heroTitle {font-size:22px; font-weight:800; color:%(text)s}
             QLabel#subtitle {font-size:12px; color:%(muted)s}
-            QTabWidget::pane, QGroupBox {border:1px solid %(border)s; border-radius:9px; background:%(panel)s}
+            QTabWidget::pane, QGroupBox {border:1px solid %(border)s; border-radius:10px; background:%(panel)s}
+            QFrame#toolbarPanel {background:%(panel)s; border:1px solid %(border)s; border-radius:10px}
             QGroupBox {font-weight:700; margin-top:10px; padding:10px}
             QGroupBox::title {subcontrol-origin:margin; left:13px; padding:0 5px}
-            QTabBar::tab {background:%(panel)s; color:%(muted)s; border:1px solid %(border)s; padding:7px 9px; margin-right:2px; border-top-left-radius:7px; border-top-right-radius:7px}
-            QTabBar::tab:selected {background:%(accent)s; color:white; font-weight:700}
+            QTabBar::tab {background:%(panel)s; color:%(muted)s; border:1px solid %(border)s; padding:9px 12px; margin-right:3px; border-top-left-radius:8px; border-top-right-radius:8px}
+            QTabBar::tab:hover:!selected {border-color:%(accent)s; color:%(text)s}
+            QTabBar::tab:selected {background:%(accent)s; color:white; font-weight:700; border-bottom:3px solid #20c6c4}
             QLineEdit,QPlainTextEdit,QListWidget,QDateTimeEdit,QSpinBox,QComboBox {background:%(field)s; color:%(text)s; border:1px solid %(border)s; border-radius:6px; padding:6px; selection-background-color:%(accent)s}
             QLineEdit:focus,QPlainTextEdit:focus {border:2px solid %(accent)s}
             QPushButton {background:%(accent)s; color:white; border:0; border-radius:7px; padding:7px 11px; font-weight:600; min-height:20px}
@@ -7678,6 +7764,12 @@ class Window(QtWidgets.QMainWindow):
         self.ui_settings.sync()
 
     def closeEvent(self, event):
+        if (not getattr(self, '_force_close', False)
+                and getattr(self, 'tray_icon', None)
+                and self.ui_settings.value('minimizeToTray', False, type=bool)):
+            event.ignore()
+            self.hide_to_system_tray()
+            return
         git_worker = getattr(self, 'git_update_worker', None)
         if git_worker and git_worker.isRunning():
             if getattr(git_worker, 'apply_update', False) and not getattr(self, '_git_update_restart_pending', False):

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 300" role="img" aria-labelledby="title desc">
+  <title id="title">MediaForge — Photo and Video Toolkit</title>
+  <desc id="desc">MediaForge wordmark with a camera lens, film frame, and play symbol.</desc>
+  <g transform="translate(10 10) scale(.55)">
+    <rect x="12" y="12" width="488" height="488" rx="112" fill="#0b172b"/>
+    <rect x="79" y="91" width="354" height="330" rx="66" fill="none" stroke="#20c6c4" stroke-width="24"/>
+    <g fill="#ff604d"><rect x="143" y="79" width="42" height="34" rx="10"/><rect x="327" y="79" width="42" height="34" rx="10"/><rect x="143" y="399" width="42" height="34" rx="10"/><rect x="327" y="399" width="42" height="34" rx="10"/></g>
+    <circle cx="256" cy="256" r="139" fill="#20c6c4"/>
+    <circle cx="256" cy="256" r="87" fill="#0b172b"/>
+    <path d="M229 197 C222 193 214 198 214 207 L214 305 C214 314 222 319 229 315 L314 267 C322 262 322 251 314 246 Z" fill="#ff604d" stroke="#0b172b" stroke-width="8" stroke-linejoin="round"/>
+  </g>
+  <text x="324" y="159" fill="#10213a" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="82" font-weight="800" letter-spacing="2">MEDIAFORGE</text>
+  <text x="329" y="212" fill="#567088" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="25" font-weight="600" letter-spacing="1.5">PHOTO &amp; VIDEO TOOLKIT</text>
+</svg>
