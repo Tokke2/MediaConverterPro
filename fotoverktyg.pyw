@@ -1017,6 +1017,20 @@ UI_TRANSLATIONS.update({
     'JPEG (vit bakgrund)': 'JPEG (white background)',
     'Kvalitet (lägre = mindre fil)': 'Quality (lower = smaller file)',
     'Skriva över {path}?': 'Overwrite {path}?',
+    'Spara som ny kopia': 'Save as a new copy',
+    'Skriv över originalet': 'Overwrite the original',
+    'Välj hur bilden ska sparas': 'Choose how to save the image',
+    'Överskrivning stöds inte för detta format; spara som en kopia.': 'Overwriting is not supported for this format; save as a copy.',
+    'Bekräfta överskrivning': 'Confirm overwrite',
+    'Skriva över {name}? Detta kan inte ångras.': 'Overwrite {name}? This cannot be undone.',
+    'Originalen har skrivits över: {path}': 'Original replaced: {path}',
+    'Originalet har skrivits över: {path}': 'Original overwritten: {path}',
+    'Ingen originalfil är vald.': 'No source image is selected.',
+    'Originalet har inte ändrats och ingen kopia blev mindre.': 'The original was not changed, and no smaller copy was produced.',
+    'Originalet ändrades under bearbetningen; ingen överskrivning gjordes.': 'The original changed during processing; it was not overwritten.',
+    'Den komprimerade bilden blev inte mindre; originalet lämnades orört.': 'The compressed image was not smaller; the original was left unchanged.',
+    'Komprimerad kopia sparad: {path} ({percent:.1f}% mindre)': 'Compressed copy saved: {path} ({percent:.1f}% smaller)',
+    'PNG optimeras förlustfritt; filen blir inte alltid mindre.': 'PNG is optimized losslessly; the file may not always get smaller.',
     'Kopia sparad: {path}': 'Copy saved: {path}',
     'Källfilen flyttades till papperskorgen. Den mindre versionen finns här: {path}': 'The source was moved to the trash. The smaller version is here: {path}',
     'Kopian blev {percent:.1f}% mindre ({before} → {after}).': 'The copy is {percent:.1f}% smaller ({before} → {after}).',
@@ -7791,6 +7805,39 @@ class Window(QtWidgets.QMainWindow):
             return None
         return self.library_paths[row]
 
+    def choose_library_save_mode(self, path, overwrite_extensions, title):
+        copy_label = self.translated('Spara som ny kopia')
+        overwrite_label = self.translated('Skriv över originalet')
+        supported = path.suffix.lower() in overwrite_extensions
+        choices = [copy_label, overwrite_label] if supported else [copy_label]
+        prompt = self.translated('Välj hur bilden ska sparas')
+        if not supported:
+            prompt += '\n' + self.translated('Överskrivning stöds inte för detta format; spara som en kopia.')
+        selected, accepted = QtWidgets.QInputDialog.getItem(self, self.translated(title), prompt, choices, 0, False)
+        if not accepted:
+            return None
+        overwrite = supported and selected == overwrite_label
+        if overwrite:
+            answer = QtWidgets.QMessageBox.warning(
+                self, self.translated('Bekräfta överskrivning'),
+                self.translated('Skriva över {name}? Detta kan inte ångras.').format(name=path.name),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No)
+            if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+                return None
+        return overwrite
+
+    def temporary_image_output(self, target):
+        descriptor, name = tempfile.mkstemp(prefix=f'.{target.stem}.mediaforge-', suffix=target.suffix, dir=target.parent)
+        os.close(descriptor)
+        return Path(name)
+
+    def replace_image_if_unchanged(self, source, temporary, expected_stat):
+        current_stat = source.stat()
+        if current_stat.st_mtime_ns != expected_stat.st_mtime_ns or current_stat.st_size != expected_stat.st_size:
+            raise RuntimeError(self.translated('Originalet ändrades under bearbetningen; ingen överskrivning gjordes.'))
+        os.replace(temporary, source)
+
     def library_processing_source(self, path):
         register_modern_formats()
         if path.suffix.lower() != '.svg':
@@ -7851,26 +7898,35 @@ class Window(QtWidgets.QMainWindow):
         if not accepted:
             return
         suffix = path.suffix.lower()
-        output_suffix = suffix if suffix in {'.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.bmp'} else ('.png' if suffix == '.svg' else '.jpg')
+        supported = {'.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.bmp'}
+        overwrite = self.choose_library_save_mode(path, supported, 'Skärpa upp…')
+        if overwrite is None:
+            return
+        output_suffix = suffix if suffix in supported else ('.png' if suffix == '.svg' else '.jpg')
         destination = OUTPUT_DIR / 'Images' / 'Sharpened'
         try:
             destination.mkdir(parents=True, exist_ok=True)
-        except OSError as exc:
-            self.show_message('warning', 'Fel', str(exc))
-            return
-        target = destination / f'{path.stem}_sharpened{output_suffix}'
-        if target.exists() and QtWidgets.QMessageBox.question(
-                self, self.translated('Skriv över?'), self.translated('Skriva över {path}?').format(path=target.name),
-                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
-                QtWidgets.QMessageBox.StandardButton.No) != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
-        try:
+            original_stat = path.stat()
+            target = self.temporary_image_output(path) if overwrite else destination / f'{path.stem}_sharpened{output_suffix}'
+            if not overwrite and target.exists() and QtWidgets.QMessageBox.question(
+                    self, self.translated('Skriv över?'), self.translated('Skriva över {path}?').format(path=target.name),
+                    QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                    QtWidgets.QMessageBox.StandardButton.No) != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
             enhance(self.library_processing_source(path), target, 1, strength, 0, 0, True, 95)
-            self.library_status.setText(self.translated('Kopia sparad: {path}').format(path=target))
-            self.append_main_log(f'Skarpare bildkopia sparad: {target}')
-            LOGGER.info('Sharpened image copy saved: %s', target)
-            self.show_message('information', 'Klart', self.translated('Kopia sparad: {path}').format(path=target))
+            if overwrite:
+                self.replace_image_if_unchanged(path, target, original_stat)
+                self.scan_image_library()
+                message = self.translated('Originalet har skrivits över: {path}').format(path=path)
+            else:
+                message = self.translated('Kopia sparad: {path}').format(path=target)
+            self.library_status.setText(message)
+            self.append_main_log(message)
+            LOGGER.info('Sharpened image %s: %s', 'overwritten' if overwrite else 'copy saved', path if overwrite else target)
+            self.show_message('information', 'Klart', message)
         except Exception as exc:
+            if 'target' in locals() and overwrite:
+                target.unlink(missing_ok=True)
             LOGGER.exception('Sharpening image failed: %s', path)
             self.show_message('warning', 'Fel', str(exc))
 
@@ -7883,71 +7939,58 @@ class Window(QtWidgets.QMainWindow):
             self, self.translated('Minska filstorlek…'), self.translated('Välj format för en komprimerad kopia'), formats, 0, False)
         if not accepted:
             return
+        suffix = '.webp' if selected == formats[0] else '.jpg'
+        overwrite_exts = {'.webp'} if suffix == '.webp' else {'.jpg', '.jpeg'}
+        overwrite = self.choose_library_save_mode(path, overwrite_exts, 'Minska filstorlek…')
+        if overwrite is None:
+            return
         quality, accepted = QtWidgets.QInputDialog.getInt(
             self, self.translated('Minska filstorlek…'), self.translated('Kvalitet (lägre = mindre fil)'), 82, 40, 95, 1)
         if not accepted:
             return
-        suffix = '.webp' if selected == formats[0] else '.jpg'
         destination = OUTPUT_DIR / 'Images' / 'Compressed'
         try:
             destination.mkdir(parents=True, exist_ok=True)
-        except OSError as exc:
-            self.show_message('warning', 'Fel', str(exc))
-            return
-        target = destination / f'{path.stem}_compressed{suffix}'
-        if target.exists() and QtWidgets.QMessageBox.question(
-                self, self.translated('Skriv över?'), self.translated('Skriva över {path}?').format(path=target.name),
-                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
-                QtWidgets.QMessageBox.StandardButton.No) != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
-        try:
             original_stat = path.stat()
             source_bytes = original_stat.st_size
+            target = self.temporary_image_output(path) if overwrite else destination / f'{path.stem}_compressed{suffix}'
+            if not overwrite and target.exists() and QtWidgets.QMessageBox.question(
+                    self, self.translated('Skriv över?'), self.translated('Skriva över {path}?').format(path=target.name),
+                    QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                    QtWidgets.QMessageBox.StandardButton.No) != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
             enhance(self.library_processing_source(path), target, 1, 0, 0, 0,
                     self.library_keep_exif.isChecked(), quality)
             target_bytes = target.stat().st_size
             if path.stat().st_mtime_ns != original_stat.st_mtime_ns or path.stat().st_size != original_stat.st_size:
-                self.show_message('warning', 'Källfilen ändrades', self.translated('Källfilen ändrades under komprimeringen. Originalet har inte ersatts; den nya kopian finns i {path}.').format(path=target))
-                return
+                raise RuntimeError(self.translated('Originalet ändrades under bearbetningen; ingen överskrivning gjordes.'))
             saved_bytes = source_bytes - target_bytes
             if saved_bytes <= 0:
-                self.show_message('information', 'Ingen storleksminskning', self.translated('Den komprimerade kopian blev inte mindre än originalet. Originalet har inte ändrats; kopian finns i {path}.').format(path=target))
+                if overwrite:
+                    target.unlink(missing_ok=True)
+                    notice = self.translated('Originalet har inte ändrats och ingen kopia blev mindre.')
+                else:
+                    notice = self.translated('Den komprimerade kopian blev inte mindre än originalet. Originalet har inte ändrats; kopian finns i {path}.').format(path=target)
+                self.show_message('information', 'Ingen storleksminskning', notice)
                 return
             percent = 100.0 * saved_bytes / max(1, source_bytes)
             summary = self.translated('Kopian blev {percent:.1f}% mindre ({before} → {after}).').format(
                 percent=percent, before=self.format_file_size(source_bytes), after=self.format_file_size(target_bytes))
-            self.library_status.setText(summary + ' ' + str(target))
-            self.append_main_log(f'Komprimerad bildkopia sparad: {target} ({percent:.1f}% mindre)')
-            LOGGER.info('Compressed image copy: %s -> %s (%d%% smaller)', path, target, round(percent))
-            replace = QtWidgets.QMessageBox.question(
-                self, self.translated('Ersätta originalet?'),
-                self.translated('Kopian är mindre. Vill du använda den i bildmappen och flytta originalet till systempapperskorgen? Originalet kan återställas därifrån; diskutrymmet frigörs först när papperskorgen töms.'),
-                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
-                QtWidgets.QMessageBox.StandardButton.No)
-            if replace != QtWidgets.QMessageBox.StandardButton.Yes:
-                self.show_message('information', 'Klart', self.translated('Kopia sparad: {path}').format(path=target))
-                return
-            replacement = path.with_name(f'{path.stem}_compressed{suffix}')
-            index = 2
-            while replacement.exists():
-                replacement = path.with_name(f'{path.stem}_compressed_{index}{suffix}')
-                index += 1
-            shutil.copy2(target, replacement)
-            try:
-                current_stat = path.stat()
-                if current_stat.st_mtime_ns != original_stat.st_mtime_ns or current_stat.st_size != original_stat.st_size:
-                    raise RuntimeError(self.translated('Källfilen ändrades; den har inte flyttats till papperskorgen.'))
-                move_to_system_trash(path)
-            except Exception:
-                replacement.unlink(missing_ok=True)
-                raise
-            try:
-                target.unlink()
-            except OSError:
-                LOGGER.warning('Komprimerad mellan-/utdatakopia kunde inte tas bort: %s', target, exc_info=True)
-            self.scan_image_library()
-            self.show_message('information', 'Klart', self.translated('Källfilen flyttades till papperskorgen. Den mindre versionen finns här: {path}').format(path=replacement))
+            if overwrite:
+                self.replace_image_if_unchanged(path, target, original_stat)
+                self.scan_image_library()
+                message = self.translated('Originalet har skrivits över: {path}').format(path=path) + ' ' + summary
+                log_target = path
+            else:
+                message = summary + ' ' + str(target)
+                log_target = target
+            self.library_status.setText(message)
+            self.append_main_log(message)
+            LOGGER.info('Compressed image %s: %s (%d%% smaller)', 'overwritten' if overwrite else 'copy saved', log_target, round(percent))
+            self.show_message('information', 'Klart', message)
         except Exception as exc:
+            if 'target' in locals() and overwrite:
+                target.unlink(missing_ok=True)
             LOGGER.exception('Image compression failed: %s', path)
             self.show_message('warning', 'Fel', str(exc))
 
@@ -8170,33 +8213,53 @@ class Window(QtWidgets.QMainWindow):
         if self.editor_image is None:
             self.show_message('information', 'Välj foto', 'Öppna ett foto först.')
             return
-        editor_output = OUTPUT_DIR / 'Images' / 'Edited'
-        editor_output.mkdir(parents=True, exist_ok=True)
-        path, _ = QtWidgets.QFileDialog.getSaveFileName(self, self.translated('Spara redigerad kopia'), str(editor_output / (self.editor_source.stem + '_edited.png')), 'PNG (*.png);;JPEG (*.jpg);;WEBP (*.webp)')
-        if not path:
+        source = self.editor_source
+        if source is None:
+            self.show_message('warning', 'Fel', self.translated('Ingen originalfil är vald.'))
             return
-        target = self.require_app_output(path)
-        if target is None:
+        overwrite = self.choose_library_save_mode(source, {'.png', '.jpg', '.jpeg', '.webp', '.tif', '.tiff', '.bmp'}, 'Spara redigerad kopia')
+        if overwrite is None:
             return
-        if target.resolve() == self.editor_source.resolve():
-            self.show_message('warning', 'Original', 'Välj ett annat filnamn så originalet inte skrivs över.')
-            return
-        if target.suffix.lower() not in {'.png', '.jpg', '.webp'}:
-            target = target.with_suffix('.png')
-        if target.exists() and self.show_message('question', 'Skriv över?', f'Skriva över {target}?') != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
+        if overwrite:
+            target = self.temporary_image_output(source)
+        else:
+            editor_output = OUTPUT_DIR / 'Images' / 'Edited'
+            editor_output.mkdir(parents=True, exist_ok=True)
+            path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self, self.translated('Spara redigerad kopia'),
+                str(editor_output / (source.stem + '_edited.png')),
+                'PNG (*.png);;JPEG (*.jpg);;WEBP (*.webp)')
+            if not path:
+                return
+            target = self.require_app_output(path)
+            if target is None:
+                return
+            if target.resolve() == source.resolve():
+                self.show_message('warning', 'Original', 'Välj ett annat filnamn så originalet inte skrivs över.')
+                return
+            if target.suffix.lower() not in {'.png', '.jpg', '.webp'}:
+                target = target.with_suffix('.png')
+            if target.exists() and self.show_message('question', 'Skriv över?', f'Skriva över {target}?') != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
         try:
-            # Save the current crop/rotation to an in-memory buffer, then use the same
-            # enhancement pipeline as batch mode. No temporary file is created.
+            original_stat = source.stat()
             import io
             buffer = io.BytesIO()
             self.editor_image.save(buffer, format='PNG')
             buffer.seek(0)
-            enhance(buffer, target, self.factor.currentIndex() + 1, self.sliders['Skärpa'].value(), self.sliders['Färgstyrka'].value(), self.sliders['Klarhet/kontrast'].value(), False)
-            self.append_main_log(f'Redigerad kopia sparad: {target}')
-            LOGGER.info('Redigerad kopia sparad: %s', target)
-            self.show_message('information', 'Klart', f'Sparad: {target}')
+            enhance(buffer, target, self.factor.currentIndex() + 1, self.sliders['Skärpa'].value(),
+                    self.sliders['Färgstyrka'].value(), self.sliders['Klarhet/kontrast'].value(), False)
+            if overwrite:
+                self.replace_image_if_unchanged(source, target, original_stat)
+                message = self.translated('Originalet har skrivits över: {path}').format(path=source)
+            else:
+                message = self.translated('Kopia sparad: {path}').format(path=target)
+            self.append_main_log(message)
+            LOGGER.info('Edited image %s: %s', 'overwritten' if overwrite else 'copy saved', source if overwrite else target)
+            self.show_message('information', 'Klart', message)
         except Exception as exc:
+            if overwrite:
+                target.unlink(missing_ok=True)
             self.show_message('warning', 'Fel', str(exc))
 
     def toggle_theme(self):
