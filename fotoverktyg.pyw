@@ -851,6 +851,870 @@ UI_TRANSLATIONS.update({
 
 UI_TRANSLATIONS.update({
     'Bildbibliotek': 'Photo library',
+    'Öppna en bildmapp och bläddra bland originalen. Redigering och komprimering skapar kopior; flytt till papperskorgen kräver bekräftelse.': 'Browse a folder of originals. Editing and compression create copies; moving an image to trash requires confirmation.',
+    'Bildmapp': 'Image folder',
+    'Öppna bildmapp…': 'Open image folder…',
+    'Uppdatera lista': 'Refresh list',
+    'Inkludera undermappar': 'Include subfolders',
+    'Föregående': 'Previous',
+    'Nästa': 'Next',
+    'Helskärm': 'Full screen',
+    'Skriv ut…': 'Print…',
+    'Välj en bildmapp att bläddra i.': 'Choose an image folder to browse.',
+    'Skannar bildmappen…': 'Scanning image folder…',
+    'Inga bilder hittades.': 'No images found.',
+    'Bilder hittade: {count}': 'Images found: {count}',
+    'Välj en bild från listan.': 'Select an image from the list.',
+    'Bild {current} av {total} · {name} · {width} × {height}': 'Image {current} of {total} · {name} · {width} × {height}',
+    'Bild {current} av {total} · {name} · ←/→ · Esc': 'Image {current} of {total} · {name} · ←/→ · Esc',
+    'Kunde inte läsa mappen:': 'Could not read folder:',
+    'Kunde inte visa bilden:': 'Could not display image:',
+    'Välj en bild först.': 'Select an image first.',
+    'Välj en bild': 'Choose an image',
+    'Kunde inte starta vald skrivare.': 'Could not start the selected printer.',
+    'Utskrift avbruten.': 'Printing cancelled.',
+    'Kunde inte skriva ut bilden:': 'Could not print image:',
+    'Skickat till skrivaren: {name}': 'Sent to printer: {name}',
+    'Välj en giltig bildmapp.': 'Choose a valid image folder.',
+    'Bildformat som stöds: JPEG, PNG, WEBP, TIFF, BMP, GIF, SVG samt HEIC/HEIF/AVIF med pillow-heif.': 'Supported formats: JPEG, PNG, WEBP, TIFF, BMP, GIF, SVG, and HEIC/HEIF/AVIF with pillow-heif.',
+})
+
+UI_TRANSLATIONS.update({
+    'Jämför vald grupp…': 'Compare selected group…',
+    'Jämför dubbletter': 'Compare duplicates',
+    'Dubblettgrupp {group} · {count} filer': 'Duplicate group {group} · {count} files',
+    'Jämför filerna; bildgrupper visas sida vid sida. Markera vilka filer du vill behålla. Omarkerade flyttas till karantän först efter separat bekräftelse.': 'Compare files; image groups are shown side by side. Mark which files to keep. Unchecked files are moved to quarantine only after a separate confirmation.',
+    'Behåll den här filen': 'Keep this file',
+    'Behåll bara denna': 'Keep only this one',
+    'Behåll alla i gruppen': 'Keep all in this group',
+    'Klar': 'Done',
+    'Ingen bildförhandsvisning för den här filtypen.': 'No image preview is available for this file type.',
+    'Förhandsvisning kunde inte läsas:': 'Could not load preview:',
+    '{size} byte · ändrad {date}': '{size} bytes · modified {date}',
+    '{width} × {height} · {size} byte · ändrad {date}': '{width} × {height} · {size} bytes · modified {date}',
+})
+
+UI_TRANSLATIONS.update({
+    'Bildspel → MP4': 'Slideshow → MP4',
+    'Välj bilder, dra dem till önskad ordning och skapa ett MP4-bildspel med valfri övergång och musik. Bilder beskärs inte; olika bildformat får svarta kanter.': 'Select images, drag them into the desired order, and create an MP4 slideshow with an optional transition and music. Images are not cropped; different aspect ratios get black bars.',
+    'Valda bilder (dra för att ändra ordning)': 'Selected images (drag to reorder)',
+    'Välj bilder…': 'Choose images…',
+    'Ta bort valda': 'Remove selected',
+    'Rensa lista': 'Clear list',
+    'Bildlängd (sekunder)': 'Duration per image (seconds)',
+    'Övergång': 'Transition',
+    'Ingen övergång': 'None',
+    'Tona': 'Fade',
+    'Svep vänster': 'Wipe left',
+    'Skjut vänster': 'Slide left',
+    'Övergångstid (sekunder)': 'Transition duration (seconds)',
+    'Videostorlek': 'Video size',
+    'Full HD · 1920 × 1080': 'Full HD · 1920 × 1080',
+    'HD · 1280 × 720': 'HD · 1280 × 720',
+    'Kvadrat · 1080 × 1080': 'Square · 1080 × 1080',
+    'Musik (valfritt)': 'Music (optional)',
+    'Välj en ljudfil…': 'Choose an audio file…',
+    'Välj musik…': 'Choose music…',
+    'Utdatafil (MP4)': 'Output file (MP4)',
+    'Spara som…': 'Save as…',
+    'Spara bildspel': 'Save slideshow',
+    'Kräver FFmpeg. HEIC/HEIF/AVIF kräver pillow-heif. Musik loopas vid behov och kapas till videons längd. Exporten kodas som H.264/AAC; originalbilder och musik ändras inte.': 'Requires FFmpeg. HEIC/HEIF/AVIF need pillow-heif. Music loops if needed and is trimmed to the video duration. The export uses H.264/AAC; original images and music are unchanged.',
+    'Skapa bildspel': 'Create slideshow',
+    'Inga bilder valda': 'No images selected',
+    'Välj minst en bild till bildspelet.': 'Choose at least one image for the slideshow.',
+    'Ogiltig bildfil': 'Invalid image file',
+    'En eller flera valda bildfiler kan inte hittas.': 'One or more selected image files could not be found.',
+    'Ogiltig utdatafil': 'Invalid output file',
+    'Välj ett filnamn som slutar på .mp4.': 'Choose a filename ending in .mp4.',
+    'Ogiltig musikfil': 'Invalid music file',
+    'Välj en giltig ljudfil eller rensa musikfältet.': 'Choose a valid audio file or clear the music field.',
+    'Bekräfta ersättning': 'Confirm replacement',
+    'Filen finns redan. Vill du ersätta den när det nya bildspelet är klart?': 'The file already exists. Replace it when the new slideshow is complete?',
+    'Bilderna är klara; FFmpeg skapar MP4-filen…': 'Images are ready; FFmpeg is creating the MP4…',
+    'Bildspel avbrutet.': 'Slideshow cancelled.',
+    'MediaForge-startaren saknas. Autostart använder inte .pyw-filen eftersom den kan visa Python-ikonen.': 'The MediaForge launcher is missing. Autostart will not use the .pyw file because it may show a Python icon.',
+    'MediaForge-startaren start_mediaforge.sh saknas. Autostart använder inte .pyw-filen.': 'The MediaForge start_mediaforge.sh launcher is missing. Autostart will not use the .pyw file.',
+    'Loggfil:': 'Log file:',
+    'Fellogg:': 'Error log:',
+    'Öppna fellogg': 'Open error log',
+    'Felloggen kunde inte öppnas:': 'Could not open the error log:',
+    'Öppna MediaForge': 'Open MediaForge',
+    'Avsluta MediaForge': 'Quit MediaForge',
+    'Resultatläge': 'Output mode',
+    'Spara bearbetade kopior i arkivmappen': 'Save processed copies in archive folder',
+    'Spara ny _rensad-kopia i källmappen': 'Save a new _rensad copy in source folder',
+    'Skriv över originalfiler i källmappen': 'Overwrite original files in source folder',
+    'Ersätt tidigare _rensad-kopior': 'Replace existing _cleaned copies',
+    'Filer och resultat (nya kopior i källmappen)': 'Files and output (new copies in source folder)',
+    'Filer och resultat (originalen skrivs över)': 'Files and output (originals will be overwritten)',
+    'Välj full metadatarensning innan du sparar i källmappen.': 'Select full metadata removal before saving in the source folder.',
+    'Skriv över originalfilerna? Detta kan inte ångras. MediaForge skapar en tillfällig kopia och ersätter varje original först när rensningen lyckats.': 'Overwrite the original files? This cannot be undone. MediaForge creates a temporary copy and replaces each original only after cleanup succeeds.',
+    'Bekräfta överskrivning': 'Confirm overwrite',
+    'Originalfiler skrivs över': 'Original files will be overwritten',
+    'Rensa metadata och skriv över…': 'Remove metadata and overwrite…',
+    'Originalen ersätts efter lyckad rensning. Misslyckade filer lämnas orörda.': 'Originals are replaced after successful cleanup. Files that fail are left unchanged.',
+    'Bildförbättring används bara när resultatet sparas i arkivmappen.': 'Image enhancement is only used when saving to the archive folder.',
+    'Originalen lämnas orörda; resultat sparas i den valda arkivmappen.': 'Originals remain untouched; results are saved in the selected archive folder.',
+    'Nya rensade kopior får suffixet _rensad och sparas bredvid källfilerna.': 'New cleaned copies get the _rensad suffix and are saved beside the source files.',
+    'Original ersätts först när en tillfällig kopia har rensats klart.': 'Originals are replaced only after a temporary copy has been cleaned successfully.',
+    'Fil': 'File',
+    'Visa': 'View',
+    'Hjälp': 'Help',
+    'Avsluta': 'Quit',
+    'Anpassa flikar': 'Customize tabs',
+    'Textstorlek': 'Text size',
+    'Mindre': 'Smaller',
+    'Standard': 'Default',
+    'Större': 'Larger',
+    'Extra stor': 'Extra large',
+    'Mörkt tema': 'Dark theme',
+    'Enkelt läge – vanliga verktyg': 'Simple mode – common tools',
+    'Stäng/minimera till systemfältet': 'Close/minimize to system tray',
+    'Minimera till systemfältet': 'Minimize to system tray',
+    'Avsluta MediaForge': 'Quit MediaForge',
+    'Öppna MediaForge': 'Open MediaForge',
+    'Hjälp och support': 'Help & support',
+    'Support för MediaForge': 'MediaForge support',
+    'Snabbhjälp': 'Quick help',
+    'Kom igång': 'Getting started',
+    'Krav och verktyg': 'Requirements and tools',
+    'Loggar och integritet': 'Logs and privacy',
+    'Kopiera diagnostik för support': 'Copy diagnostics for support',
+    'GitHub-sidan kunde inte öppnas.': 'Could not open the GitHub page.',
+    'MediaForge behöver systemets Python 3.10 eller senare. Appen installerar inte en egen Python-runtime.': 'MediaForge needs system Python 3.10 or later. The app does not install its own Python runtime.',
+    'Video, bildspel och ljudverktyg behöver FFmpeg. Bred metadatahantering fungerar bäst med ExifTool.': 'Video, slideshow, and audio tools require FFmpeg. ExifTool is recommended for broad metadata support.',
+    'Fellogg finns under Logs/errors.log. Läs igenom loggarna innan du delar dem; de kan innehålla filvägar och annons-ID:n.': 'The error log is under Logs/errors.log. Review logs before sharing; they may contain file paths and ad IDs.',
+    'Diagnostik innehåller bara versions- och miljöinformation, inte dina filer eller logginnehåll.': 'Diagnostics contain only version and environment information, not your files or log contents.',
+    'Kopiera diagnostik': 'Copy diagnostics',
+    'Öppna GitHub-support': 'Open GitHub support',
+    'Stäng': 'Close',
+    'Diagnostik kopierad till urklipp.': 'Diagnostics copied to clipboard.',
+    'Visa alla flikar': 'Show all tabs',
+    'Fliken visas inte i valt arbetsläge.': 'This tab is outside the selected workspace mode.',
+    'Inga flikar visas. Öppna menyn Flikar och markera de flikar du vill använda.': 'No tabs are shown. Open the Tabs menu and check the tabs you want to use.',
+    'Dölj alla flikar': 'Hide all tabs',
+    'Markera för att visa fliken; avmarkera för att dölja den.': 'Check to show this tab; uncheck to hide it.',
+    'Appversion': 'App version',
+    'Operativsystem': 'Operating system',
+    'Python': 'Python',
+    'Qt': 'Qt',
+    'FFmpeg': 'FFmpeg',
+    'ExifTool': 'ExifTool',
+    'Tillgänglig': 'Available',
+    'Saknas': 'Missing',
+    'Minst en flik måste vara synlig i valt arbetsläge.': 'At least one tab must stay visible in the selected mode.'
+})
+
+UI_TRANSLATIONS.update({
+    'Beskär/redigera…': 'Crop/edit…',
+    'Skärpa upp…': 'Sharpen…',
+    'Minska filstorlek…': 'Reduce file size…',
+    'Flytta till papperskorgen…': 'Move to trash…',
+    'Bevara EXIF i komprimerad kopia (kan innehålla platsdata)': 'Keep EXIF in compressed copy (may contain location data)',
+    'Skärpegrad (högre = skarpare)': 'Sharpening strength (higher = sharper)',
+    'Välj format för en komprimerad kopia': 'Choose format for compressed copy',
+    'WebP (behåll transparens)': 'WebP (preserve transparency)',
+    'JPEG (vit bakgrund)': 'JPEG (white background)',
+    'Kvalitet (lägre = mindre fil)': 'Quality (lower = smaller file)',
+    'Skriva över {path}?': 'Overwrite {path}?',
+    'Kopian blev {percent:.1f}% mindre ({before} → {after}).': 'The copy is {percent:.1f}% smaller ({before} → {after}).',
+    'Ingen storleksminskning': 'No size reduction',
+    'Den komprimerade kopian blev inte mindre än originalet. Originalet har inte ändrats; kopian finns i {path}.': 'The compressed copy is not smaller than the original. The original is unchanged; the copy is at {path}.',
+    'Ersätta originalet?': 'Replace the original?',
+    'Kopian är mindre. Vill du använda den i bildmappen och flytta originalet till systempapperskorgen? Originalet kan återställas därifrån; diskutrymmet frigörs först när papperskorgen töms.': 'The copy is smaller. Use it in the image folder and move the original to the system trash? The original can be restored from there; disk space is freed only after the trash is emptied.',
+    'Källfilen ändrades': 'Source file changed',
+    'Källfilen ändrades under komprimeringen. Originalet har inte ersatts; den nya kopian finns i {path}.': 'The source file changed during compression. The original was not replaced; the new copy is at {path}.',
+    'Källfilen ändrades; den har inte flyttats till papperskorgen.': 'The source file changed; it was not moved to the trash.',
+    'Flytta till papperskorgen?': 'Move to trash?',
+    'Flytta {name} till systempapperskorgen? Originalet kan återställas därifrån.': 'Move {name} to the system trash? The original can be restored from there.',
+    'Bild flyttad till papperskorgen: {name}': 'Image moved to trash: {name}',
+    'Kunde inte flytta bilden': 'Could not move image',
+    'Den här skrivbordsmiljön har inget tillgängligt systemfält.': 'This desktop environment has no available system tray.',
+    'Kunde inte förbereda SVG-bilden för redigering.': 'Could not prepare the SVG image for editing.',
+    'Kunde inte omvandla SVG-bilden till PNG.': 'Could not convert the SVG image to PNG.',
+    'Animerad bild': 'Animated image',
+    'Den här åtgärden skapar en stillbild från den första bildrutan. Vill du fortsätta?': 'This action creates a still image from the first frame. Continue?',
+    'Källfilen har flyttats eller ändrats; ingen ersättning gjordes.': 'The source file was moved or changed; no replacement was made.',
+    'Källfilen ändrades; den har inte flyttats till papperskorgen.': 'The source file changed; it was not moved to the trash.'
+})
+
+ 'Kontrollera att källfilen fortfarande finns och går att läsa; kör sedan om skanningen eller jobbet.': 'Check that the source file still exists and is readable, then rescan or rerun the job.',
+ 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH; öppna sedan appen igen.': 'Check that FFmpeg/ffprobe is installed and available on PATH, then reopen the app.',
+ 'Kontrollera att filen inte är skadad och att formatet stöds; prova en annan fil eller uppdatera FFmpeg via systemets vanliga metod.': 'Check that the file is not damaged and that its format is supported; try another file or update FFmpeg using your usual system method.',
+ 'Kontrollera internetanslutningen och försök igen; servern kan också begränsa eller tillfälligt neka hämtningen.': 'Check the internet connection and retry; the server may also be limiting or temporarily rejecting the download.',
+ 'Kontrollera att källfilens format stöds och att nödvändigt stöd för HEIC/HEIF/AVIF är tillgängligt.': 'Check that the source format is supported and that HEIC/HEIF/AVIF support is available when needed.',
+ 'Välj en annan målfil eller målmapp, eller slå på ersättning om du avsiktligt vill skriva över en befintlig kopia.': 'Choose another output file or folder, or enable replacement if you intentionally want to overwrite an existing copy.',
+ 'Använd Verktyg → Kontrollera/installera Python-tillägg… och kontrollera felloggen om paketet fortfarande saknas.': 'Use Tools → Check/install Python packages… and review the error log if the package is still missing.',
+ 'Kontrollera källfilen och målmappen. Detaljer finns i Logs/errors.log om felet kvarstår.': 'Check the source file and destination folder. Details are in Logs/errors.log if the error persists.',
+
+ 'Bildförbättring': 'Photo enhancement',
+ 'Datum & EXIF': 'Date & EXIF',
+ 'Bildoptimering': 'Image optimization',
+ 'Videokonvertering': 'Video conversion',
+ 'Skapa musik-DVD': 'Create music DVD',
+ 'Aktivitetslogg': 'Activity log',
+ 'Webbbilder → JPEG': 'Web images → JPEG',
+ 'Blocket → JPEG': 'Blocket → JPEG',
+ 'AVIF/HEIC → JPEG': 'AVIF/HEIC → JPEG',
+ 'Fotoredigerare': 'Photo editor',
+ 'Öppna ett foto. Dra över förhandsvisningen för att markera ett område att beskära, korrigera röda ögon eller sudda ut.': 'Open a photo. Drag over the preview to select an area to crop, correct red-eye, or blur.',
+ 'Positiva värden roterar moturs; negativa värden roterar medurs.': 'Positive values rotate counter-clockwise; negative values rotate clockwise.',
+
+ 'Räta upp (grader)': 'Straighten (degrees)',
+ 'Räta upp': 'Straighten',
+ 'Ta bort röda ögon i markering': 'Remove red-eye in selection',
+ 'Gör markering suddig (valfritt)': 'Blur selection (optional)',
+ 'Välj ett område i bilden först.': 'Select an area in the image first.',
+ 'Markera ett litet område runt de röda ögonen.': 'Select a small area around the red eyes.',
+ 'Markera området som ska suddas ut.': 'Select the area to blur.',
+ 'Röda ögon korrigerade:': 'Red-eye corrected:',
+ 'Område suddat ut:': 'Area blurred:',
+ 'Horisonten justerad {angle}°:': 'Horizon adjusted by {angle}°:',
+ 'Sök i hjälpen…': 'Search help…',
+ 'Ingen hjälptext matchar sökningen.': 'No help text matches your search.',
+        'Guide steg {current} av {total}': 'Guide step {current} of {total}',
+        'Guiden visar hur du hittar ett verktyg, väljer material och följer ett jobb. Den startar inget jobb och ändrar inga filer.': 'This guide shows how to find a tool, choose media, and follow a job. It does not start a job or change files.',
+        'Interaktiv guide…': 'Interactive guide…',
+ 'Välkommen till MediaForge': 'Welcome to MediaForge',
+ 'Välj arbetsläge och verktyg': 'Choose a mode and tool',
+ 'Välj indata och utdata': 'Choose input and output',
+ 'Granska inställningar och starta': 'Review settings and start',
+ 'Följ resultatet och kontrollera loggen': 'Follow progress and review the log',
+ 'Stäng guiden': 'Finish guide',
+ 'Öppna valt verktyg': 'Open selected tool',
+ 'Välj Foto, Video eller Alla högst upp. Flikar kan visas och döljas från Visa → Flikar.': 'Choose Photo, Video, or All at the top. Show or hide tabs from View → Tabs.',
+ 'Välj en lämplig flik. Bildbibliotek och fotoredigerare öppnar källor utan att ändra dem. Bearbetningsverktyg skapar resultatkopior om inte ett särskilt läge säger annat.': 'Choose a suitable tab. The photo library and editor open sources without changing them. Processing tools create output copies unless a specific mode says otherwise.',
+ 'Välj en fil eller mapp och granska målplatsen. Kontrollera att det finns tillräckligt med utrymme innan ett stort jobb.': 'Choose a file or folder and review the destination. Check available space before a large job.',
+ 'Kontrollera format, kvalitet och metadataalternativ. Kör ett litet jobb först om du är osäker på resultatet.': 'Check format, quality, and metadata options. Try a small job first if you are unsure about the result.',
+ 'Följ förloppet och läs aktivitetsloggen. Fel visar ofta ett förslag på nästa steg; avbrutna original ska förbli orörda.': 'Follow progress and read the activity log. Errors often include a suggested next step; source originals should remain untouched.',
+ 'Kontrollera/installera Python-tillägg…': 'Check/install Python packages…',
+ 'Uppdatera systemets Python…': 'Update system Python…',
+ 'Visa MediaForge i Utforskaren (högerklicksmeny)': 'Add MediaForge to File Explorer (right-click menu)',
+ 'Registrera MediaForge som bildvisare': 'Register MediaForge as an image viewer',
+ 'Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.': 'The default app is not changed. Choose MediaForge manually in your operating system settings.',
+ 'Håll datorn vaken under jobb': 'Keep the computer awake during jobs',
+ 'Bevaka källmappen och fråga innan nya filer behandlas': 'Watch the source folder and ask before processing new files',
+ 'MediaForge bevakar källmappen. Nya filer bearbetas aldrig utan bekräftelse.': 'MediaForge is watching the source folder. New files are never processed without confirmation.',
+ 'Hittade {count} nya mediefiler i den bevakade mappen. Vill du bearbeta bara dessa filer nu?': 'Found {count} new media files in the watched folder. Process only these files now?',
+ 'Bevakningen kunde inte startas: {error}': 'Could not start watching: {error}',
+ 'Bevakningen av källmappen är avstängd.': 'Source folder watching is off.',
+ 'Välj en giltig källmapp innan du aktiverar bevakning.': 'Choose a valid source folder before enabling watch mode.',
+ 'Nya filer hittades': 'New files found',
+ 'Mappbevakning': 'Folder watch',
+ 'Den bevakade källmappen finns inte längre.': 'The watched source folder no longer exists.',
+ 'Inga nya filer': 'No new files',
+ 'Inga av de nya filerna kan bearbetas med de valda inställningarna.': 'None of the new files can be processed with the current settings.',
+ 'Efter bearbetning': 'After processing',
+ 'Behåll vald mappstruktur': 'Keep the selected folder structure',
+ 'Sortera i Bilder och Videor': 'Organize into Images and Videos',
+ 'Arbetsflöde: bearbeta och sortera resultaten i Bilder/Videor.': 'Workflow: process, then organize results into Images/Videos.',
+ 'Uppdatera alla Python-paket (starta om)…': 'Update all Python packages (restart)…',
+    'Sök tyst efter nya versioner (2 ggr/dygn)': 'Silently check for updates twice a day',
+    'Installerar release…': 'Installing release…',
+    'Bearbetar %p% (%v/%m)': 'Processing %p% (%v/%m)',
+    'Klart · %p% (%v/%m)': 'Done · %p% (%v/%m)',
+    'Avbrutet · %p% (%v/%m)': 'Cancelled · %p% (%v/%m)',
+    'Bearbetning klar': 'Processing complete',
+    'Bearbetning avbruten': 'Processing cancelled',
+    'Mappbearbetningen är klar för {total} filer. Kontrollera loggen för eventuella FEL, DELVIS eller HOPPADES ÖVER.': 'Folder processing is complete for {total} files. Check the log for any errors, partial results, or skipped files.',
+    'Mappbearbetningen avbröts efter {done} av {total} filer. Kontrollera loggen.': 'Folder processing was cancelled after {done} of {total} files. Check the log.',
+    'Ny GitHub-release {tag} finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efteråt.': 'A new GitHub release {tag} is available ({local} → {remote}). Update now? The app will restart automatically afterwards.',
+    'Filer som ändrats:': 'Changed files:',
+    '… och {count} till': '… and {count} more',
+    'Commit-ID:t skiljer sig, men inga filer innehåller ändringar.': 'The commit ID differs, but the file contents are unchanged.',
+    'Uppdateringen misslyckades. MediaForge startas inte om.': 'The update failed. MediaForge will not restart.',
+    'Uppdateringskontrollen kunde inte genomföras.': 'The update check could not be completed.',
+ 'Uppdatering kräver en ren Git-kopia av MediaForge.': 'Updating requires a clean Git checkout of MediaForge.',
+ 'Den lokala grenen skiljer sig från releasen. Uppdateringen växlar arbetskopian till releasetaggen i frikopplat läge. Din nuvarande gren och dess commits behålls.': 'This branch differs from the release. Updating switches this working copy to the release tag in detached-HEAD mode. Your current branch and its commits are preserved.',
+ 'Detta stänger MediaForge och uppdaterar paketen i den gemensamma Python-installationen för ditt användarkonto. Andra program som använder samma Python kan också påverkas. Fortsätta?': 'This closes MediaForge and updates packages in the shared Python installation for your user account. Other programs using the same Python may also be affected. Continue?',
+ 'Sök efter uppdatering…': 'Check for updates…',
+ 'Detta stänger MediaForge och försöker uppdatera befintlig system-Python via systemets pakethanterare. En ny Python installeras inte. Fortsätta?': 'This will close MediaForge and try to update the existing system Python through its system package manager. No new Python runtime will be installed. Continue?',
+ 'Söker efter senaste release…': 'Checking for the latest release…',
+ 'MediaForge är redan uppdaterat.': 'MediaForge is already up to date.',
+ 'Kan inte uppdatera säkert eftersom den lokala grenen inte kan snabbspolas till releasen.': 'Cannot update safely because the local branch cannot fast-forward to the release.',
+ 'Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.': 'The Git worktree is not clean. Commit, stash, or discard changes before updating.',
+ 'Uppdatering tillgänglig: {local} → {remote}. Uppdatera nu? Endast snabbspolning tillåts.': 'Update available: {local} → {remote}. Update now? Only a fast-forward update is allowed.',
+ 'Uppdateringen är klar. Starta om MediaForge för att använda den nya versionen.': 'Update complete. Restart MediaForge to use the updated code.',
+ 'GitHub-uppdateringen misslyckades:': 'GitHub release update failed:',
+ 'Git saknas i PATH och uppdateraren kan därför inte verifiera arbetskopian. Installera Git eller använd en källkodsinstallation utan .git-mapp.': 'Git is not available in PATH, so the updater cannot verify this checkout. Install Git or use a source-archive installation without a .git folder.',
+ 'Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En säkerhetskopia sparas i MediaForge_Data/Backups.': 'Git is not installed in this copy. Only application files will be replaced; settings and user data are kept. A backup is saved in MediaForge_Data/Backups.',
+ 'Python-uppdatering' : 'Python update',
+ 'GitHub-uppdatering': 'GitHub update',
+    'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
+    'MediaForge har redan senaste releasen ({tag}).': 'MediaForge already has the latest release ({tag}).',
+ 'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
+ 'Stöd utvecklingen · Ko-fi': 'Support development · Ko-fi',
+ 'Ko-fi-länk saknas': 'Ko-fi link not set',
+ 'Ko-fi-adressen är inte konfigurerad i appen ännu. Be utvecklaren lägga till den fasta länken.': 'The app does not have a Ko-fi destination configured yet. Ask the developer to add the fixed link.',
+ 'Förstora, förbättra färger och skärp foton. Video kopieras utan bildförbättring.': 'Enlarge, enhance '
+                                                                                     'colors and sharpen '
+                                                                                     'photos. Videos are '
+                                                                                     'copied without image '
+                                                                                     'enhancement.',
+ 'Förbättra bilder (annars kopieras de oförändrade)': 'Enhance images (otherwise copy unchanged)',
+ 'Förstoring': 'Scale',
+ 'Skärpa': 'Sharpness',
+ 'Färgstyrka': 'Color',
+ 'Klarhet/kontrast': 'Clarity/contrast',
+ 'Behåll befintlig EXIF vid export (kan innehålla GPS/programnamn)': 'Keep existing EXIF on export (may '
+                                                                     'include GPS/software name)',
+ 'Sätt samma datum på alla filer': 'Set the same date for all files',
+ 'Flytta varje fils befintliga datum': 'Shift each file’s existing date',
+ 'Ändra EXIF/video-datum': 'Change EXIF/video date',
+ 'Ändra filens tidsstämpel (skapad där det stöds)': 'Change file timestamps (creation time where supported)',
+ 'Ta bort programnamn i metadata': 'Remove software name from metadata',
+ 'Radera ALL befintlig EXIF/metadata (datum skrivs tillbaka om valt)': 'Remove ALL existing EXIF/metadata '
+                                                                       '(date is restored if selected)',
+ 'ExifTool rekommenderas för HEIC, PNG, RAW och video. Utan det krävs piexif för JPEG/TIFF.': 'ExifTool is '
+                                                                                              'recommended '
+                                                                                              'for HEIC, '
+                                                                                              'PNG, RAW and '
+                                                                                              'video. '
+                                                                                              'Without it, '
+                                                                                              'piexif is '
+                                                                                              'required for '
+                                                                                              'JPEG/TIFF.',
+ 'Mappjobb — kopior i arkivmappen': 'Folder job — copies in archive folder',
+ 'Mappjobb — rensade kopior i källmappen': 'Folder job — cleaned copies in source folder',
+ 'Mappjobb — skriv över originalen': 'Folder job — overwrite originals',
+ 'Alla stödda bild- och videofiler i källmappen bearbetas. Originalen lämnas orörda; kopior sparas i arkivmappen.': 'All supported image and video files in the source folder are processed. Originals are untouched; copies are saved in the archive folder.',
+ 'Alla stödda bild- och videofiler i källmappen bearbetas. Rensade kopior sparas bredvid källfilerna med suffixet _rensad.': 'All supported image and video files in the source folder are processed. Cleaned copies are saved beside the sources with the _rensad suffix.',
+ 'Alla stödda bild- och videofiler i källmappen bearbetas. Original ersätts först när en tillfällig kopia har rensats klart.': 'All supported image and video files in the source folder are processed. Originals are replaced only after a temporary copy has been cleaned successfully.',
+ 'Bearbeta alla filer i mappen': 'Process all files in folder',
+ 'Rensa metadata och skriv över alla filer…': 'Clean metadata and overwrite all files…',
+ 'Filer och arkiv (originalen ändras aldrig)': 'Files and archive (originals are never changed)',
+ 'Källmapp': 'Source folder',
+ 'Arkivmapp': 'Archive folder',
+ 'Välj…': 'Browse…',
+ 'Undermappar': 'Subfolders',
+ 'Bevara mappstruktur': 'Preserve folder structure',
+ 'Skriv över arkivfiler': 'Overwrite archive files',
+ 'Ljust/mörkt tema': 'Light/dark theme',
+ 'Exportera logg': 'Export log',
+ 'Bearbeta kopior': 'Process copies',
+ 'Avbryt': 'Cancel',
+ 'Starta automatiskt vid inloggning': 'Start automatically at sign-in',
+ 'Välj mapp…': 'Choose folder…',
+ 'Ta med undermappar': 'Include subfolders',
+ 'Rensa EXIF/metadata (GPS, kameradata m.m.)': 'Remove EXIF/metadata (GPS, camera data, etc.)',
+ 'Bildmapp': 'Image folder',
+ 'Spara kopior i': 'Save copies to',
+ 'Importera en hel mapp och skapa optimerade kopior. Originalen ändras aldrig.': 'Import an entire folder '
+                                                                                 'and create optimized '
+                                                                                 'copies. Originals are '
+                                                                                 'never changed.',
+ 'JPG kopieras utan omkodning för att bevara bildkvaliteten; PNG/TIFF optimeras förlustfritt och WEBP kodas förlustfritt.': 'JPG '
+                                                                                                                            'files '
+                                                                                                                            'are '
+                                                                                                                            'copied '
+                                                                                                                            'without '
+                                                                                                                            're-encoding '
+                                                                                                                            'to '
+                                                                                                                            'preserve '
+                                                                                                                            'quality; '
+                                                                                                                            'PNG/TIFF '
+                                                                                                                            'are '
+                                                                                                                            'optimized '
+                                                                                                                            'losslessly '
+                                                                                                                            'and '
+                                                                                                                            'WEBP '
+                                                                                                                            'uses '
+                                                                                                                            'lossless '
+                                                                                                                            'encoding.',
+ 'OBS: För JPG bevaras den ursprungliga bildströmmen, så storleken minskar främst genom att metadata rensas. PNG/TIFF kan bli mindre genom förlustfri optimering.': 'Note: '
+                                                                                                                                                                    'JPG '
+                                                                                                                                                                    'image '
+                                                                                                                                                                    'data '
+                                                                                                                                                                    'is '
+                                                                                                                                                                    'preserved, '
+                                                                                                                                                                    'so '
+                                                                                                                                                                    'size '
+                                                                                                                                                                    'reduction '
+                                                                                                                                                                    'mainly '
+                                                                                                                                                                    'comes '
+                                                                                                                                                                    'from '
+                                                                                                                                                                    'removing '
+                                                                                                                                                                    'metadata. '
+                                                                                                                                                                    'PNG/TIFF '
+                                                                                                                                                                    'may '
+                                                                                                                                                                    'shrink '
+                                                                                                                                                                    'through '
+                                                                                                                                                                    'lossless '
+                                                                                                                                                                    'optimization.',
+ 'Optimera bildmapp': 'Optimize image folder',
+ 'Konvertera en mapp med videor till MP4/H.264 med FFmpeg. Källfilerna lämnas orörda.': 'Convert a folder of '
+                                                                                        'videos to MP4/H.264 '
+                                                                                        'with FFmpeg. Source '
+                                                                                        'files remain '
+                                                                                        'untouched.',
+ 'Videomapp': 'Video folder',
+ 'Högsta upplösning': 'Maximum resolution',
+ 'Kvalitet (CRF; lägre = bättre/större)': 'Quality (CRF; lower = better/larger)',
+ 'Kräver FFmpeg i PATH. Kodning använder H.264/AAC och kan minska filstorlek, men är en omkodning med viss kvalitetsförlust.': 'Requires '
+                                                                                                                               'FFmpeg '
+                                                                                                                               'in '
+                                                                                                                               'PATH. '
+                                                                                                                               'H.264/AAC '
+                                                                                                                               'encoding '
+                                                                                                                               'can '
+                                                                                                                               'reduce '
+                                                                                                                               'file '
+                                                                                                                               'size, '
+                                                                                                                               'but '
+                                                                                                                               're-encoding '
+                                                                                                                               'may '
+                                                                                                                               'reduce '
+                                                                                                                               'quality.',
+ 'Konvertera videomapp till MP4': 'Convert video folder to MP4',
+ 'Samla musikfiler i en DVD-5-kompatibel mapp och skapa en ISO-avbildning om ett ISO-verktyg finns installerat.': 'Collect '
+                                                                                                                  'music '
+                                                                                                                  'files '
+                                                                                                                  'in '
+                                                                                                                  'a '
+                                                                                                                  'DVD-5-compatible '
+                                                                                                                  'folder '
+                                                                                                                  'and '
+                                                                                                                  'create '
+                                                                                                                  'an '
+                                                                                                                  'ISO '
+                                                                                                                  'image '
+                                                                                                                  'if '
+                                                                                                                  'an '
+                                                                                                                  'ISO '
+                                                                                                                  'tool '
+                                                                                                                  'is '
+                                                                                                                  'installed.',
+ 'Detta är en data-DVD med musikfiler – inte en DVD-Video för alla DVD-spelare. Välj/bränn ISO som skivavbildning, eller bränn mappen som data-DVD.': 'This '
+                                                                                                                                                      'is '
+                                                                                                                                                      'a '
+                                                                                                                                                      'data '
+                                                                                                                                                      'DVD '
+                                                                                                                                                      'containing '
+                                                                                                                                                      'music '
+                                                                                                                                                      'files, '
+                                                                                                                                                      'not '
+                                                                                                                                                      'a '
+                                                                                                                                                      'DVD-Video '
+                                                                                                                                                      'for '
+                                                                                                                                                      'all '
+                                                                                                                                                      'DVD '
+                                                                                                                                                      'players. '
+                                                                                                                                                      'Burn '
+                                                                                                                                                      'the '
+                                                                                                                                                      'ISO '
+                                                                                                                                                      'as '
+                                                                                                                                                      'a '
+                                                                                                                                                      'disc '
+                                                                                                                                                      'image, '
+                                                                                                                                                      'or '
+                                                                                                                                                      'burn '
+                                                                                                                                                      'the '
+                                                                                                                                                      'folder '
+                                                                                                                                                      'as '
+                                                                                                                                                      'a '
+                                                                                                                                                      'data '
+                                                                                                                                                      'DVD.',
+ 'Musikmapp': 'Music folder',
+ 'Utmatningsmapp': 'Output folder',
+ 'Ta med undermappar (filer samlas i skivans rot)': 'Include subfolders (files are placed in the disc root)',
+ 'Stödjer MP3, WAV, FLAC, M4A, AAC, OGG, OPUS, WMA och AIFF. DVD-5 rymmer cirka 4,7 GB.': 'Supports MP3, '
+                                                                                          'WAV, FLAC, M4A, '
+                                                                                          'AAC, OGG, OPUS, '
+                                                                                          'WMA and AIFF. A '
+                                                                                          'DVD-5 holds about '
+                                                                                          '4.7 GB.',
+ 'Händelser från alla flikar sparas också automatiskt till en roterande loggfil.': 'Events from all tabs are '
+                                                                                   'also saved automatically '
+                                                                                   'to a rotating log file.',
+ 'Exportera hela loggen…': 'Export full log…',
+ 'Direkta HTTPS-länkar till bildfiler. En länk per rad; stöder JPG, PNG, WEBP, AVIF och HEIC.': 'Direct '
+                                                                                                'HTTPS links '
+                                                                                                'to image '
+                                                                                                'files. One '
+                                                                                                'link per '
+                                                                                                'line; '
+                                                                                                'supports '
+                                                                                                'JPG, PNG, '
+                                                                                                'WEBP, AVIF '
+                                                                                                'and HEIC.',
+ 'Basmapp:': 'Base folder:',
+ 'Bilderna sparas som JPEG i undermappen “Direkta bilder” i vald basmapp.': 'Images are saved as JPEG in a '
+                                                                            '“Direct images” subfolder in '
+                                                                            'the selected base folder.',
+ 'JPEG-kvalitet': 'JPEG quality',
+ 'Hämta webbbilder som JPEG': 'Download web images as JPEG',
+ 'Klistra in Blocket-annonser från /mobility/item/ eller /recommerce/forsale/item/, en per rad. Varje annons får en mapp med sin titel.': 'Paste '
+                                                                                                                                          'Blocket '
+                                                                                                                                          'ad '
+                                                                                                                                          'links '
+                                                                                                                                          '(/mobility/item/ '
+                                                                                                                                          'or '
+                                                                                                                                          '/recommerce/forsale/item/), '
+                                                                                                                                          'one '
+                                                                                                                                          'per '
+                                                                                                                                          'line. '
+                                                                                                                                          'Each '
+                                                                                                                                          'ad '
+                                                                                                                                          'gets '
+                                                                                                                                          'a '
+                                                                                                                                          'folder '
+                                                                                                                                          'named '
+                                                                                                                                          'after '
+                                                                                                                                          'its '
+                                                                                                                                          'title.',
+ 'Spara i:': 'Save to:',
+ 'Använd bara bilder du har rätt att spara/använda. Ingen inloggning eller åtkomstspärr kringgås.': 'Only '
+                                                                                                    'download '
+                                                                                                    'images '
+                                                                                                    'you '
+                                                                                                    'have '
+                                                                                                    'permission '
+                                                                                                    'to use. '
+                                                                                                    'The app '
+                                                                                                    'does '
+                                                                                                    'not '
+                                                                                                    'bypass '
+                                                                                                    'logins '
+                                                                                                    'or '
+                                                                                                    'access '
+                                                                                                    'restrictions.',
+ 'Hämta alla galleribilder som JPEG': 'Download all gallery images as JPEG',
+ 'Lägg till bilder…': 'Add images…',
+ 'Rensa listan': 'Clear list',
+ 'Konvertera till JPEG': 'Convert to JPEG',
+ 'Avbryt konvertering': 'Cancel conversion',
+ 'Konvertera AVIF, HEIC och HEIF till JPEG. Originalfilerna sparas oförändrade.': 'Convert AVIF, HEIC and '
+                                                                                  'HEIF to JPEG. Original '
+                                                                                  'files remain untouched.',
+ 'Spara JPEG-kopior i:': 'Save JPEG copies to:',
+ 'Bevara EXIF och färgprofil (kan innehålla GPS)': 'Keep EXIF and color profile (may include GPS)',
+ 'Genomskinliga områden får vit bakgrund. Samma filnamn får automatiskt nytt löpnummer.': 'Transparent areas '
+                                                                                          'get a white '
+                                                                                          'background. '
+                                                                                          'Duplicate '
+                                                                                          'filenames receive '
+                                                                                          'an automatic '
+                                                                                          'number.',
+ 'Öppna ett foto. Dra över förhandsvisningen för att markera ett område att klippa ut.': 'Open a photo. Drag '
+                                                                                         'on the preview to '
+                                                                                         'select an area to '
+                                                                                         'crop.',
+ 'Spara kopia använder förstoring, skärpa, färg och klarhet från fliken Bildförbättring. Originalet påverkas inte.': 'Save '
+                                                                                                                     'Copy '
+                                                                                                                     'uses '
+                                                                                                                     'scale, '
+                                                                                                                     'sharpness, '
+                                                                                                                     'color '
+                                                                                                                     'and '
+                                                                                                                     'clarity '
+                                                                                                                     'from '
+                                                                                                                     'Photo '
+                                                                                                                     'Enhancement. '
+                                                                                                                     'The '
+                                                                                                                     'original '
+                                                                                                                     'is '
+                                                                                                                     'not '
+                                                                                                                     'affected.',
+ 'Dra en mapp hit eller välj mapp…': 'Drop a folder here or choose one…',
+ 'Välj mapp med bilder…': 'Choose image folder…',
+ 'Välj mapp med videor…': 'Choose video folder…',
+ 'Välj mapp med musik…': 'Choose music folder…',
+ 'Välj en basmapp; varje annons får en undermapp med sin titel': 'Choose a base folder; each ad gets a '
+                                                                 'subfolder named after its title',
+ '1× (bara färg/skärpa)': '1× (color/sharpness only)',
+ '+ Lägg till': '+ Add',
+ '− Dra ifrån': '− Subtract',
+ 'Behåll originalstorlek': 'Keep original size',
+ '1080p': '1080p',
+ '720p': '720p',
+ 'Ko-fi-donationslänk': 'Ko-fi donation link',
+ 'Klistra in din personliga Ko-fi-länk (https://ko-fi.com/dittnamn):': 'Enter your personal Ko-fi link '
+                                                                       '(https://ko-fi.com/yourname):',
+ 'Välj basmapp för webbbilder': 'Choose a base folder for web images',
+ 'Välj bildmapp': 'Choose image folder',
+ 'Välj AVIF/HEIC-bilder': 'Choose AVIF/HEIC images',
+ 'AVIF/HEIC (*.avif *.heic *.heif)': 'AVIF/HEIC (*.avif *.heic *.heif)',
+ 'Välj JPEG-mapp': 'Choose JPEG folder',
+ 'Öppna foto': 'Open photo',
+ 'Bilder (*.jpg *.jpeg *.png *.webp *.tif *.tiff *.bmp)': 'Images (*.jpg *.jpeg *.png *.webp *.tif *.tiff '
+                                                          '*.bmp)',
+ 'Spara redigerad kopia': 'Save edited copy',
+ 'PNG (*.png);;JPEG (*.jpg);;WEBP (*.webp)': 'PNG (*.png);;JPEG (*.jpg);;WEBP (*.webp)',
+ 'Välj källmapp': 'Choose source folder',
+ 'Välj arkivmapp': 'Choose archive folder',
+ 'Spara logg': 'Save log',
+ 'Text (*.txt)': 'Text (*.txt)',
+ 'Ohanterat fel': 'Unhandled error',
+ 'Ogiltig mapp': 'Invalid folder',
+ 'Välj en giltig videomapp och en separat målmapp utanför källmappen.': 'Choose a valid video folder and a '
+                                                                        'separate destination outside the '
+                                                                        'source folder.',
+ 'Välj en giltig bildmapp och en separat målmapp utanför källmappen.': 'Choose a valid image folder and a '
+                                                                       'separate destination outside the '
+                                                                       'source folder.',
+ 'Välj en giltig musikmapp och en separat utmatningsmapp utanför källmappen.': 'Choose a valid music folder '
+                                                                               'and a separate output folder '
+                                                                               'outside the source folder.',
+ 'Ogiltig länk': 'Invalid link',
+ 'Ange en personlig Ko-fi-länk på domänen ko-fi.com, till exempel https://ko-fi.com/dittnamn.': 'Enter a '
+                                                                                                'personal '
+                                                                                                'Ko-fi link '
+                                                                                                'on '
+                                                                                                'ko-fi.com, '
+                                                                                                'for example '
+                                                                                                'https://ko-fi.com/yourname.',
+ 'Sparat': 'Saved',
+ 'Din Ko-fi-länk sparades lokalt i appens inställningsmapp.': 'Your Ko-fi link was saved locally in the app '
+                                                              'settings folder.',
+ 'Kunde inte spara': 'Could not save',
+ 'Saknade tillägg': 'Missing packages',
+ 'Vill du installera saknade frivilliga Python-tillägg?\\n': 'Install missing optional Python packages?\\n',
+ 'Ingenting installeras utan ditt godkännande.': 'Nothing is installed without your approval.',
+ 'Python-tillägg': 'Python packages',
+ 'Installera/uppdatera Pillow, pillow-heif och piexif?\\nDetta använder samma Python-miljö som appen.\\nPyQt6 uppdateras inte medan appen körs; uppdatera det efter att appen stängts.': 'Install/update '
+                                                                                                                                                                                         'Pillow, '
+                                                                                                                                                                                         'pillow-heif '
+                                                                                                                                                                                         'and '
+                                                                                                                                                                                         'piexif?\\nThis '
+                                                                                                                                                                                         'uses '
+                                                                                                                                                                                         'the '
+                                                                                                                                                                                         'same '
+                                                                                                                                                                                         'Python '
+                                                                                                                                                                                         'environment '
+                                                                                                                                                                                         'as '
+                                                                                                                                                                                         'the '
+                                                                                                                                                                                         'app.\\nPyQt6 '
+                                                                                                                                                                                         'cannot '
+                                                                                                                                                                                         'be '
+                                                                                                                                                                                         'safely '
+                                                                                                                                                                                         'updated '
+                                                                                                                                                                                         'while '
+                                                                                                                                                                                         'the '
+                                                                                                                                                                                         'app '
+                                                                                                                                                                                         'is '
+                                                                                                                                                                                         'running; '
+                                                                                                                                                                                         'update '
+                                                                                                                                                                                         'it '
+                                                                                                                                                                                         'after '
+                                                                                                                                                                                         'closing '
+                                                                                                                                                                                         'the '
+                                                                                                                                                                                         'app.',
+ 'Välj länkar': 'Choose links',
+ 'Ange bildlänkar och en basmapp.': 'Enter image links and a base folder.',
+ 'Fel länkar': 'Invalid links',
+ 'Använd direkta HTTPS-bildlänkar här. Blocket-annonser hör hemma i Blocket-fliken.': 'Use direct HTTPS '
+                                                                                      'image links here. '
+                                                                                      'Blocket ads belong in '
+                                                                                      'the Blocket tab.',
+ 'Ange länkar': 'Enter links',
+ 'Ange minst en annonslänk.': 'Enter at least one ad link.',
+ 'Använd Blocket-annonslänkar här. Direkta bilder hör hemma i Webbbilder-fliken.': 'Use Blocket ad links '
+                                                                                   'here. Direct image links '
+                                                                                   'belong in the Web Images '
+                                                                                   'tab.',
+ 'Kunde inte öppna mappen': 'Could not open folder',
+ 'Välj bilder': 'Choose images',
+ 'Välj bilder och målmapp först.': 'Choose images and a destination folder first.',
+ 'Klipp': 'Crop',
+ 'Dra en tydlig markering på bilden först.': 'Draw a clear selection on the image first.',
+ 'Välj foto': 'Choose photo',
+ 'Öppna ett foto först.': 'Open a photo first.',
+ 'Original': 'Original',
+ 'Välj ett annat filnamn så originalet inte skrivs över.': 'Choose a different filename so the original is '
+                                                           'not overwritten.',
+ 'Klart': 'Done',
+ 'Sparad:': 'Saved:',
+ 'Fel': 'Error',
+ 'Skriv över?': 'Overwrite?',
+ 'Välj en giltig källmapp och arkivmapp.': 'Choose a valid source folder and archive folder.',
+ 'Inga filer': 'No files',
+ 'Inga bilder eller videor hittades.': 'No images or videos were found.',
+ 'Arkivmappen måste skilja sig från källmappen.': 'The archive folder must be different from the source '
+                                                  'folder.',
+ 'Loggfel': 'Log error',
+ 'Autostart kunde inte ändras': 'Could not change startup setting',
+ 'Installationsfel': 'Installation error',
+ 'Installation': 'Installation',
+ 'Klart. Starta om appen för att aktivera tilläggen.': 'Done. Restart the app to activate the packages.',
+ 'Installationen misslyckades.': 'Installation failed.',
+ 'Installera saknade frivilliga Python-tillägg?': 'Install missing optional Python packages?',
+ 'Vill du installera/uppdatera Pillow, pillow-heif och piexif?': 'Install/update Pillow, pillow-heif and '
+                                                                 'piexif?',
+ '\nDetta använder samma Python-miljö som appen.\nPyQt6 uppdateras inte medan appen körs; uppdatera det efter att appen stängts.': '\n'
+                                                                                                                                   'This '
+                                                                                                                                   'uses '
+                                                                                                                                   'the '
+                                                                                                                                   'same '
+                                                                                                                                   'Python '
+                                                                                                                                   'environment '
+                                                                                                                                   'as '
+                                                                                                                                   'the '
+                                                                                                                                   'app.\n'
+                                                                                                                                   'PyQt6 '
+                                                                                                                                   'cannot '
+                                                                                                                                   'be '
+                                                                                                                                   'safely '
+                                                                                                                                   'updated '
+                                                                                                                                   'while '
+                                                                                                                                   'the '
+                                                                                                                                   'app '
+                                                                                                                                   'is '
+                                                                                                                                   'running; '
+                                                                                                                                   'update '
+                                                                                                                                   'it '
+                                                                                                                                   'after '
+                                                                                                                                   'closing '
+                                                                                                                                   'the '
+                                                                                                                                   'app.',
+ 'Skriv över': 'Overwrite',
+ ' dagar': ' days',
+ ' timmar': ' hours',
+ ' minuter': ' minutes',
+ ' sekunder': ' seconds',
+ 'Installera/uppdatera Pillow, pillow-heif och piexif?\nDetta använder samma Python-miljö som appen.\nPyQt6 uppdateras inte medan appen körs; uppdatera det efter att appen stängts.': 'Install/update '
+                                                                                                                                                                                       'Pillow, '
+                                                                                                                                                                                       'pillow-heif '
+                                                                                                                                                                                       'and '
+                                                                                                                                                                                       'piexif?\n'
+                                                                                                                                                                                       'This '
+                                                                                                                                                                                       'uses '
+                                                                                                                                                                                       'the '
+                                                                                                                                                                                       'same '
+                                                                                                                                                                                       'Python '
+                                                                                                                                                                                       'environment '
+                                                                                                                                                                                       'as '
+                                                                                                                                                                                       'the '
+                                                                                                                                                                                       'app.\n'
+                                                                                                                                                                                       'PyQt6 '
+                                                                                                                                                                                       'cannot '
+                                                                                                                                                                                       'be '
+                                                                                                                                                                                       'safely '
+                                                                                                                                                                                       'updated '
+                                                                                                                                                                                       'while '
+                                                                                                                                                                                       'the '
+                                                                                                                                                                                       'app '
+                                                                                                                                                                                       'is '
+                                                                                                                                                                                       'running; '
+                                                                                                                                                                                       'update '
+                                                                                                                                                                                       'it '
+                                                                                                                                                                                       'after '
+                                                                                                                                                                                       'closing '
+                                                                                                                                                                                       'the '
+                                                                                                                                                                                       'app.',
+ 'Autostart is supported on Windows, macOS and Linux only.': 'Autostart stöds bara på Windows, macOS och '
+                                                             'Linux.',
+ 'Output folder restricted': 'Output folder restricted',
+ 'Utdata måste sparas under MediaForge-appens mapp.': 'All generated files must be saved inside the '
+                                                      'MediaForge application folder.'}
+
+
+UI_TRANSLATIONS.update({
+    'Dubblettfinnare': 'Duplicate finder',
+    'Ljud från video': 'Audio from video',
+    'Hitta identiska filer med SHA-256 och visuellt liknande bilder med perceptuell hash. Inga filer ändras under skanningen.': 'Find identical files with SHA-256 and visually similar images with perceptual hashes. No files are changed during scanning.',
+    'Välj mapp att skanna…': 'Choose a folder to scan…',
+    'Skanna mapp': 'Folder to scan',
+    'Välj skanningsmapp': 'Choose scan folder',
+    'Likhetströskel (0–20; lägre = striktare)': 'Similarity threshold (0–20; lower is stricter)',
+    'Välj minst en fil att behålla i varje grupp. Omarkerade kopior flyttas till appens karantänmapp; inget raderas permanent.': 'Choose at least one file to keep in each group. Unchecked copies are moved to the app quarantine; nothing is permanently deleted.',
+ 'Skanna efter dubbletter': 'Scan for duplicates',
+ 'Skanna datorn efter bild-/videodubbletter…': 'Scan the computer for image/video duplicates…',
+ 'INFO: Letar efter bild- och videofiler i de valda diskarna…': 'INFO: Searching selected drives for image and video files…',
+ 'Skanna alla tillgängliga diskar efter bild- och videofiler? Stora diskar kan ta lång tid. Skanningen läser filer men ändrar ingenting.': 'Scan all available drives for image and video files? Large drives may take a long time. Scanning reads files but changes nothing.',
+ 'Hittade inga tillgängliga diskar att skanna.': 'No available drives were found to scan.',
+ 'Tillgängliga rötter: {roots}': 'Available roots: {roots}',
+ 'Avbryt skanning': 'Cancel scan',
+    'Flytta omarkerade till karantän…': 'Move unchecked files to quarantine…',
+    'Avbryt flytt': 'Cancel move',
+    'Skannar filer…': 'Scanning files…',
+    'Skanningen avbröts.': 'Scan cancelled.',
+    'Hittade {groups} grupper med {files} filer.': 'Found {groups} groups with {files} files.',
+    'Inga dubbletter hittades.': 'No duplicates found.',
+    'Välj filer att behålla': 'Choose files to keep',
+    'Markera minst en fil att behålla i varje dubblettgrupp.': 'Select at least one file to keep in every duplicate group.',
+    'Inga filer valda': 'No files selected',
+    'Avmarkera kopior som ska flyttas till karantän först.': 'Uncheck copies to move to quarantine first.',
+    'Flytta {count} omarkerade filer till karantän under MediaForge_Data/Output/Duplicates? Filerna kan återställas manuellt därifrån.': 'Move {count} unchecked files to quarantine under MediaForge_Data/Output/Duplicates? You can restore them manually from there.',
+    'Bekräfta karantänflytt': 'Confirm quarantine move',
+    'Flytt till karantän klar: {moved} flyttade, {failed} fel.': 'Quarantine move finished: {moved} moved, {failed} errors.',
+    'Identiska filer': 'Exact duplicate files',
+    'Visuellt liknande bilder': 'Visually similar images',
+    'Grupp': 'Group',
+    'Behåll': 'Keep',
+    'Fil': 'File',
+    'Matchning': 'Match type',
+    'Välj mapp med videor…': 'Choose a video folder…',
+    'Spara nya filer i': 'Save new files to',
+    'Ljudformat': 'Audio format',
+    'Extrahera ljud från videor': 'Extract audio from videos',
+    'Ta bort ljudspår och spara videokopia': 'Remove audio and save a video copy',
+    'Extrahera ljud till MP3, WAV eller FLAC, eller skapa en videokopia där ljudspåren tas bort. Originalfilerna lämnas orörda.': 'Extract audio to MP3, WAV, or FLAC, or create a video copy with its audio tracks removed. Original files are left untouched.',
+    'Ljudextrahering konverterar ljudspåret till valt format. Borttagning kopierar videospåret utan omkodning och utan ljudspår. Kräver FFmpeg.': 'Audio extraction converts the audio track to the selected format. Removing audio copies the video stream without re-encoding or audio. Requires FFmpeg.',
+    'Välj en giltig videomapp och en målmapp som inte innehåller källmappen och inte ligger inuti den.': 'Choose a valid video folder and a destination that neither contains nor is inside the source folder.',
+    'Välj en giltig videomapp.': 'Choose a valid video folder.',
+    'Välj en giltig mapp att skanna.': 'Choose a valid folder to scan.',
+    'Extraherar ljud från': 'Extracting audio from',
+    'Tar bort ljudspår från': 'Removing audio from',
+    'Skanningen avbröts.': 'The scan was cancelled.',
+    'Färgprofiler': 'Color profiles',
+    'Konvertera bilder mellan sRGB, Display P3 och Adobe RGB (1998). Inbäddade profiler används automatiskt; för omärkta bilder väljer du antagen källprofil.': 'Convert images between sRGB, Display P3, and Adobe RGB (1998). Embedded profiles are used automatically; choose an assumed source profile for untagged images.',
+    'Antagen profil för bilder utan inbäddad profil': 'Assumed profile for images without an embedded profile',
+    'Konvertera till': 'Convert to',
+    'Bilder sparas i samma filformat. Qt måste ha stöd för bildformatet. Konvertering kan ändra pixelvärden och metadata kanske inte följer med; originalfilerna behålls.': 'Images are saved in the same file format. Qt must support that image format. Pixel values may change and metadata might not be retained; originals are preserved.',
+    'Konvertera färgprofiler': 'Convert color profiles',
+    'Välj en giltig bildmapp.': 'Choose a valid image folder.',
+    'Välj en giltig bildmapp och en målmapp som är skild från källmappen.': 'Choose a valid image folder and a destination separate from the source folder.',
+    'Videostabilisering': 'Video stabilization',
+    'Stabilisera skakiga videor med FFmpeg deshake och spara H.264-kopior. Omkodning kan påverka kvalitet och tar tid; originalen ändras inte.': 'Stabilize shaky videos with FFmpeg deshake and save H.264 copies. Re-encoding takes time and may affect quality; originals are unchanged.',
+    'Styrka': 'Strength',
+    'Mild': 'Mild',
+    'Normal': 'Normal',
+    'Stark': 'Strong',
+    'Stabilisera videomapp': 'Stabilize video folder',
+    'Ljudförbättring': 'Audio enhancement',
+    'Normalisera ljudstyrka med EBU-loudness-normalisering eller minska konstant bakgrundsbrus. Ljud bearbetas med FFmpeg; videospåret kopieras utan omkodning.': 'Normalize loudness with EBU loudness normalization or reduce steady background noise. Audio is processed with FFmpeg; video streams are copied without re-encoding.',
+    'Välj mapp med ljud eller video…': 'Choose an audio or video folder…',
+    'Spara bearbetade kopior i': 'Save processed copies to',
+    'Brusreducering kan påverka ljudkvaliteten. Resultat sparas som nya filer; originalen lämnas orörda.': 'Noise reduction can affect audio quality. Results are saved as new files; originals are left untouched.',
+    'Normalisera ljudvolym': 'Normalize audio loudness',
+    'Minska bakgrundsbrus': 'Reduce background noise',
+    'Välj en giltig ljud- eller videomapp.': 'Choose a valid audio or video folder.',
+    'Välj en giltig källmapp och en separat målmapp.': 'Choose a valid source folder and a separate destination folder.',
+    'Codec-rapport': 'Codec report',
+    'Läs teknisk information om ljud- och videofiler med ffprobe (installeras tillsammans med FFmpeg).': 'Inspect technical details of audio and video files using ffprobe (installed with FFmpeg).',
+    'Välj mapp med mediafiler…': 'Choose a folder with media files…',
+    'Skapa codec-rapport': 'Create codec report',
+    'Exportera CSV…': 'Export CSV…',
+    'Exportera codec-rapport': 'Export codec report',
+    'Export klar': 'Export complete',
+    'CSV sparad:': 'CSV saved:',
+    'Exportfel': 'Export error',
+    'Container': 'Container',
+    'Längd': 'Duration',
+    'Video-codec': 'Video codec',
+    'Upplösning': 'Resolution',
+    'Bildfrekvens': 'Frame rate',
+    'Video-bitrate': 'Video bitrate',
+    'Ljud-codec': 'Audio codec',
+    'Ljudformat': 'Audio format',
+    'Ljud-bitrate': 'Audio bitrate',
+    'Fel': 'Error',
+    'Videostabilisering avbruten.': 'Video stabilization cancelled.',
+    'Ljudbearbetning avbruten.': 'Audio processing cancelled.',
+    'Färgprofilkonvertering avbruten.': 'Color profile conversion cancelled.',
+    'Inga stödda bilder hittades.': 'No supported images found.',
+    'Inga ljud- eller videofiler hittades.': 'No audio or video files were found.',
+    'Codec-rapport avbruten.': 'Codec report cancelled.',
+    'Videostabilisering avbruten': 'Video stabilization cancelled',
+    'Ljudbearbetning': 'Audio processing',
+    'Codec-rapport klar.': 'Codec report complete.',
+    'Stabiliserad kopia:': 'Stabilized copy:',
+    'Normaliserad:': 'Normalized:',
+    'Brusreducerad:': 'Noise reduced:',
+})
+
+UI_TRANSLATIONS.update({
+    'Bildbibliotek': 'Photo library',
     'Öppna en bildmapp och bläddra bland originalen. Bilder kopieras eller ändras inte.': 'Open a folder and browse the originals. Images are not copied or modified.',
     'Bildmapp': 'Image folder',
     'Öppna bildmapp…': 'Open image folder…',
@@ -1087,7 +1951,7 @@ def folder_pipeline_relative_path(source, root, preserve_structure, pipeline):
     return relative
 
 
-def enhance(source, target, factor, sharp, color, clarity, keep_exif):
+def enhance(source, target, factor, sharp, color, clarity, keep_exif, quality=95):
     with Image.open(source) as original:
         image = ImageOps.exif_transpose(original)
         w, h = image.size
@@ -1096,8 +1960,13 @@ def enhance(source, target, factor, sharp, color, clarity, keep_exif):
         exif = image.getexif() if keep_exif else None
         if exif:
             exif[274] = 1  # Pixels were already rotated by exif_transpose.
-        alpha = image.getchannel('A') if 'A' in image.getbands() else None
+        has_transparency = 'A' in image.getbands() or image.info.get('transparency') is not None
+        alpha = image.convert('RGBA').getchannel('A') if has_transparency else None
         rgb = image.convert('RGB')
+        if alpha is not None and target.suffix.lower() in {'.jpg', '.jpeg'}:
+            white_background = Image.new('RGB', image.size, (255, 255, 255))
+            white_background.paste(rgb, mask=alpha)
+            rgb = white_background
         if clarity:
             rgb = ImageOps.autocontrast(rgb, cutoff=min(.8, clarity / 180))
             rgb = ImageEnhance.Contrast(rgb).enhance(1 + clarity / 500)
@@ -1112,11 +1981,15 @@ def enhance(source, target, factor, sharp, color, clarity, keep_exif):
         if alpha is not None and target.suffix.lower() != '.jpg':
             rgb.putalpha(alpha.resize(rgb.size, Image.Resampling.LANCZOS))
         kwargs = {}
-        if target.suffix.lower() == '.jpg':
-            kwargs.update(quality=95, subsampling=0)
+        if target.suffix.lower() in {'.jpg', '.jpeg'}:
+            kwargs.update(quality=max(1, min(100, int(quality))), subsampling=0, optimize=True)
         elif target.suffix.lower() == '.webp':
-            kwargs.update(quality=95)
-        if exif and target.suffix.lower() in {'.jpg', '.webp', '.png'}:
+            kwargs.update(quality=max(1, min(100, int(quality))), method=6)
+        elif target.suffix.lower() == '.png':
+            kwargs.update(optimize=True)
+        elif target.suffix.lower() in {'.tif', '.tiff'}:
+            kwargs.update(compression='tiff_lzw')
+        if exif and target.suffix.lower() in {'.jpg', '.jpeg', '.webp', '.png'}:
             kwargs['exif'] = exif.tobytes()
         rgb.save(target, **kwargs)
 
@@ -1312,7 +2185,7 @@ class ImageLibraryScanWorker(QtCore.QThread):
 
     IMAGE_EXTENSIONS = VIEWER_IMAGE_EXTENSIONS
     MODERN_EXTENSIONS = {'.heic', '.heif', '.avif'}
-    SKIP_DIRS = {'.git', '.venv', '__pycache__', 'node_modules'}
+    SKIP_DIRS = {'.git', '.venv', '__pycache__', 'node_modules', 'MediaForge_Data'}
 
     def __init__(self, source, recursive=True, modern_formats=True):
         super().__init__()
@@ -3130,6 +4003,48 @@ def brand_icon():
     p.drawPath(path)
     p.end()
     return QtGui.QIcon(pix)
+
+
+def move_to_system_trash(path):
+    """Move one selected file to the OS trash/recycle bin; never permanently delete it."""
+    path = Path(path).absolute()
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    if sys.platform == 'win32':
+        import ctypes
+        from ctypes import wintypes
+
+        class SHFILEOPSTRUCTW(ctypes.Structure):
+            _fields_ = [
+                ('hwnd', wintypes.HWND), ('wFunc', wintypes.UINT),
+                ('pFrom', wintypes.LPCWSTR), ('pTo', wintypes.LPCWSTR),
+                ('fFlags', wintypes.WORD), ('fAnyOperationsAborted', wintypes.BOOL),
+                ('hNameMappings', wintypes.LPVOID), ('lpszProgressTitle', wintypes.LPCWSTR),
+            ]
+
+        operation = SHFILEOPSTRUCTW()
+        operation.wFunc = 3  # FO_DELETE
+        operation.pFrom = str(path) + '\0\0'
+        operation.fFlags = 0x0040 | 0x0010 | 0x0004 | 0x0400  # undo, no confirm/UI
+        result = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(operation))
+        if result or operation.fAnyOperationsAborted:
+            raise OSError(result or 'Recycle-bin operation was cancelled')
+        return
+    if sys.platform == 'darwin':
+        script = 'on run argv\n tell application "Finder" to delete POSIX file (item 1 of argv)\nend run'
+        subprocess.run(['/usr/bin/osascript', '-e', script, str(path)], check=True, capture_output=True, text=True)
+        return
+    if sys.platform.startswith('linux'):
+        gio = shutil.which('gio')
+        if gio:
+            subprocess.run([gio, 'trash', '--', str(path)], check=True, capture_output=True, text=True)
+            return
+        for client in ('kioclient6', 'kioclient5'):
+            executable = shutil.which(client)
+            if executable:
+                subprocess.run([executable, 'moveToTrash', str(path)], check=True, capture_output=True, text=True)
+                return
+    raise RuntimeError('No supported OS trash/recycle-bin service is available; nothing was deleted.')
 
 
 def autostart_supported():
@@ -6588,7 +7503,7 @@ class Window(QtWidgets.QMainWindow):
         self.library_tab = tab
         self.tabs.addTab(tab, 'Bildbibliotek')
         layout = QtWidgets.QVBoxLayout(tab)
-        layout.addWidget(QtWidgets.QLabel('Öppna en bildmapp och bläddra bland originalen. Bilder kopieras eller ändras inte.'))
+        layout.addWidget(QtWidgets.QLabel('Öppna en bildmapp och bläddra bland originalen. Redigering och komprimering skapar kopior; flytt till papperskorgen kräver bekräftelse.'))
         location = QtWidgets.QGridLayout()
         layout.addLayout(location)
         self.library_source = DropEdit()
@@ -6643,6 +7558,25 @@ class Window(QtWidgets.QMainWindow):
         self.library_print_button.clicked.connect(self.print_library_image)
         controls.addWidget(self.library_print_button)
         preview_layout.addLayout(controls)
+        edit_controls = QtWidgets.QHBoxLayout()
+        self.library_crop_button = QtWidgets.QPushButton('Beskär/redigera…')
+        self.library_crop_button.setToolTip('Öppna den valda bilden i redigeraren. Beskärning sparas som en kopia.')
+        self.library_crop_button.clicked.connect(self.edit_library_image)
+        edit_controls.addWidget(self.library_crop_button)
+        self.library_sharpen_button = QtWidgets.QPushButton('Skärpa upp…')
+        self.library_sharpen_button.clicked.connect(self.sharpen_library_image)
+        edit_controls.addWidget(self.library_sharpen_button)
+        self.library_compress_button = QtWidgets.QPushButton('Minska filstorlek…')
+        self.library_compress_button.clicked.connect(self.compress_library_image)
+        edit_controls.addWidget(self.library_compress_button)
+        self.library_delete_button = QtWidgets.QPushButton('Flytta till papperskorgen…')
+        self.library_delete_button.clicked.connect(self.trash_library_image)
+        edit_controls.addWidget(self.library_delete_button)
+        preview_layout.addLayout(edit_controls)
+        self.library_keep_exif = QtWidgets.QCheckBox('Bevara EXIF i komprimerad kopia (kan innehålla platsdata)')
+        self.library_keep_exif.setChecked(self.ui_settings.value('libraryKeepExif', False, type=bool))
+        self.library_keep_exif.toggled.connect(lambda checked: self.ui_settings.setValue('libraryKeepExif', checked))
+        preview_layout.addWidget(self.library_keep_exif)
         splitter.addWidget(preview_panel)
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 3)
@@ -6657,6 +7591,8 @@ class Window(QtWidgets.QMainWindow):
         self.library_next_button.setEnabled(False)
         self.library_fullscreen_button.setEnabled(False)
         self.library_print_button.setEnabled(False)
+        for button in (self.library_crop_button, self.library_sharpen_button, self.library_compress_button, self.library_delete_button):
+            button.setEnabled(False)
 
     def choose_image_library(self):
         start = self.library_source.text().strip() or str(Path.home())
@@ -6820,6 +7756,8 @@ class Window(QtWidgets.QMainWindow):
             self.library_next_button.setEnabled(False)
             self.library_fullscreen_button.setEnabled(False)
             self.library_print_button.setEnabled(False)
+            for button in (self.library_crop_button, self.library_sharpen_button, self.library_compress_button, self.library_delete_button):
+                button.setEnabled(False)
             return
         path = self.library_paths[row]
         try:
@@ -6831,13 +7769,213 @@ class Window(QtWidgets.QMainWindow):
             self.library_next_button.setEnabled(row < len(self.library_paths) - 1)
             self.library_fullscreen_button.setEnabled(True)
             self.library_print_button.setEnabled(True)
+            for button in (self.library_crop_button, self.library_sharpen_button, self.library_compress_button, self.library_delete_button):
+                button.setEnabled(True)
         except Exception as exc:
             self.library_current_qimage = None
             self.library_preview.setText(f"{self.translated('Kunde inte visa bilden:')}\n{path.name}\n{exc}")
             self.library_image_info.setText(str(path))
             self.library_fullscreen_button.setEnabled(False)
             self.library_print_button.setEnabled(False)
+            for button in (self.library_crop_button, self.library_sharpen_button, self.library_compress_button):
+                button.setEnabled(False)
+            self.library_delete_button.setEnabled(True)
             LOGGER.warning('Kunde inte läsa bild %s: %s', path, exc)
+
+    def selected_library_path(self):
+        row = self.library_grid.currentRow()
+        if not 0 <= row < len(self.library_paths):
+            self.show_message('information', 'Välj en bild', 'Välj en bild först.')
+            return None
+        return self.library_paths[row]
+
+    def library_processing_source(self, path):
+        register_modern_formats()
+        if path.suffix.lower() != '.svg':
+            return path
+        qimage, _ = image_file_to_qimage(path)
+        buffer = QtCore.QBuffer()
+        if not buffer.open(QtCore.QIODevice.OpenModeFlag.WriteOnly):
+            raise RuntimeError('Kunde inte förbereda SVG-bilden för redigering.')
+        try:
+            if not qimage.save(buffer, 'PNG'):
+                raise RuntimeError('Kunde inte omvandla SVG-bilden till PNG.')
+            import io
+            return io.BytesIO(bytes(buffer.data()))
+        finally:
+            buffer.close()
+
+    def confirm_library_static_image_operation(self, path):
+        if path.suffix.lower() not in {'.gif', '.webp'}:
+            return True
+        try:
+            with Image.open(path) as image:
+                if getattr(image, 'n_frames', 1) <= 1:
+                    return True
+        except Exception:
+            return True
+        answer = QtWidgets.QMessageBox.warning(
+            self, self.translated('Animerad bild'), self.translated('Den här åtgärden skapar en stillbild från den första bildrutan. Vill du fortsätta?'),
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No)
+        return answer == QtWidgets.QMessageBox.StandardButton.Yes
+
+    def edit_library_image(self):
+        path = self.selected_library_path()
+        if path is None or not self.confirm_library_static_image_operation(path):
+            return
+        try:
+            source = self.library_processing_source(path)
+            with Image.open(source) as image:
+                self.editor_image = ImageOps.exif_transpose(image).copy()
+            self.editor_source = path
+            self.editor_history.clear()
+            self.show_editor_image()
+            editor_index = self.tabs.indexOf(self.editor_tab)
+            if editor_index >= 0 and not self.tabs.isTabVisible(editor_index):
+                self.set_user_tab_visible(str(self.editor_tab.property('tabVisibilityKey')), True)
+            self.tabs.setCurrentWidget(self.editor_tab)
+            self.append_main_log(f'Öppnade bildbiblioteksfoto i redigeraren: {path}')
+            LOGGER.info('Image library opened in editor: %s', path)
+        except Exception as exc:
+            self.show_message('warning', 'Fel', str(exc))
+
+    def sharpen_library_image(self):
+        path = self.selected_library_path()
+        if path is None or not self.confirm_library_static_image_operation(path):
+            return
+        strength, accepted = QtWidgets.QInputDialog.getInt(
+            self, self.translated('Skärpa upp…'), self.translated('Skärpegrad (högre = skarpare)'), 45, 10, 100, 5)
+        if not accepted:
+            return
+        suffix = path.suffix.lower()
+        output_suffix = suffix if suffix in {'.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.bmp'} else ('.png' if suffix == '.svg' else '.jpg')
+        destination = OUTPUT_DIR / 'Images' / 'Sharpened'
+        try:
+            destination.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            self.show_message('warning', 'Fel', str(exc))
+            return
+        target = destination / f'{path.stem}_sharpened{output_suffix}'
+        if target.exists() and QtWidgets.QMessageBox.question(
+                self, self.translated('Skriv över?'), self.translated('Skriva över {path}?').format(path=target.name),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No) != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        try:
+            enhance(self.library_processing_source(path), target, 1, strength, 0, 0, True, 95)
+            self.library_status.setText(self.translated('Kopia sparad: {path}').format(path=target))
+            self.append_main_log(f'Skarpare bildkopia sparad: {target}')
+            LOGGER.info('Sharpened image copy saved: %s', target)
+            self.show_message('information', 'Klart', 'Kopia sparad: {path}'.format(path=target))
+        except Exception as exc:
+            LOGGER.exception('Sharpening image failed: %s', path)
+            self.show_message('warning', 'Fel', str(exc))
+
+    def compress_library_image(self):
+        path = self.selected_library_path()
+        if path is None or not self.confirm_library_static_image_operation(path):
+            return
+        formats = [self.translated('WebP (behåll transparens)'), self.translated('JPEG (vit bakgrund)')]
+        selected, accepted = QtWidgets.QInputDialog.getItem(
+            self, self.translated('Minska filstorlek…'), self.translated('Välj format för en komprimerad kopia'), formats, 0, False)
+        if not accepted:
+            return
+        quality, accepted = QtWidgets.QInputDialog.getInt(
+            self, self.translated('Minska filstorlek…'), self.translated('Kvalitet (lägre = mindre fil)'), 82, 40, 95, 1)
+        if not accepted:
+            return
+        suffix = '.webp' if selected == formats[0] else '.jpg'
+        destination = OUTPUT_DIR / 'Images' / 'Compressed'
+        try:
+            destination.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            self.show_message('warning', 'Fel', str(exc))
+            return
+        target = destination / f'{path.stem}_compressed{suffix}'
+        if target.exists() and QtWidgets.QMessageBox.question(
+                self, self.translated('Skriv över?'), self.translated('Skriva över {path}?').format(path=target.name),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No) != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        try:
+            original_stat = path.stat()
+            source_bytes = original_stat.st_size
+            enhance(self.library_processing_source(path), target, 1, 0, 0, 0,
+                    self.library_keep_exif.isChecked(), quality)
+            target_bytes = target.stat().st_size
+            if path.stat().st_mtime_ns != original_stat.st_mtime_ns or path.stat().st_size != original_stat.st_size:
+                self.show_message('warning', 'Källfilen ändrades', 'Källfilen ändrades under komprimeringen. Originalet har inte ersatts; den nya kopian finns i {path}.'.format(path=target))
+                return
+            saved_bytes = source_bytes - target_bytes
+            if saved_bytes <= 0:
+                self.show_message('information', 'Ingen storleksminskning', 'Den komprimerade kopian blev inte mindre än originalet. Originalet har inte ändrats; kopian finns i {path}.'.format(path=target))
+                return
+            percent = 100.0 * saved_bytes / max(1, source_bytes)
+            summary = self.translated('Kopian blev {percent:.1f}% mindre ({before} → {after}).').format(
+                percent=percent, before=self.format_file_size(source_bytes), after=self.format_file_size(target_bytes))
+            self.library_status.setText(summary + ' ' + str(target))
+            self.append_main_log(f'Komprimerad bildkopia sparad: {target} ({percent:.1f}% mindre)')
+            LOGGER.info('Compressed image copy: %s -> %s (%d%% smaller)', path, target, round(percent))
+            replace = QtWidgets.QMessageBox.question(
+                self, self.translated('Ersätta originalet?'),
+                self.translated('Kopian är mindre. Vill du använda den i bildmappen och flytta originalet till systempapperskorgen? Originalet kan återställas därifrån; diskutrymmet frigörs först när papperskorgen töms.'),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No)
+            if replace != QtWidgets.QMessageBox.StandardButton.Yes:
+                self.show_message('information', 'Klart', 'Kopia sparad: {path}'.format(path=target))
+                return
+            replacement = path.with_name(f'{path.stem}_compressed{suffix}')
+            index = 2
+            while replacement.exists():
+                replacement = path.with_name(f'{path.stem}_compressed_{index}{suffix}')
+                index += 1
+            shutil.copy2(target, replacement)
+            try:
+                current_stat = path.stat()
+                if current_stat.st_mtime_ns != original_stat.st_mtime_ns or current_stat.st_size != original_stat.st_size:
+                    raise RuntimeError(self.translated('Källfilen ändrades; den har inte flyttats till papperskorgen.'))
+                move_to_system_trash(path)
+            except Exception:
+                replacement.unlink(missing_ok=True)
+                raise
+            try:
+                target.unlink()
+            except OSError:
+                LOGGER.warning('Komprimerad mellan-/utdatakopia kunde inte tas bort: %s', target, exc_info=True)
+            self.scan_image_library()
+            self.show_message('information', 'Klart', 'Källfilen flyttades till papperskorgen. Den mindre versionen finns här: {path}'.format(path=replacement))
+        except Exception as exc:
+            LOGGER.exception('Image compression failed: %s', path)
+            self.show_message('warning', 'Fel', str(exc))
+
+    def trash_library_image(self):
+        path = self.selected_library_path()
+        if path is None:
+            return
+        answer = QtWidgets.QMessageBox.question(
+            self, self.translated('Flytta till papperskorgen?'),
+            self.translated('Flytta {name} till systempapperskorgen? Originalet kan återställas därifrån.').format(name=path.name),
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No)
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        try:
+            move_to_system_trash(path)
+            self.library_status.setText(self.translated('Bild flyttad till papperskorgen: {name}').format(name=path.name))
+            LOGGER.info('Image library file moved to system trash: %s', path)
+            self.scan_image_library()
+        except Exception as exc:
+            LOGGER.exception('Could not move selected library image to system trash: %s', path)
+            self.show_message('warning', 'Kunde inte flytta bilden', str(exc))
+
+    def format_file_size(self, size):
+        units = ('B', 'KB', 'MB', 'GB')
+        value = float(size)
+        for unit in units:
+            if value < 1024 or unit == units[-1]:
+                return f'{value:.1f} {unit}'
+            value /= 1024
 
     def step_library_image(self, amount):
         row = self.library_grid.currentRow()
@@ -6889,6 +8027,7 @@ class Window(QtWidgets.QMainWindow):
     def build_editor_tab(self):
         tab = QtWidgets.QWidget()
         tab.setProperty('mediaMode', 'photo')
+        self.editor_tab = tab
         self.tabs.addTab(tab, 'Fotoredigerare')
         layout = QtWidgets.QVBoxLayout(tab)
         layout.addWidget(QtWidgets.QLabel('Öppna ett foto. Dra över förhandsvisningen för att markera ett område att beskära, korrigera röda ögon eller sudda ut.'))
@@ -7669,7 +8808,7 @@ class Window(QtWidgets.QMainWindow):
             'writeMetadataDates': 'meta', 'writeFileDates': 'fs', 'stripSoftwareMetadata': 'strip',
             'removeAllMetadata': 'remove_all', 'recursiveFolders': 'recursive',
             'preserveFolderStructure': 'structure', 'overwriteArchive': 'overwrite',
-            'imageRecursive': 'image_recursive', 'imageStripMetadata': 'image_strip', 'libraryRecursive': 'library_recursive',
+            'imageRecursive': 'image_recursive', 'imageStripMetadata': 'image_strip', 'libraryRecursive': 'library_recursive', 'libraryKeepExif': 'library_keep_exif',
             'videoRecursive': 'video_recursive', 'audioRecursive': 'audio_recursive', 'duplicateRecursive': 'duplicate_recursive', 'colorRecursive': 'color_recursive', 'stabilizeRecursive': 'stabilize_recursive', 'cleanupRecursive': 'cleanup_recursive', 'codecRecursive': 'codec_recursive', 'musicRecursive': 'music_recursive',
             'conversionKeepMetadata': 'conversion_metadata',
         }
@@ -7737,7 +8876,7 @@ class Window(QtWidgets.QMainWindow):
             'writeMetadataDates': 'meta', 'writeFileDates': 'fs', 'stripSoftwareMetadata': 'strip',
             'removeAllMetadata': 'remove_all', 'recursiveFolders': 'recursive',
             'preserveFolderStructure': 'structure', 'overwriteArchive': 'overwrite',
-            'imageRecursive': 'image_recursive', 'imageStripMetadata': 'image_strip', 'libraryRecursive': 'library_recursive',
+            'imageRecursive': 'image_recursive', 'imageStripMetadata': 'image_strip', 'libraryRecursive': 'library_recursive', 'libraryKeepExif': 'library_keep_exif',
             'videoRecursive': 'video_recursive', 'audioRecursive': 'audio_recursive', 'duplicateRecursive': 'duplicate_recursive', 'colorRecursive': 'color_recursive', 'stabilizeRecursive': 'stabilize_recursive', 'cleanupRecursive': 'cleanup_recursive', 'codecRecursive': 'codec_recursive', 'musicRecursive': 'music_recursive',
             'conversionKeepMetadata': 'conversion_metadata', 'autoUpdateCheck': 'auto_update_action',
         }
