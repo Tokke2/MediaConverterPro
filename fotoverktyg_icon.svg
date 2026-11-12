@@ -1,16 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">MediaForge</title>
-  <desc id="desc">A teal film frame and camera lens surrounding a coral play mark.</desc>
-  <rect x="12" y="12" width="488" height="488" rx="112" fill="#0b172b"/>
-  <rect x="79" y="91" width="354" height="330" rx="66" fill="none" stroke="#20c6c4" stroke-width="24"/>
-  <g fill="#ff604d">
-    <rect x="143" y="79" width="42" height="34" rx="10"/>
-    <rect x="327" y="79" width="42" height="34" rx="10"/>
-    <rect x="143" y="399" width="42" height="34" rx="10"/>
-    <rect x="327" y="399" width="42" height="34" rx="10"/>
-  </g>
-  <circle cx="256" cy="256" r="139" fill="#20c6c4"/>
-  <circle cx="256" cy="256" r="87" fill="#0b172b"/>
-  <path d="M229 197 C222 193 214 198 214 207 L214 305 C214 314 222 319 229 315 L314 267 C322 262 322 251 314 246 Z" fill="#ff604d" stroke="#0b172b" stroke-width="8" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">MediaForge</title><desc id="desc">Vivid cyan, blue, violet and pink film-frame camera aperture with a bright star glint.</desc>
+
+<defs>
+  <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#16e5f4"/><stop offset=".48" stop-color="#2867ff"/><stop offset="1" stop-color="#a20bff"/></linearGradient>
+  <linearGradient id="lens" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#09152d"/><stop offset="1" stop-color="#15102f"/></linearGradient>
+  <linearGradient id="bladeA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#42f4ff"/><stop offset="1" stop-color="#3764ff"/></linearGradient>
+  <linearGradient id="bladeB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#864dff"/><stop offset="1" stop-color="#ed25ce"/></linearGradient>
+  <linearGradient id="bladeC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4da4"/><stop offset="1" stop-color="#ff795d"/></linearGradient>
+  <linearGradient id="wordmark" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#00cfe9"/><stop offset=".42" stop-color="#386aff"/><stop offset=".72" stop-color="#922eff"/><stop offset="1" stop-color="#ff3b96"/></linearGradient>
+</defs>
+<rect x="12" y="12" width="488" height="488" rx="116" fill="url(#tile)"/>
+<path d="M64 55 Q255 2 448 65 Q398 49 320 53 Q166 54 64 95Z" fill="#fff" opacity=".16"/>
+<!-- film perforations -->
+<g fill="#f8fbff" opacity=".94">
+  <rect x="46" y="190" width="20" height="32" rx="8"/><rect x="46" y="244" width="20" height="32" rx="8"/><rect x="46" y="298" width="20" height="32" rx="8"/>
+  <rect x="446" y="190" width="20" height="32" rx="8"/><rect x="446" y="244" width="20" height="32" rx="8"/><rect x="446" y="298" width="20" height="32" rx="8"/>
+</g>
+<circle cx="256" cy="256" r="176" fill="url(#lens)" stroke="#f7fcff" stroke-width="13"/>
+<circle cx="256" cy="256" r="151" fill="none" stroke="#91f8ff" stroke-width="3" opacity=".8"/>
+<path d="M 250 112 C 296 112 331 139 340 183 L 298 215 C 281 201 261 191 240 187 C 225 163 227 133 250 112 Z" transform="rotate(0 256 256)" fill="url(#bladeA)" stroke="#fff" stroke-opacity=".17" stroke-width="2"/>
+<path d="M 250 112 C 296 112 331 139 340 183 L 298 215 C 281 201 261 191 240 187 C 225 163 227 133 250 112 Z" transform="rotate(60 256 256)" fill="url(#bladeB)" stroke="#fff" stroke-opacity=".17" stroke-width="2"/>
+<path d="M 250 112 C 296 112 331 139 340 183 L 298 215 C 281 201 261 191 240 187 C 225 163 227 133 250 112 Z" transform="rotate(120 256 256)" fill="url(#bladeC)" stroke="#fff" stroke-opacity=".17" stroke-width="2"/>
+<path d="M 250 112 C 296 112 331 139 340 183 L 298 215 C 281 201 261 191 240 187 C 225 163 227 133 250 112 Z" transform="rotate(180 256 256)" fill="url(#bladeA)" stroke="#fff" stroke-opacity=".17" stroke-width="2"/>
+<path d="M 250 112 C 296 112 331 139 340 183 L 298 215 C 281 201 261 191 240 187 C 225 163 227 133 250 112 Z" transform="rotate(240 256 256)" fill="url(#bladeB)" stroke="#fff" stroke-opacity=".17" stroke-width="2"/>
+<path d="M 250 112 C 296 112 331 139 340 183 L 298 215 C 281 201 261 191 240 187 C 225 163 227 133 250 112 Z" transform="rotate(300 256 256)" fill="url(#bladeC)" stroke="#fff" stroke-opacity=".17" stroke-width="2"/>
+
+<circle cx="256" cy="256" r="53" fill="#09142b" stroke="#d9fbff" stroke-width="8"/>
+<circle cx="256" cy="256" r="27" fill="#142c5c"/>
+<path d="M369 91 L381 123 L414 135 L381 147 L369 180 L357 147 L324 135 L357 123Z" fill="#fff"/>
+<path d="M399 184 L405 199 L420 205 L405 211 L399 226 L393 211 L378 205 L393 199Z" fill="#ff5a9f"/>
+<circle cx="327" cy="95" r="6" fill="#fff"/>
+
 </svg>

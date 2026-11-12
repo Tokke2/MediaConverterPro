@@ -42,7 +42,7 @@ KOFI_URL = ''  # Fixed app destination; configured by the maintainer, never by t
 UPDATEABLE_RELEASE_FILES = {
     '.gitignore', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
     'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs',
-    'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png', 'fotoverktyg_icon.svg', 'mediaforge_logo.svg',
+    'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png', 'fotoverktyg_icon.svg', 'mediaforge_logo.svg', 'mediaforge_logo_print.svg',
     'start_mediaforge.sh',
 }
 MAX_RELEASE_ARCHIVE_BYTES = 80 * 1024 * 1024
