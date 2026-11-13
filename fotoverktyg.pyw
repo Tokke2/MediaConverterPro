@@ -9167,5 +9167,11 @@ if __name__ == '__main__':
     # window creation so login launch behaves like a manual launch.
     window.setWindowState(QtCore.Qt.WindowState.WindowNoState)
     window.showMinimized()
-    QtCore.QTimer.singleShot(0, window.showMinimized)
+
+    def enforce_startup_minimized():
+        window.setWindowState(QtCore.Qt.WindowState.WindowMinimized)
+        window.showMinimized()
+        LOGGER.info('Startup window minimize requested')
+
+    QtCore.QTimer.singleShot(0, enforce_startup_minimized)
     sys.exit(app.exec())

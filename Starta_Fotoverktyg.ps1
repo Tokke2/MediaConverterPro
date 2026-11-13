@@ -252,12 +252,14 @@ try {
 
     $pythonw = Join-Path (Split-Path -Parent $basePython.Executable) 'pythonw.exe'
     if (-not (Test-Path -LiteralPath $pythonw)) { throw "pythonw.exe is missing next to $($basePython.Executable). Cannot start the GUI without a console." }
-    Write-StartupLog "Starting MediaForge using shared Python $($basePython.Version)"
+    Write-StartupLog "Starting MediaForge minimized using shared Python $($basePython.Version)"
     $appArguments = '"' + $script + '"'
     if (-not [string]::IsNullOrWhiteSpace($OpenPath)) {
         $appArguments += ' "' + $OpenPath + '"'
     }
-    Start-Process -FilePath $pythonw -ArgumentList $appArguments -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -ErrorAction Stop
+    # pythonw.exe has no console; start the GUI minimized rather than hidden so
+    # Windows login/start-menu launch does not override Qt's minimized state.
+    Start-Process -FilePath $pythonw -ArgumentList $appArguments -WorkingDirectory $PSScriptRoot -WindowStyle Minimized -ErrorAction Stop
 } catch {
     $failure = $_.Exception.Message
     Write-StartupLog "Startup failure: $failure"
