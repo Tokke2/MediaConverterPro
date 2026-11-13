@@ -8906,7 +8906,11 @@ class Window(QtWidgets.QMainWindow):
             pass
 
     def save_preferences(self):
-        self.ui_settings.setValue('windowGeometry', self.saveGeometry())
+        # QMainWindow.saveGeometry() includes the native window state. Do not
+        # persist a minimized/maximized startup state: the app deliberately
+        # starts minimized at each launch and should restore a normal-size frame.
+        if self.isVisible() and not self.isMinimized():
+            self.ui_settings.setValue('windowGeometry', self.saveGeometry())
         self.ui_settings.setValue('uiFontSize', self.ui_font_size)
         self.ui_settings.setValue('hiddenTabs', sorted(self.hidden_tabs))
         self.ui_settings.setValue('tabVisibilityConfigured', True)
@@ -9156,10 +9160,12 @@ if __name__ == '__main__':
     app.aboutToQuit.connect(single_instance.release)
     if requested_path is not None:
         window.open_external_path(requested_path, activate=False)
-    # Set the initial state before entering the event loop, then re-apply it
-    # once Qt has created the native window. Some window managers ignore an
-    # early minimize request while the window is still being constructed.
-    window.setWindowState(window.windowState() | QtCore.Qt.WindowState.WindowMinimized)
+    # Discard a saved Normal/Maximized flag before starting. restoreGeometry()
+    # may restore that native state, and OR-ing WindowMinimized leaves both
+    # flags set on some window managers (which can show the window normally).
+    # Always start with a clean state and repeat the minimize after native
+    # window creation so login launch behaves like a manual launch.
+    window.setWindowState(QtCore.Qt.WindowState.WindowNoState)
     window.showMinimized()
     QtCore.QTimer.singleShot(0, window.showMinimized)
     sys.exit(app.exec())
