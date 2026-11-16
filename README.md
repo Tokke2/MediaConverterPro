@@ -54,6 +54,8 @@ MediaForge stores settings in `MediaForge_Data/Settings/`, pip downloads in `Med
 
 The in-app updater checks the latest published GitHub Release and fetches its Git tag (currently **0.0.2**), not commits from `main` or release binary assets. Choose **Help → Check for updates…** or use the system-tray menu. It compares commit IDs and changed files and asks before applying. A clean Git checkout is fast-forwarded when possible; if its branch has diverged from the release, the updater switches the working copy to the release tag in detached-HEAD mode while preserving the original branch and commits. If the checkout already contains the release commit, it will not downgrade it. Source-archive copies without `.git` can also update from the same release; only app files are replaced, existing files are backed up, and app data is kept. The enabled-by-default **Silently check for updates twice a day** option checks at most every 12 hours while MediaForge is open and stays quiet when no release is available. Checks do not run while the app is closed.
 
+**Maintainer release routine:** after every code update, move the `0.0.2` release tag to the new commit and refresh the release notes so the updater offers the latest code. Run `Uppdatera_Release.ps1` (Windows) or `./update_release.sh` (macOS/Linux), optionally with `--notes-file <notes.md>` (PowerShell: `-NotesFile <notes.md>`). The version stays `0.0.2`; only the tag target and notes change.
+
 ## Batch estimates and keyboard shortcuts
 
 MediaForge allows one running app instance per user. Launching it again brings the existing window to the front instead of opening another one.
