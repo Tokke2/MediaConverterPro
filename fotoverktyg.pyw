@@ -4664,10 +4664,15 @@ class Window(QtWidgets.QMainWindow):
             legacy_settings.clear()
             legacy_settings.sync()
         try:
-            saved_font_size = int(self.ui_settings.value('uiFontSize', 12))
+            saved_font_size = int(self.ui_settings.value('uiFontSize', 14))
         except (TypeError, ValueError):
-            saved_font_size = 12
-        self.ui_font_size = saved_font_size if saved_font_size in {11, 12, 14, 16} else 12
+            saved_font_size = 14
+        if not self.ui_settings.value('uiFontSizeV2', False, type=bool):
+            # One-time migration: shift saved sizes up one step on the larger scale.
+            saved_font_size = {11: 12, 12: 14, 14: 16, 16: 18}.get(saved_font_size, saved_font_size)
+            self.ui_settings.setValue('uiFontSizeV2', True)
+            self.ui_settings.sync()
+        self.ui_font_size = saved_font_size if saved_font_size in {12, 14, 16, 18} else 14
         saved_hidden_tabs = self.ui_settings.value('hiddenTabs', [])
         self.hidden_tabs = set(map(str, saved_hidden_tabs)) if isinstance(saved_hidden_tabs, (list, tuple, set)) else set()
         self.simple_mode = self.ui_settings.value('simpleMode', True, type=bool)
@@ -4679,6 +4684,18 @@ class Window(QtWidgets.QMainWindow):
                     LOGGER.warning('A sparad fönsterlayout kunde inte återställas')
             except (TypeError, RuntimeError):
                 LOGGER.warning('A sparad fönsterlayout kunde inte återställas')
+        try:
+            screen = QtWidgets.QApplication.primaryScreen()
+            if screen is not None:
+                available = screen.availableGeometry()
+                frame = self.frameGeometry()
+                width = min(frame.width(), available.width())
+                height = min(frame.height(), available.height())
+                x = min(max(frame.x(), available.x()), available.x() + available.width() - width)
+                y = min(max(frame.y(), available.y()), available.y() + available.height() - height)
+                self.setGeometry(x, y, width, height)
+        except (AttributeError, RuntimeError):
+            pass
         self.ui_language = self.ui_settings.value('language', 'sv')
         self.media_mode = self.ui_settings.value('mediaMode', 'all')
         saved_dark = self.ui_settings.value('darkTheme', True, type=bool)
@@ -4931,7 +4948,19 @@ class Window(QtWidgets.QMainWindow):
         main.addWidget(self.log)
         for index in range(self.tabs.count()):
             widget = self.tabs.widget(index)
-            widget.setProperty('tabVisibilityKey', self.tabs.tabText(index))
+            title = self.tabs.tabText(index)
+            scroll = QtWidgets.QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+            scroll.setWidget(widget)
+            media_mode = widget.property('mediaMode')
+            if media_mode is not None:
+                scroll.setProperty('mediaMode', media_mode)
+            self.tabs.removeTab(index)
+            self.tabs.insertTab(index, scroll, title)
+            scroll.setProperty('tabVisibilityKey', title)
         all_tab_keys = {str(self.tabs.widget(index).property('tabVisibilityKey')) for index in range(self.tabs.count())}
         if not self.ui_settings.value('tabVisibilityConfigured', False, type=bool):
             # Start with a small, useful set rather than an empty window. Advanced tools
@@ -5033,7 +5062,7 @@ class Window(QtWidgets.QMainWindow):
         self.font_size_group = QtGui.QActionGroup(self)
         self.font_size_group.setExclusive(True)
         self.font_size_actions = {}
-        for size, label in ((11, 'Mindre'), (12, 'Standard'), (14, 'Större'), (16, 'Extra stor')):
+        for size, label in ((12, 'Mindre'), (14, 'Standard'), (16, 'Större'), (18, 'Extra stor')):
             action = QtGui.QAction('', self)
             action.setCheckable(True)
             action.triggered.connect(lambda checked=False, value=size: self.set_ui_font_size(value))
@@ -5142,7 +5171,7 @@ class Window(QtWidgets.QMainWindow):
         self.simple_mode_action.setText(self.translated('Enkelt läge – vanliga verktyg'))
         self.simple_mode_action.setChecked(self.simple_mode)
         self.font_size_menu.setTitle(self.translated('Textstorlek'))
-        for size, label in ((11, 'Mindre'), (12, 'Standard'), (14, 'Större'), (16, 'Extra stor')):
+        for size, label in ((12, 'Mindre'), (14, 'Standard'), (16, 'Större'), (18, 'Extra stor')):
             key = 'Extra stor' if label == 'Extra stor' else label
             self.font_size_actions[size].setText(self.translated(key))
             self.font_size_actions[size].setChecked(self.ui_font_size == size)
@@ -5240,7 +5269,7 @@ class Window(QtWidgets.QMainWindow):
             QtCore.QTimer.singleShot(0, self.refresh_tab_visibility_menu)
 
     def set_ui_font_size(self, size):
-        if size not in {11, 12, 14, 16}:
+        if size not in {12, 14, 16, 18}:
             return
         self.ui_font_size = size
         self.ui_settings.setValue('uiFontSize', size)
@@ -8594,10 +8623,12 @@ class Window(QtWidgets.QMainWindow):
         else:
             c = dict(bg='#f1f5fb', panel='#ffffff', field='#f8fafc', border='#cbd5e1', text='#182437', muted='#52637d', accent='#2563eb', hover='#1d4ed8')
         c['font_size'] = self.ui_font_size
+        c['hero_size'] = self.ui_font_size + 8
+        c['subtitle_size'] = max(10, self.ui_font_size - 2)
         self.setStyleSheet('''
             QMainWindow, QWidget {background:%(bg)s; color:%(text)s; font-family:"Segoe UI",Arial,sans-serif; font-size:%(font_size)spx}
-            QLabel#heroTitle {font-size:22px; font-weight:800; color:%(text)s}
-            QLabel#subtitle {font-size:12px; color:%(muted)s}
+            QLabel#heroTitle {font-size:%(hero_size)spx; font-weight:800; color:%(text)s}
+            QLabel#subtitle {font-size:%(subtitle_size)spx; color:%(muted)s}
             QTabWidget::pane, QGroupBox {border:1px solid %(border)s; border-radius:10px; background:%(panel)s}
             QFrame#toolbarPanel {background:%(panel)s; border:1px solid %(border)s; border-radius:10px}
             QGroupBox {font-weight:700; margin-top:10px; padding:10px}
