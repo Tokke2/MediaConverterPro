@@ -39,6 +39,8 @@ APP_COPYRIGHT = 'Copyright © 2026 Rickard Längkvist'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
 UPDATE_RELEASE_API = 'https://api.github.com/repos/Tokke2/MediaConverterPro/releases/latest'
 SWISH_NUMBER = '0721817177'  # Fixed maintainer-configured Swish number; never user-editable and never shown in plain text.
+KOFI_URL = 'https://ko-fi.com/tokke2'  # Fixed maintainer-configured destination; never user-editable.
+PAYPAL_URL = 'https://paypal.me/Rickard3dPrint'  # Fixed maintainer-configured destination; never user-editable.
 LICENSE_FILE = APP_DIR / 'LICENSE'
 UPDATEABLE_RELEASE_FILES = {
     '.gitignore', 'LICENSE', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
@@ -514,11 +516,14 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
     'MediaForge har redan senaste releasen ({tag}).': 'MediaForge already has the latest release ({tag}).',
  'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
- 'Stöd utvecklingen · Swish': 'Support development · Swish',
+ 'Stöd utvecklingen · Donationer': 'Support development · Donate',
  'Stöd MediaForge': 'Support MediaForge',
- 'MediaForge är och förblir gratis att använda — för alla. Ingen reklam, inga prenumerationer och inga låsta funktioner. Vill du hjälpa till att hålla utvecklingen igång kan du skicka en frivillig Swish-gåva med valfritt belopp. Varje bidrag går direkt till fortsatt utveckling av appen. Tack för ditt stöd!': 'MediaForge is and will remain free to use — for everyone. No ads, no subscriptions, and no locked features. If you want to help keep development going, you can send an optional Swish contribution of any amount. Every contribution goes directly to continued development of the app. Thank you for your support!',
+ 'MediaForge är och förblir gratis att använda — för alla. Ingen reklam, inga prenumerationer och inga låsta funktioner. Vill du hjälpa till att hålla utvecklingen igång kan du skicka en frivillig gåva via Swish, Ko-fi eller PayPal med valfritt belopp. Varje bidrag går direkt till fortsatt utveckling av appen. Tack för ditt stöd!': 'MediaForge is and will remain free to use — for everyone. No ads, no subscriptions, and no locked features. If you want to help keep development going, you can send an optional contribution via Swish, Ko-fi, or PayPal — any amount. Every contribution goes directly to continued development of the app. Thank you for your support!',
  'Skanna QR-koden med Swish-appen, välj valfritt belopp och bekräfta.': 'Scan the QR code with the Swish app, choose any amount, and confirm.',
- 'Swish-numret är fast inställt av utvecklaren och visas inte i klartext.': 'The Swish number is fixed by the maintainer and is not shown in plain text.',
+ 'Swish-numret och betalningslänkarna är fast inställda av utvecklaren och kan inte ändras i appen. Swish-numret visas inte i klartext.': 'The Swish number and payment links are fixed by the maintainer and cannot be changed in the app. The Swish number is not shown in plain text.',
+ 'Öppna Ko-fi': 'Open Ko-fi',
+ 'Öppna PayPal': 'Open PayPal',
+ 'Betalsidan kunde inte öppnas.': 'The payment page could not be opened.',
  'Öppna Swish': 'Open Swish',
  'Swish-QR-kod': 'Swish QR code',
  'Swish-länken kunde inte öppnas.': 'The Swish link could not be opened.',
@@ -5156,7 +5161,7 @@ class Window(QtWidgets.QMainWindow):
         self.viewer_integration_action.setToolTip(self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
         self.keep_awake_action.setText(self.translated('Håll datorn vaken under jobb'))
         self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
-        self.donate_action.setText(self.translated('Stöd utvecklingen · Swish'))
+        self.donate_action.setText(self.translated('Stöd utvecklingen · Donationer'))
         self.license_action.setText(self.translated('Licens och användningsrättigheter'))
         self.help_menu.setTitle(self.translated('Hjälp'))
         self.support_action.setText(self.translated('Hjälp och support'))
@@ -7061,7 +7066,7 @@ class Window(QtWidgets.QMainWindow):
         heading = QtWidgets.QLabel('💚  ' + self.translated('Stöd MediaForge'))
         heading.setStyleSheet('color:white;font-size:20px;font-weight:800')
         hero_layout.addWidget(heading)
-        intro = QtWidgets.QLabel(self.translated('MediaForge är och förblir gratis att använda — för alla. Ingen reklam, inga prenumerationer och inga låsta funktioner. Vill du hjälpa till att hålla utvecklingen igång kan du skicka en frivillig Swish-gåva med valfritt belopp. Varje bidrag går direkt till fortsatt utveckling av appen. Tack för ditt stöd!'))
+        intro = QtWidgets.QLabel(self.translated('MediaForge är och förblir gratis att använda — för alla. Ingen reklam, inga prenumerationer och inga låsta funktioner. Vill du hjälpa till att hålla utvecklingen igång kan du skicka en frivillig gåva via Swish, Ko-fi eller PayPal med valfritt belopp. Varje bidrag går direkt till fortsatt utveckling av appen. Tack för ditt stöd!'))
         intro.setWordWrap(True)
         intro.setStyleSheet('color:#f0fff7;font-size:13px')
         hero_layout.addWidget(intro)
@@ -7081,22 +7086,33 @@ class Window(QtWidgets.QMainWindow):
         prompt.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(prompt)
         layout.addWidget(card)
-        fixed_note = QtWidgets.QLabel(self.translated('Swish-numret är fast inställt av utvecklaren och visas inte i klartext.'))
+        pay_card = QtWidgets.QFrame()
+        pay_card.setObjectName('donationCard')
+        pay_layout = QtWidgets.QVBoxLayout(pay_card)
+        pay_layout.setContentsMargins(14, 14, 14, 14)
+        pay_layout.setSpacing(10)
+        swish_button = QtWidgets.QPushButton('💚  ' + self.translated('Öppna Swish'))
+        swish_button.clicked.connect(self.open_swish_link)
+        pay_layout.addWidget(swish_button)
+        kofi_button = QtWidgets.QPushButton('☕  ' + self.translated('Öppna Ko-fi'))
+        kofi_button.setObjectName('secondary')
+        kofi_button.clicked.connect(lambda: self.open_donation_url(KOFI_URL, {'ko-fi.com', 'www.ko-fi.com'}, 'Ko-fi'))
+        pay_layout.addWidget(kofi_button)
+        paypal_button = QtWidgets.QPushButton('💙  ' + self.translated('Öppna PayPal'))
+        paypal_button.setObjectName('secondary')
+        paypal_button.clicked.connect(lambda: self.open_donation_url(PAYPAL_URL, {'paypal.me'}, 'PayPal'))
+        pay_layout.addWidget(paypal_button)
+        layout.addWidget(pay_card)
+        fixed_note = QtWidgets.QLabel(self.translated('Swish-numret och betalningslänkarna är fast inställda av utvecklaren och kan inte ändras i appen. Swish-numret visas inte i klartext.'))
         fixed_note.setWordWrap(True)
         fixed_note.setStyleSheet('color:#627487;font-size:11px')
         layout.addWidget(fixed_note)
-        buttons = QtWidgets.QHBoxLayout()
-        swish_button = QtWidgets.QPushButton('💚  ' + self.translated('Öppna Swish'))
-        swish_button.clicked.connect(self.open_swish_link)
-        buttons.addWidget(swish_button)
-        buttons.addStretch()
         close_button = QtWidgets.QPushButton(self.translated('Stäng'))
         close_button.setObjectName('secondary')
         close_button.clicked.connect(dialog.accept)
-        buttons.addWidget(close_button)
-        layout.addLayout(buttons)
+        layout.addWidget(close_button, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         dialog.exec()
-        LOGGER.info('Swish donation QR dialog opened')
+        LOGGER.info('Donation dialog opened (Swish, Ko-fi, PayPal)')
 
     def open_swish_link(self):
         data = json.dumps({
@@ -7110,6 +7126,18 @@ class Window(QtWidgets.QMainWindow):
             self.show_message('warning', 'Stöd MediaForge', 'Swish-länken kunde inte öppnas.')
             return
         LOGGER.info('Swish payment link opened')
+
+    def open_donation_url(self, value, allowed_hosts, provider):
+        from urllib.parse import urlparse
+        parsed = urlparse(value)
+        if parsed.scheme != 'https' or parsed.hostname not in allowed_hosts or not parsed.path.strip('/'):
+            LOGGER.error('Invalid maintainer-configured %s destination; it is not editable in the app', provider)
+            self.show_message('warning', 'Stöd MediaForge', 'Betalsidan kunde inte öppnas.')
+            return
+        if not QtGui.QDesktopServices.openUrl(QtCore.QUrl(value)):
+            self.show_message('warning', 'Stöd MediaForge', 'Betalsidan kunde inte öppnas.')
+            return
+        LOGGER.info('Fixed %s donation destination opened', provider)
 
     def show_license_dialog(self):
         try:
