@@ -44,9 +44,9 @@ PAYPAL_URL = 'https://paypal.me/Rickard3dPrint'  # Fixed maintainer-configured d
 LICENSE_FILE = APP_DIR / 'LICENSE'
 UPDATEABLE_RELEASE_FILES = {
     '.gitignore', 'LICENSE', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
-    'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs',
+    'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs', 'Uppdatera_Release.ps1',
     'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png', 'fotoverktyg_icon.svg', 'mediaforge_logo.svg', 'mediaforge_logo_print.svg',
-    'start_mediaforge.sh',
+    'start_mediaforge.sh', 'update_release.sh',
 }
 MAX_RELEASE_ARCHIVE_BYTES = 80 * 1024 * 1024
 MAX_RELEASE_FILE_BYTES = 40 * 1024 * 1024
@@ -2594,6 +2594,38 @@ class ReleaseUpdateWorker(QtCore.QThread):
             digest.update(data)
         return digest.hexdigest()
 
+    def git_bytes(self, *args, timeout=45):
+        if self.cancelled:
+            raise InterruptedError('Update check was cancelled.')
+        executable = self.git_executable or ('git.exe' if os.name == 'nt' else 'git')
+        try:
+            process = subprocess.run(
+                [executable, '-C', str(APP_DIR), *args],
+                capture_output=True, timeout=timeout,
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError(f'Git executable could not be started ({executable}). Install Git or add git.exe to PATH.') from exc
+        if process.returncode:
+            raise RuntimeError(process.stderr.decode('utf-8', 'replace').strip() or f'git {args[0]} failed')
+        return process.stdout
+
+    def local_release_files(self):
+        files = {}
+        for name in UPDATEABLE_RELEASE_FILES:
+            path = APP_DIR / name
+            if path.is_file() and not path.is_symlink():
+                files[name] = path.read_bytes()
+        return files
+
+    def release_files_at(self, ref):
+        files = {}
+        for name in sorted(UPDATEABLE_RELEASE_FILES):
+            try:
+                files[name] = self.git_bytes('show', f'{ref}:{name}')
+            except RuntimeError:
+                pass  # The file does not exist at this ref.
+        return files
+
     def download_release_files(self, tag):
         archive_url = 'https://codeload.github.com/Tokke2/MediaConverterPro/zip/refs/tags/' + quote(tag, safe='')
         request = urllib.request.Request(archive_url, headers={'User-Agent': 'MediaForge'})
@@ -2689,11 +2721,7 @@ class ReleaseUpdateWorker(QtCore.QThread):
 
     def run_archive_update(self, tag):
         files, modes = self.download_release_files(tag)
-        local_files = {}
-        for name in UPDATEABLE_RELEASE_FILES:
-            path = APP_DIR / name
-            if path.is_file() and not path.is_symlink():
-                local_files[name] = path.read_bytes()
+        local_files = self.local_release_files()
         local = self.manifest_fingerprint(local_files)
         remote = self.manifest_fingerprint(files)
         changed_files = sorted(name for name in files
@@ -2737,12 +2765,23 @@ class ReleaseUpdateWorker(QtCore.QThread):
             if local == remote:
                 self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote, 'tag': tag})
                 return
+            # Compare the updateable app files themselves (SHA-256), not just
+            # commit IDs: this catches manually changed files and avoids
+            # offering an update when only non-app files differ.
+            local_files = self.local_release_files()
+            remote_files = self.release_files_at('FETCH_HEAD')
+            changed_files = sorted(
+                name for name in set(local_files) | set(remote_files)
+                if local_files.get(name) != remote_files.get(name)
+            )
+            if not changed_files:
+                self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote, 'tag': tag})
+                return
             release_is_ancestor = self.git('merge-base', '--is-ancestor', 'FETCH_HEAD', 'HEAD', allow_failure=True)
             if release_is_ancestor.returncode == 0:
                 self.result_ready.emit({'status': 'current', 'local': local, 'remote': remote, 'tag': tag, 'local_ahead': True})
                 return
             local_is_ancestor = self.git('merge-base', '--is-ancestor', 'HEAD', 'FETCH_HEAD', allow_failure=True)
-            changed_files = self.git('diff', '--name-only', local, remote).stdout.splitlines()
             if local_is_ancestor.returncode == 0:
                 if not self.apply_update:
                     self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'tag': tag,
