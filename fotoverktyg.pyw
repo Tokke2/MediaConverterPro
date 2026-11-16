@@ -38,8 +38,7 @@ APP_VERSION = '0.0.2'
 APP_COPYRIGHT = 'Copyright © 2026 Rickard Längkvist'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
 UPDATE_RELEASE_API = 'https://api.github.com/repos/Tokke2/MediaConverterPro/releases/latest'
-KOFI_URL = 'https://ko-fi.com/tokke2'  # Fixed maintainer-configured destination; never user-editable.
-PAYPAL_URL = 'https://paypal.me/Rickard3dPrint'  # Fixed maintainer-configured destination; never user-editable.
+SWISH_NUMBER = '0721817177'  # Fixed maintainer-configured Swish number; never user-editable and never shown in plain text.
 LICENSE_FILE = APP_DIR / 'LICENSE'
 UPDATEABLE_RELEASE_FILES = {
     '.gitignore', 'LICENSE', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
@@ -50,6 +49,241 @@ UPDATEABLE_RELEASE_FILES = {
 MAX_RELEASE_ARCHIVE_BYTES = 80 * 1024 * 1024
 MAX_RELEASE_FILE_BYTES = 40 * 1024 * 1024
 MAX_RELEASE_FILES_BYTES = 100 * 1024 * 1024
+
+
+# --- Minimal QR encoder (byte mode, ECC level M, versions 1-4, mask 0) ---
+# Used only for the Swish donation QR code so the app needs no extra package
+# and works offline. The Swish payload is short, so version 2 is enough.
+_QR_ECC_PER_BLOCK = {'M': [0, 10, 16, 26, 18]}
+_QR_EC_BLOCKS = {'M': [0, 1, 1, 1, 2]}
+_QR_ALIGNMENT = {1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26]}
+_QR_GF_EXP = [0] * 512
+_QR_GF_LOG = [0] * 256
+_x = 1
+for _i in range(255):
+    _QR_GF_EXP[_i] = _x
+    _QR_GF_LOG[_x] = _i
+    _x <<= 1
+    if _x & 0x100:
+        _x ^= 0x11D
+for _i in range(255, 512):
+    _QR_GF_EXP[_i] = _QR_GF_EXP[_i - 255]
+del _x, _i
+
+
+def _qr_gf_mul(a, b):
+    return 0 if a == 0 or b == 0 else _QR_GF_EXP[_QR_GF_LOG[a] + _QR_GF_LOG[b]]
+
+
+def _qr_rs_divisor(degree):
+    result = [0] * (degree - 1) + [1]
+    root = 1
+    for _ in range(degree):
+        for j in range(len(result)):
+            result[j] = _qr_gf_mul(result[j], root)
+            if j + 1 < len(result):
+                result[j] ^= result[j + 1]
+        root = _qr_gf_mul(root, 0x02)
+    return result
+
+
+def _qr_rs_remainder(data, divisor):
+    result = [0] * len(divisor)
+    for byte in data:
+        factor = byte ^ result.pop(0)
+        result.append(0)
+        for i, coef in enumerate(divisor):
+            result[i] ^= _qr_gf_mul(coef, factor)
+    return result
+
+
+def _qr_raw_modules(ver):
+    result = (16 * ver + 128) * ver + 64
+    if ver >= 2:
+        num_align = ver // 7 + 2
+        result -= (25 * num_align - 10) * num_align - 55
+        if ver >= 7:
+            result -= 36
+    return result
+
+
+def _qr_data_codewords(ver):
+    return _qr_raw_modules(ver) // 8 - _QR_ECC_PER_BLOCK['M'][ver] * _QR_EC_BLOCKS['M'][ver]
+
+
+def _qr_encode_matrix(payload_bytes):
+    """Return a module matrix (list of lists of 0/1) for the payload, ECC M."""
+    ver = next(v for v in range(1, 5) if len(payload_bytes) <= _qr_data_codewords(v) - 2)
+    size = ver * 4 + 17
+    modules = [[None] * size for _ in range(size)]
+    is_function = [[False] * size for _ in range(size)]
+
+    def set_func(r, c, val):
+        if 0 <= r < size and 0 <= c < size:
+            modules[r][c] = val
+            is_function[r][c] = True
+
+    def draw_finder(r0, c0):
+        for dr in range(-1, 8):
+            for dc in range(-1, 8):
+                r, c = r0 + dr, c0 + dc
+                if 0 <= r < size and 0 <= c < size:
+                    dist = max(abs(dr - 3), abs(dc - 3))
+                    set_func(r, c, 1 if dist == 3 or dist <= 1 else 0)
+
+    draw_finder(0, 0)
+    draw_finder(0, size - 7)
+    draw_finder(size - 7, 0)
+    for i in range(8, size - 8):
+        set_func(6, i, 1 if i % 2 == 0 else 0)
+        set_func(i, 6, 1 if i % 2 == 0 else 0)
+    centers = _QR_ALIGNMENT[ver]
+    for r in centers:
+        for c in centers:
+            if (r, c) in ((centers[0], centers[0]), (centers[0], centers[-1]), (centers[-1], centers[0])):
+                continue
+            for dr in range(-2, 3):
+                for dc in range(-2, 3):
+                    set_func(r + dr, c + dc, 1 if max(abs(dr), abs(dc)) != 1 else 0)
+    for i in range(6):
+        set_func(8, i, 0)
+    set_func(8, 7, 0)
+    set_func(8, 8, 0)
+    set_func(7, 8, 0)
+    for i in range(9, 15):
+        set_func(14 - i, 8, 0)
+    for i in range(8):
+        set_func(8, size - 1 - i, 0)
+    for i in range(8, 15):
+        set_func(size - 15 + i, 8, 0)
+    set_func(size - 8, 8, 1)
+
+    # Data codewords: byte mode, terminator, padding.
+    capacity_bits = _qr_data_codewords(ver) * 8
+    bits = []
+
+    def push(val, length):
+        for i in range(length - 1, -1, -1):
+            bits.append((val >> i) & 1)
+
+    push(0b0100, 4)
+    push(len(payload_bytes), 8)
+    for byte in payload_bytes:
+        push(byte, 8)
+    push(0, min(4, capacity_bits - len(bits)))
+    while len(bits) % 8:
+        bits.append(0)
+    pad = 0xEC
+    while len(bits) < capacity_bits:
+        push(pad, 8)
+        pad ^= 0xEC ^ 0x11
+    data = []
+    for i in range(0, len(bits), 8):
+        byte = 0
+        for bit in bits[i:i + 8]:
+            byte = (byte << 1) | bit
+        data.append(byte)
+
+    # Error correction and interleaving.
+    num_blocks = _QR_EC_BLOCKS['M'][ver]
+    ecc_len = _QR_ECC_PER_BLOCK['M'][ver]
+    raw_codewords = _qr_raw_modules(ver) // 8
+    num_short = num_blocks - raw_codewords % num_blocks
+    short_len = raw_codewords // num_blocks
+    divisor = _qr_rs_divisor(ecc_len)
+    blocks = []
+    k = 0
+    for i in range(num_blocks):
+        dat_len = short_len - ecc_len + (0 if i < num_short else 1)
+        block = data[k:k + dat_len]
+        k += dat_len
+        blocks.append((block, _qr_rs_remainder(block, divisor)))
+    codewords = []
+    for i in range(max(len(b[0]) for b in blocks)):
+        for dat, _ecc in blocks:
+            if i < len(dat):
+                codewords.append(dat[i])
+    for i in range(ecc_len):
+        for _dat, ecc in blocks:
+            codewords.append(ecc[i])
+    data_bits = []
+    for byte in codewords:
+        for i in range(7, -1, -1):
+            data_bits.append((byte >> i) & 1)
+    data_bits.extend([0] * (_qr_raw_modules(ver) - len(data_bits)))
+
+    # Place data modules in zigzag order, mask 0.
+    idx = 0
+    right = size - 1
+    upward = True
+    while right >= 1:
+        if right == 6:
+            right = 5
+        rows = range(size - 1, -1, -1) if upward else range(size)
+        for r in rows:
+            for c in (right, right - 1):
+                if not is_function[r][c]:
+                    bit = data_bits[idx] if idx < len(data_bits) else 0
+                    idx += 1
+                    if (r + c) % 2 == 0:
+                        bit ^= 1
+                    modules[r][c] = bit
+        right -= 2
+        upward = not upward
+
+    # Format information: ECC M (00), mask 0.
+    fmt_data = 0 << 3 | 0
+    rem = fmt_data
+    for _ in range(10):
+        rem = (rem << 1) ^ ((rem >> 9) * 0x537)
+    fmt_bits = (fmt_data << 10 | rem) ^ 0x5412
+
+    def get_bit(i):
+        return (fmt_bits >> i) & 1
+
+    for i in range(6):
+        modules[i][8] = get_bit(i)
+    modules[7][8] = get_bit(6)
+    modules[8][8] = get_bit(7)
+    modules[8][7] = get_bit(8)
+    for i in range(9, 15):
+        modules[8][14 - i] = get_bit(i)
+    for i in range(8):
+        modules[8][size - 1 - i] = get_bit(i)
+    for i in range(8, 15):
+        modules[size - 15 + i][8] = get_bit(i)
+    modules[size - 8][8] = 1
+    return modules
+
+
+def swish_qr_payload():
+    """Standard Swish QR payload (C-format): number locked, amount and
+    message editable in the Swish app (mask 6), no preset amount."""
+    return f'C{SWISH_NUMBER};;MediaForge;6'
+
+
+def swish_qr_pixmap(target_px=264):
+    """Render the Swish QR code as a QPixmap, or None on failure."""
+    try:
+        matrix = _qr_encode_matrix(swish_qr_payload().encode('utf-8'))
+    except Exception:
+        LOGGER.exception('Could not create the Swish QR code')
+        return None
+    border = 4
+    total = len(matrix) + border * 2
+    scale = max(1, target_px // total)
+    image = QtGui.QImage(total * scale, total * scale, QtGui.QImage.Format.Format_RGB32)
+    image.fill(QtCore.Qt.GlobalColor.white)
+    painter = QtGui.QPainter(image)
+    painter.setPen(QtCore.Qt.GlobalColor.black)
+    painter.setBrush(QtCore.Qt.GlobalColor.black)
+    for r, row in enumerate(matrix):
+        for c, val in enumerate(row):
+            if val == 1:
+                painter.fillRect((c + border) * scale, (r + border) * scale, scale, scale)
+    painter.end()
+    return QtGui.QPixmap.fromImage(image)
+
 
 
 
@@ -280,22 +514,19 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
     'MediaForge har redan senaste releasen ({tag}).': 'MediaForge already has the latest release ({tag}).',
  'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
- 'Stöd utvecklingen · Donationer': 'Support development · Donate',
+ 'Stöd utvecklingen · Swish': 'Support development · Swish',
  'Stöd MediaForge': 'Support MediaForge',
  'MediaForge är gratis att använda. Frivilliga bidrag hjälper till att finansiera fortsatt utveckling; alla funktioner är tillgängliga utan donation.': 'MediaForge is free to use. Optional contributions help fund continued development; every feature is available without donating.',
- 'Välj en betaltjänst. Belopp och eventuell återkommande betalning väljer du säkert hos tjänsten.': 'Choose a payment service. Select an amount and any recurring payment securely with the provider.',
- 'Ko-fi-adressen är fast inställd av utvecklaren och kan inte ändras i appen.': 'The Ko-fi destination is fixed by the maintainer and cannot be changed in the app.',
- 'Öppna Ko-fi': 'Open Ko-fi',
- 'Öppna PayPal': 'Open PayPal',
+ 'Skanna QR-koden med Swish-appen och välj belopp i appen.': 'Scan the QR code with the Swish app and choose an amount in the app.',
+ 'Swish-numret är fast inställt av utvecklaren och visas inte i klartext.': 'The Swish number is fixed by the maintainer and is not shown in plain text.',
+ 'Öppna Swish': 'Open Swish',
+ 'Swish-QR-kod': 'Swish QR code',
+ 'Swish-länken kunde inte öppnas.': 'The Swish link could not be opened.',
+ 'Swish-QR-koden kunde inte skapas.': 'The Swish QR code could not be created.',
  'Licens och användningsrättigheter': 'License and usage rights',
  'MediaForge använder MIT-licensen. Du får använda, kopiera, ändra och distribuera appen, även privat och kommersiellt, om upphovsrätts- och licenstexten följer med. Programvaran tillhandahålls utan garanti.': 'MediaForge is licensed under the MIT License. You may use, copy, modify, and distribute the app, including for private and commercial purposes, provided the copyright and license notice are included. The software is provided without warranty.',
  'Fullständig MIT-licenstext': 'Full MIT license text',
  'Licensfilen LICENSE kunde inte läsas.': 'The LICENSE file could not be read.',
- 'Betallänken är ogiltig och kunde inte öppnas.': 'The payment link is invalid and could not be opened.',
- 'Betalsidan kunde inte öppnas.': 'The payment page could not be opened.',
- 'Stöd utvecklingen · Ko-fi': 'Support development · Ko-fi',
- 'Ko-fi-länk saknas': 'Ko-fi link not set',
- 'Ko-fi-adressen är inte konfigurerad i appen ännu. Be utvecklaren lägga till den fasta länken.': 'The app does not have a Ko-fi destination configured yet. Ask the developer to add the fixed link.',
  'Förstora, förbättra färger och skärp foton. Video kopieras utan bildförbättring.': 'Enlarge, enhance '
                                                                                      'colors and sharpen '
                                                                                      'photos. Videos are '
@@ -577,9 +808,6 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Behåll originalstorlek': 'Keep original size',
  '1080p': '1080p',
  '720p': '720p',
- 'Ko-fi-donationslänk': 'Ko-fi donation link',
- 'Klistra in din personliga Ko-fi-länk (https://ko-fi.com/dittnamn):': 'Enter your personal Ko-fi link '
-                                                                       '(https://ko-fi.com/yourname):',
  'Välj basmapp för webbbilder': 'Choose a base folder for web images',
  'Välj bildmapp': 'Choose image folder',
  'Välj AVIF/HEIC-bilder': 'Choose AVIF/HEIC images',
@@ -606,16 +834,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
                                                                                'and a separate output folder '
                                                                                'outside the source folder.',
  'Ogiltig länk': 'Invalid link',
- 'Ange en personlig Ko-fi-länk på domänen ko-fi.com, till exempel https://ko-fi.com/dittnamn.': 'Enter a '
-                                                                                                'personal '
-                                                                                                'Ko-fi link '
-                                                                                                'on '
-                                                                                                'ko-fi.com, '
-                                                                                                'for example '
-                                                                                                'https://ko-fi.com/yourname.',
  'Sparat': 'Saved',
- 'Din Ko-fi-länk sparades lokalt i appens inställningsmapp.': 'Your Ko-fi link was saved locally in the app '
-                                                              'settings folder.',
  'Kunde inte spara': 'Could not save',
  'Saknade tillägg': 'Missing packages',
  'Vill du installera saknade frivilliga Python-tillägg?\\n': 'Install missing optional Python packages?\\n',
@@ -1173,9 +1392,6 @@ UI_TRANSLATIONS.update({
     'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
     'MediaForge har redan senaste releasen ({tag}).': 'MediaForge already has the latest release ({tag}).',
  'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
- 'Stöd utvecklingen · Ko-fi': 'Support development · Ko-fi',
- 'Ko-fi-länk saknas': 'Ko-fi link not set',
- 'Ko-fi-adressen är inte konfigurerad i appen ännu. Be utvecklaren lägga till den fasta länken.': 'The app does not have a Ko-fi destination configured yet. Ask the developer to add the fixed link.',
  'Förstora, förbättra färger och skärp foton. Video kopieras utan bildförbättring.': 'Enlarge, enhance '
                                                                                      'colors and sharpen '
                                                                                      'photos. Videos are '
@@ -1457,9 +1673,6 @@ UI_TRANSLATIONS.update({
  'Behåll originalstorlek': 'Keep original size',
  '1080p': '1080p',
  '720p': '720p',
- 'Ko-fi-donationslänk': 'Ko-fi donation link',
- 'Klistra in din personliga Ko-fi-länk (https://ko-fi.com/dittnamn):': 'Enter your personal Ko-fi link '
-                                                                       '(https://ko-fi.com/yourname):',
  'Välj basmapp för webbbilder': 'Choose a base folder for web images',
  'Välj bildmapp': 'Choose image folder',
  'Välj AVIF/HEIC-bilder': 'Choose AVIF/HEIC images',
@@ -1486,16 +1699,7 @@ UI_TRANSLATIONS.update({
                                                                                'and a separate output folder '
                                                                                'outside the source folder.',
  'Ogiltig länk': 'Invalid link',
- 'Ange en personlig Ko-fi-länk på domänen ko-fi.com, till exempel https://ko-fi.com/dittnamn.': 'Enter a '
-                                                                                                'personal '
-                                                                                                'Ko-fi link '
-                                                                                                'on '
-                                                                                                'ko-fi.com, '
-                                                                                                'for example '
-                                                                                                'https://ko-fi.com/yourname.',
  'Sparat': 'Saved',
- 'Din Ko-fi-länk sparades lokalt i appens inställningsmapp.': 'Your Ko-fi link was saved locally in the app '
-                                                              'settings folder.',
  'Kunde inte spara': 'Could not save',
  'Saknade tillägg': 'Missing packages',
  'Vill du installera saknade frivilliga Python-tillägg?\\n': 'Install missing optional Python packages?\\n',
@@ -4953,7 +5157,7 @@ class Window(QtWidgets.QMainWindow):
         self.viewer_integration_action.setToolTip(self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
         self.keep_awake_action.setText(self.translated('Håll datorn vaken under jobb'))
         self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
-        self.donate_action.setText(self.translated('Stöd utvecklingen · Donationer'))
+        self.donate_action.setText(self.translated('Stöd utvecklingen · Swish'))
         self.license_action.setText(self.translated('Licens och användningsrättigheter'))
         self.help_menu.setTitle(self.translated('Hjälp'))
         self.support_action.setText(self.translated('Hjälp och support'))
@@ -6830,10 +7034,14 @@ class Window(QtWidgets.QMainWindow):
             self.tabs.setCurrentIndex(preferred if preferred is not None else visible[0])
 
     def open_donation(self):
+        qr_pixmap = swish_qr_pixmap()
+        if qr_pixmap is None:
+            self.show_message('warning', 'Stöd MediaForge', 'Swish-QR-koden kunde inte skapas.')
+            return
         dialog = QtWidgets.QDialog(self)
         dialog.setWindowTitle(self.translated('Stöd MediaForge'))
         dialog.setWindowIcon(self.brand)
-        dialog.setMinimumWidth(480)
+        dialog.setMinimumWidth(420)
         dialog.setStyleSheet('''
             QDialog { background: #f4f7f8; }
             QLabel { color: #233447; }
@@ -6859,43 +7067,50 @@ class Window(QtWidgets.QMainWindow):
         intro.setStyleSheet('color:#f0fff7;font-size:13px')
         hero_layout.addWidget(intro)
         layout.addWidget(hero)
-        prompt = QtWidgets.QLabel(self.translated('Välj en betaltjänst. Belopp och eventuell återkommande betalning väljer du säkert hos tjänsten.'))
-        prompt.setWordWrap(True)
-        layout.addWidget(prompt)
         card = QtWidgets.QFrame()
         card.setObjectName('donationCard')
         card_layout = QtWidgets.QVBoxLayout(card)
-        card_layout.setContentsMargins(14, 14, 14, 14)
+        card_layout.setContentsMargins(16, 16, 16, 16)
         card_layout.setSpacing(10)
-        kofi_button = QtWidgets.QPushButton('☕  ' + self.translated('Öppna Ko-fi'))
-        kofi_button.clicked.connect(lambda: self.open_donation_url(KOFI_URL, {'ko-fi.com', 'www.ko-fi.com'}, 'Ko-fi'))
-        card_layout.addWidget(kofi_button)
-        paypal_button = QtWidgets.QPushButton('💙  ' + self.translated('Öppna PayPal'))
-        paypal_button.setObjectName('secondary')
-        paypal_button.clicked.connect(lambda: self.open_donation_url(PAYPAL_URL, {'paypal.me'}, 'PayPal'))
-        card_layout.addWidget(paypal_button)
+        qr_label = QtWidgets.QLabel()
+        qr_label.setPixmap(qr_pixmap)
+        qr_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        qr_label.setAccessibleName(self.translated('Swish-QR-kod'))
+        card_layout.addWidget(qr_label)
+        prompt = QtWidgets.QLabel(self.translated('Skanna QR-koden med Swish-appen och välj belopp i appen.'))
+        prompt.setWordWrap(True)
+        prompt.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        card_layout.addWidget(prompt)
         layout.addWidget(card)
-        fixed_note = QtWidgets.QLabel(self.translated('Ko-fi-adressen är fast inställd av utvecklaren och kan inte ändras i appen.'))
+        fixed_note = QtWidgets.QLabel(self.translated('Swish-numret är fast inställt av utvecklaren och visas inte i klartext.'))
         fixed_note.setWordWrap(True)
         fixed_note.setStyleSheet('color:#627487;font-size:11px')
         layout.addWidget(fixed_note)
+        buttons = QtWidgets.QHBoxLayout()
+        swish_button = QtWidgets.QPushButton('💚  ' + self.translated('Öppna Swish'))
+        swish_button.clicked.connect(self.open_swish_link)
+        buttons.addWidget(swish_button)
+        buttons.addStretch()
         close_button = QtWidgets.QPushButton(self.translated('Stäng'))
         close_button.setObjectName('secondary')
         close_button.clicked.connect(dialog.accept)
-        layout.addWidget(close_button, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        buttons.addWidget(close_button)
+        layout.addLayout(buttons)
         dialog.exec()
+        LOGGER.info('Swish donation QR dialog opened')
 
-    def open_donation_url(self, value, allowed_hosts, provider):
-        from urllib.parse import urlparse
-        parsed = urlparse(value)
-        if parsed.scheme != 'https' or parsed.hostname not in allowed_hosts or not parsed.path.strip('/'):
-            LOGGER.error('Invalid maintainer-configured %s destination; it is not editable in the app', provider)
-            self.show_message('warning', 'Stöd MediaForge', 'Betallänken är ogiltig och kunde inte öppnas.')
+    def open_swish_link(self):
+        data = json.dumps({
+            'version': 1,
+            'payee': {'value': SWISH_NUMBER, 'editable': False},
+            'amount': {'value': 0, 'editable': True},
+            'message': {'value': 'MediaForge', 'editable': True},
+        }, separators=(',', ':'))
+        url = 'swish://payment?data=' + quote(data, safe='')
+        if not QtGui.QDesktopServices.openUrl(QtCore.QUrl(url)):
+            self.show_message('warning', 'Stöd MediaForge', 'Swish-länken kunde inte öppnas.')
             return
-        if not QtGui.QDesktopServices.openUrl(QtCore.QUrl(value)):
-            self.show_message('warning', 'Stöd MediaForge', 'Betalsidan kunde inte öppnas.')
-            return
-        LOGGER.info('Fixed %s donation destination opened', provider)
+        LOGGER.info('Swish payment link opened')
 
     def show_license_dialog(self):
         try:
