@@ -516,8 +516,8 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
  'Stöd utvecklingen · Swish': 'Support development · Swish',
  'Stöd MediaForge': 'Support MediaForge',
- 'MediaForge är gratis att använda. Frivilliga bidrag hjälper till att finansiera fortsatt utveckling; alla funktioner är tillgängliga utan donation.': 'MediaForge is free to use. Optional contributions help fund continued development; every feature is available without donating.',
- 'Skanna QR-koden med Swish-appen och välj belopp i appen.': 'Scan the QR code with the Swish app and choose an amount in the app.',
+ 'MediaForge är och förblir gratis att använda — för alla. Ingen reklam, inga prenumerationer och inga låsta funktioner. Vill du hjälpa till att hålla utvecklingen igång kan du skicka en frivillig Swish-gåva med valfritt belopp. Varje bidrag går direkt till fortsatt utveckling av appen. Tack för ditt stöd!': 'MediaForge is and will remain free to use — for everyone. No ads, no subscriptions, and no locked features. If you want to help keep development going, you can send an optional Swish contribution of any amount. Every contribution goes directly to continued development of the app. Thank you for your support!',
+ 'Skanna QR-koden med Swish-appen, välj valfritt belopp och bekräfta.': 'Scan the QR code with the Swish app, choose any amount, and confirm.',
  'Swish-numret är fast inställt av utvecklaren och visas inte i klartext.': 'The Swish number is fixed by the maintainer and is not shown in plain text.',
  'Öppna Swish': 'Open Swish',
  'Swish-QR-kod': 'Swish QR code',
@@ -5095,10 +5095,8 @@ class Window(QtWidgets.QMainWindow):
         self.auto_update_action.setChecked(self.ui_settings.value('autoUpdateCheck', True, type=bool))
         self.auto_update_action.toggled.connect(self.change_auto_update_check)
         self.tools_menu.addAction(self.auto_update_action)
-        self.tools_menu.addSeparator()
         self.donate_action = QtGui.QAction('', self)
         self.donate_action.triggered.connect(self.open_donation)
-        self.tools_menu.addAction(self.donate_action)
 
         self.help_menu = bar.addMenu('')
         self.support_action = QtGui.QAction('', self)
@@ -5114,6 +5112,7 @@ class Window(QtWidgets.QMainWindow):
         self.error_log_action = QtGui.QAction('', self)
         self.error_log_action.triggered.connect(self.open_error_log)
         self.help_menu.addAction(self.error_log_action)
+        self.help_menu.addAction(self.donate_action)
         self.help_menu.addSeparator()
         self.license_action = QtGui.QAction('', self)
         self.license_action.triggered.connect(self.show_license_dialog)
@@ -7062,7 +7061,7 @@ class Window(QtWidgets.QMainWindow):
         heading = QtWidgets.QLabel('💚  ' + self.translated('Stöd MediaForge'))
         heading.setStyleSheet('color:white;font-size:20px;font-weight:800')
         hero_layout.addWidget(heading)
-        intro = QtWidgets.QLabel(self.translated('MediaForge är gratis att använda. Frivilliga bidrag hjälper till att finansiera fortsatt utveckling; alla funktioner är tillgängliga utan donation.'))
+        intro = QtWidgets.QLabel(self.translated('MediaForge är och förblir gratis att använda — för alla. Ingen reklam, inga prenumerationer och inga låsta funktioner. Vill du hjälpa till att hålla utvecklingen igång kan du skicka en frivillig Swish-gåva med valfritt belopp. Varje bidrag går direkt till fortsatt utveckling av appen. Tack för ditt stöd!'))
         intro.setWordWrap(True)
         intro.setStyleSheet('color:#f0fff7;font-size:13px')
         hero_layout.addWidget(intro)
@@ -7077,7 +7076,7 @@ class Window(QtWidgets.QMainWindow):
         qr_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         qr_label.setAccessibleName(self.translated('Swish-QR-kod'))
         card_layout.addWidget(qr_label)
-        prompt = QtWidgets.QLabel(self.translated('Skanna QR-koden med Swish-appen och välj belopp i appen.'))
+        prompt = QtWidgets.QLabel(self.translated('Skanna QR-koden med Swish-appen, välj valfritt belopp och bekräfta.'))
         prompt.setWordWrap(True)
         prompt.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(prompt)
