@@ -9485,13 +9485,22 @@ if __name__ == '__main__':
     # flags set on some window managers (which can show the window normally).
     # Always start with a clean state and repeat the minimize after native
     # window creation so login launch behaves like a manual launch.
+    # When a system tray is available the app starts hidden in the tray;
+    # otherwise it starts minimized to the taskbar.
     window.setWindowState(QtCore.Qt.WindowState.WindowNoState)
-    window.showMinimized()
+    if getattr(window, 'tray_icon', None):
+        window.hide()
+    else:
+        window.showMinimized()
 
     def enforce_startup_minimized():
-        window.setWindowState(QtCore.Qt.WindowState.WindowMinimized)
-        window.showMinimized()
-        LOGGER.info('Startup window minimize requested')
+        if getattr(window, 'tray_icon', None):
+            window.hide_to_system_tray()
+            LOGGER.info('Startup window hidden to system tray')
+        else:
+            window.setWindowState(QtCore.Qt.WindowState.WindowMinimized)
+            window.showMinimized()
+            LOGGER.info('Startup window minimize requested')
 
     QtCore.QTimer.singleShot(0, enforce_startup_minimized)
     sys.exit(app.exec())
