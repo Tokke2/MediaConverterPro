@@ -4,13 +4,15 @@ En gemensam skrivbordsapp för foton och video. Flikarna omfattar **Bildförbät
 
 Copyright © 2026 Rickard Längkvist.
 
+MediaForge ges ut under MIT-licensen: appen får användas privat och kommersiellt, kopieras, ändras och distribueras om upphovsrätts- och licenstexten följer med. Se `LICENSE` eller **Hjälp → Licens och användningsrättigheter**.
+
 ## Installera och starta
 
 MediaForge använder systemets Python 3.10 eller senare (även 3.15). Om ingen Python hittas frågar startaren innan den installerar den senaste tillgängliga versionen via operativsystemets pakethanterare. Om någon Python redan finns—även en äldre—erbjuder eller installerar startaren aldrig en ny; uppgradera den befintliga installationen manuellt om den är äldre än 3.10. Ingen app-privat Python-miljö skapas. Paketcache ligger i `MediaForge_Data/` och loggar i den separata appmappen `Logs/`.
 
 - **Windows:** dubbelklicka `Starta_Fotoverktyg.vbs`. `Starta_Fotoverktyg.ps1` söker via Python-startaren, registerposter och PATH. Om ingen Python alls hittas frågar den innan den installerar senaste stabila Python via winget. Om Python redan finns erbjuds eller installeras aldrig en till; en äldre än 3.10 måste uppgraderas manuellt. Ingen separat Python-uppdateringsfil `.bat` ingår.
 - **macOS/Linux:** kör `./start_mediaforge.sh` från Terminal. Den använder befintlig system-Python direkt och installerar nödvändiga gemensamma användarpaket endast om de saknas. Ingen automatisk paketuppdatering sker vid start; välj **Uppdatera alla Python-paket (starta om)** för en manuell uppdatering. När startaren är klar startar GUI:t frikopplat från terminalen; utdata omdirigeras till `Logs/launcher.log` bredvid appen. Om ingen Python alls hittas frågar startaren innan installation via Homebrew eller Linux-distributionens pakethanterare. Om Python redan finns ställs ingen Python-installationsfråga och ingen ny runtime installeras. Linux-distributionens förråd kan ligga efter senaste upstream-versionen.
-- Under menyn **Verktyg** finns hantering av Python-tillägg, Python-/paketuppdatering, autostart, tyst versionssökning och Ko-fi. Du kan även registrera MediaForge som **Öppna med**-bildvisare utan att ändra standardappen, lägga till en Windows Explorer-högerklicksmeny och välja att hålla datorn vaken medan jobb körs. Manuell kontroll av senaste GitHub-releasen finns under **Hjälp → Sök efter uppdatering…**.
+- Under menyn **Verktyg** finns hantering av Python-tillägg, Python-/paketuppdatering, autostart, tyst versionssökning och **Stöd utvecklingen · Donationer** med fasta Ko-fi- och PayPal-länkar som inte går att ändra i appen. Du kan även registrera MediaForge som **Öppna med**-bildvisare utan att ändra standardappen, lägga till en Windows Explorer-högerklicksmeny och välja att hålla datorn vaken medan jobb körs. Manuell kontroll av senaste GitHub-releasen finns under **Hjälp → Sök efter uppdatering…**.
 
 Installera även **ExifTool** separat för bred metadatahantering, **FFmpeg** för videokonvertering och `xorriso`, `genisoimage` eller `mkisofs` för att skapa ISO till musik-data-DVD. På Linux kan Qt även kräva systembibliotek för grafiskt gränssnitt.
 
@@ -46,7 +48,7 @@ Appen öppnas i **Visa → Enkelt läge** med vanliga verktyg synliga; stäng av
 14. På **Videostabilisering**: välj mapp och stabiliseringsstyrka. FFmpeg skapar H.264-kopior med deshake; omkodning tar tid och kan påverka kvaliteten.
 15. På **Ljudförbättring**: normalisera ljudstyrkan eller minska bakgrundsbrus. Funktionen stöder ljud- och videofiler och lämnar originalen orörda.
 16. På **Codec-rapport**: skanna en mapp med ffprobe för container, codec, upplösning, bildfrekvens, bitrate och ljudinformation. Rapporten kan exporteras som CSV under appmappen.
-17. Knappen **Stöd utvecklingen · Ko-fi** öppnar appens fasta Ko-fi-adress. Adressen kan inte ändras i appen. Om ingen adress har konfigurerats än visas ett meddelande i stället.
+17. Öppna **Verktyg → Stöd utvecklingen · Donationer** för ett informationsfönster med fasta Ko-fi- och PayPal-knappar. Betalningsadresserna är konfigurerade av utvecklaren och kan inte ändras i appen; belopp väljs hos betaltjänsten. Donationer är frivilliga och låser inte upp några funktioner.
 
 **Viktigt:** Full metadatarensning kan även ta bort GPS, kamerainställningar, färgprofiler och annan information. Testa på kopior först. Om **Behåll befintlig EXIF** markeras vid bildexport kan gamla metadata följa med, om inte full rensning utförs efteråt. På Linux går filens skapandetid normalt inte att ändra; ändrings- och åtkomsttid uppdateras. Förlustfri förstoring ger fler pixlar men skapar inte verkliga detaljer som saknas i originalbilden. Arkivfiler skrivs inte över om du inte uttryckligen markerar det.
 

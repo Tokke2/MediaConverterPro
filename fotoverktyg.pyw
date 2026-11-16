@@ -38,9 +38,11 @@ APP_VERSION = '0.0.2'
 APP_COPYRIGHT = 'Copyright © 2026 Rickard Längkvist'
 UPDATE_REMOTE_URL = 'https://github.com/Tokke2/MediaConverterPro.git'
 UPDATE_RELEASE_API = 'https://api.github.com/repos/Tokke2/MediaConverterPro/releases/latest'
-KOFI_URL = ''  # Fixed app destination; configured by the maintainer, never by the user.
+KOFI_URL = 'https://ko-fi.com/tokke2'  # Fixed maintainer-configured destination; never user-editable.
+PAYPAL_URL = 'https://paypal.me/Rickard3dPrint'  # Fixed maintainer-configured destination; never user-editable.
+LICENSE_FILE = APP_DIR / 'LICENSE'
 UPDATEABLE_RELEASE_FILES = {
-    '.gitignore', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
+    '.gitignore', 'LICENSE', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
     'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs',
     'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png', 'fotoverktyg_icon.svg', 'mediaforge_logo.svg', 'mediaforge_logo_print.svg',
     'start_mediaforge.sh',
@@ -278,6 +280,19 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
     'MediaForge har redan senaste releasen ({tag}).': 'MediaForge already has the latest release ({tag}).',
  'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
+ 'Stöd utvecklingen · Donationer': 'Support development · Donate',
+ 'Stöd MediaForge': 'Support MediaForge',
+ 'MediaForge är gratis att använda. Frivilliga bidrag hjälper till att finansiera fortsatt utveckling; alla funktioner är tillgängliga utan donation.': 'MediaForge is free to use. Optional contributions help fund continued development; every feature is available without donating.',
+ 'Välj en betaltjänst. Belopp och eventuell återkommande betalning väljer du säkert hos tjänsten.': 'Choose a payment service. Select an amount and any recurring payment securely with the provider.',
+ 'Ko-fi-adressen är fast inställd av utvecklaren och kan inte ändras i appen.': 'The Ko-fi destination is fixed by the maintainer and cannot be changed in the app.',
+ 'Öppna Ko-fi': 'Open Ko-fi',
+ 'Öppna PayPal': 'Open PayPal',
+ 'Licens och användningsrättigheter': 'License and usage rights',
+ 'MediaForge använder MIT-licensen. Du får använda, kopiera, ändra och distribuera appen, även privat och kommersiellt, om upphovsrätts- och licenstexten följer med. Programvaran tillhandahålls utan garanti.': 'MediaForge is licensed under the MIT License. You may use, copy, modify, and distribute the app, including for private and commercial purposes, provided the copyright and license notice are included. The software is provided without warranty.',
+ 'Fullständig MIT-licenstext': 'Full MIT license text',
+ 'Licensfilen LICENSE kunde inte läsas.': 'The LICENSE file could not be read.',
+ 'Betallänken är ogiltig och kunde inte öppnas.': 'The payment link is invalid and could not be opened.',
+ 'Betalsidan kunde inte öppnas.': 'The payment page could not be opened.',
  'Stöd utvecklingen · Ko-fi': 'Support development · Ko-fi',
  'Ko-fi-länk saknas': 'Ko-fi link not set',
  'Ko-fi-adressen är inte konfigurerad i appen ännu. Be utvecklaren lägga till den fasta länken.': 'The app does not have a Ko-fi destination configured yet. Ask the developer to add the fixed link.',
@@ -4895,6 +4910,10 @@ class Window(QtWidgets.QMainWindow):
         self.error_log_action = QtGui.QAction('', self)
         self.error_log_action.triggered.connect(self.open_error_log)
         self.help_menu.addAction(self.error_log_action)
+        self.help_menu.addSeparator()
+        self.license_action = QtGui.QAction('', self)
+        self.license_action.triggered.connect(self.show_license_dialog)
+        self.help_menu.addAction(self.license_action)
         self.retranslate_menu_bar()
 
     def activate_visible_tab(self, visible_slot):
@@ -4934,7 +4953,8 @@ class Window(QtWidgets.QMainWindow):
         self.viewer_integration_action.setToolTip(self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
         self.keep_awake_action.setText(self.translated('Håll datorn vaken under jobb'))
         self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
-        self.donate_action.setText(self.translated('Stöd utvecklingen · Ko-fi'))
+        self.donate_action.setText(self.translated('Stöd utvecklingen · Donationer'))
+        self.license_action.setText(self.translated('Licens och användningsrättigheter'))
         self.help_menu.setTitle(self.translated('Hjälp'))
         self.support_action.setText(self.translated('Hjälp och support'))
         self.tutorial_action.setText(self.translated('Interaktiv guide…'))
@@ -6810,21 +6830,99 @@ class Window(QtWidgets.QMainWindow):
             self.tabs.setCurrentIndex(preferred if preferred is not None else visible[0])
 
     def open_donation(self):
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(self.translated('Stöd MediaForge'))
+        dialog.setWindowIcon(self.brand)
+        dialog.setMinimumWidth(480)
+        dialog.setStyleSheet('''
+            QDialog { background: #f4f7f8; }
+            QLabel { color: #233447; }
+            QFrame#donationHero { background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #26a269, stop:1 #176c52); border-radius: 16px; }
+            QFrame#donationCard { background: white; border: 1px solid #dce6e8; border-radius: 12px; }
+            QPushButton { background: #16895f; color: white; border: 0; border-radius: 9px; padding: 10px 18px; font-weight: 700; }
+            QPushButton:hover { background: #11734f; }
+            QPushButton#secondary { background: #e8eef0; color: #233447; }
+            QPushButton#secondary:hover { background: #dbe5e8; }
+        ''')
+        layout = QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(18, 18, 18, 16)
+        layout.setSpacing(14)
+        hero = QtWidgets.QFrame()
+        hero.setObjectName('donationHero')
+        hero_layout = QtWidgets.QVBoxLayout(hero)
+        hero_layout.setContentsMargins(20, 18, 20, 18)
+        heading = QtWidgets.QLabel('💚  ' + self.translated('Stöd MediaForge'))
+        heading.setStyleSheet('color:white;font-size:20px;font-weight:800')
+        hero_layout.addWidget(heading)
+        intro = QtWidgets.QLabel(self.translated('MediaForge är gratis att använda. Frivilliga bidrag hjälper till att finansiera fortsatt utveckling; alla funktioner är tillgängliga utan donation.'))
+        intro.setWordWrap(True)
+        intro.setStyleSheet('color:#f0fff7;font-size:13px')
+        hero_layout.addWidget(intro)
+        layout.addWidget(hero)
+        prompt = QtWidgets.QLabel(self.translated('Välj en betaltjänst. Belopp och eventuell återkommande betalning väljer du säkert hos tjänsten.'))
+        prompt.setWordWrap(True)
+        layout.addWidget(prompt)
+        card = QtWidgets.QFrame()
+        card.setObjectName('donationCard')
+        card_layout = QtWidgets.QVBoxLayout(card)
+        card_layout.setContentsMargins(14, 14, 14, 14)
+        card_layout.setSpacing(10)
+        kofi_button = QtWidgets.QPushButton('☕  ' + self.translated('Öppna Ko-fi'))
+        kofi_button.clicked.connect(lambda: self.open_donation_url(KOFI_URL, {'ko-fi.com', 'www.ko-fi.com'}, 'Ko-fi'))
+        card_layout.addWidget(kofi_button)
+        paypal_button = QtWidgets.QPushButton('💙  ' + self.translated('Öppna PayPal'))
+        paypal_button.setObjectName('secondary')
+        paypal_button.clicked.connect(lambda: self.open_donation_url(PAYPAL_URL, {'paypal.me'}, 'PayPal'))
+        card_layout.addWidget(paypal_button)
+        layout.addWidget(card)
+        fixed_note = QtWidgets.QLabel(self.translated('Ko-fi-adressen är fast inställd av utvecklaren och kan inte ändras i appen.'))
+        fixed_note.setWordWrap(True)
+        fixed_note.setStyleSheet('color:#627487;font-size:11px')
+        layout.addWidget(fixed_note)
+        close_button = QtWidgets.QPushButton(self.translated('Stäng'))
+        close_button.setObjectName('secondary')
+        close_button.clicked.connect(dialog.accept)
+        layout.addWidget(close_button, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        dialog.exec()
+
+    def open_donation_url(self, value, allowed_hosts, provider):
         from urllib.parse import urlparse
-        from PyQt6.QtGui import QDesktopServices
-        value = KOFI_URL.strip()
         parsed = urlparse(value)
-        if parsed.scheme != 'https' or parsed.hostname not in {'ko-fi.com', 'www.ko-fi.com'} or not parsed.path.strip('/'):
-            LOGGER.warning('Ko-fi-länk saknas eller är ogiltig; användaren kan inte ändra den i appen')
-            self.show_message(
-                'information', 'Ko-fi-länk saknas',
-                'Ko-fi-adressen är inte konfigurerad i appen ännu. Be utvecklaren lägga till den fasta länken.',
-            )
+        if parsed.scheme != 'https' or parsed.hostname not in allowed_hosts or not parsed.path.strip('/'):
+            LOGGER.error('Invalid maintainer-configured %s destination; it is not editable in the app', provider)
+            self.show_message('warning', 'Stöd MediaForge', 'Betallänken är ogiltig och kunde inte öppnas.')
             return
-        if not QDesktopServices.openUrl(QtCore.QUrl(value)):
-            self.show_message('warning', 'Ko-fi-länk saknas', 'Ko-fi-adressen kunde inte öppnas.')
+        if not QtGui.QDesktopServices.openUrl(QtCore.QUrl(value)):
+            self.show_message('warning', 'Stöd MediaForge', 'Betalsidan kunde inte öppnas.')
             return
-        LOGGER.info('Fast Ko-fi-donationslänk öppnad')
+        LOGGER.info('Fixed %s donation destination opened', provider)
+
+    def show_license_dialog(self):
+        try:
+            license_text = LICENSE_FILE.read_text(encoding='utf-8')
+        except OSError:
+            LOGGER.exception('Could not read the MediaForge license file')
+            self.show_message('warning', 'Licens och användningsrättigheter', 'Licensfilen LICENSE kunde inte läsas.')
+            return
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(self.translated('Licens och användningsrättigheter'))
+        dialog.setWindowIcon(self.brand)
+        dialog.resize(620, 520)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        summary = QtWidgets.QLabel(self.translated('MediaForge använder MIT-licensen. Du får använda, kopiera, ändra och distribuera appen, även privat och kommersiellt, om upphovsrätts- och licenstexten följer med. Programvaran tillhandahålls utan garanti.'))
+        summary.setWordWrap(True)
+        layout.addWidget(summary)
+        full_text_label = QtWidgets.QLabel(self.translated('Fullständig MIT-licenstext'))
+        full_text_label.setStyleSheet('font-weight:700')
+        layout.addWidget(full_text_label)
+        license_view = QtWidgets.QPlainTextEdit()
+        license_view.setReadOnly(True)
+        license_view.setPlainText(license_text)
+        layout.addWidget(license_view, 1)
+        close_button = QtWidgets.QPushButton(self.translated('Stäng'))
+        close_button.clicked.connect(dialog.accept)
+        layout.addWidget(close_button, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        dialog.exec()
 
     def change_autostart(self, enabled):
         try:
