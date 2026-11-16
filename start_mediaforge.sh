@@ -51,13 +51,11 @@ on_error() {
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
 UPDATE_PACKAGES=0
-UPDATE_SYSTEM_PYTHON=0
 WAIT_FOR_PID=0
 APP_ARGS=()
 while (($#)); do
   case "$1" in
     --update-packages) UPDATE_PACKAGES=1 ;;
-    --update-system-python|--install-latest-python) UPDATE_SYSTEM_PYTHON=1 ;;
     --wait-for-pid)
       shift
       [[ $# -gt 0 ]] || { write_error 'Missing PID after --wait-for-pid'; printf '%s\n' 'Missing PID after --wait-for-pid.' >&2; exit 2; }
@@ -99,52 +97,103 @@ find_python() {
   return 1
 }
 
-update_existing_python() {
-  local existing_python="$1"
-  [[ -n "$existing_python" ]] || { printf '%s\n' 'No compatible system Python is available; MediaForge will not install one.' >&2; return 1; }
-  if [[ "$(uname -s)" == Darwin ]] && command -v brew >/dev/null 2>&1; then
-    brew list --versions python >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by Homebrew; it was left unchanged. No other Python will be installed.' >&2; return 1; }
-    printf '%s\n' 'Updating the existing Homebrew Python runtime…'
-    brew update && brew upgrade python
-  elif command -v apt-get >/dev/null 2>&1; then
-    dpkg-query -S "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by apt; it was left unchanged. No other Python will be installed.' >&2; return 1; }
-    printf '%s\n' 'Updating the existing apt-managed Python runtime…'
-    sudo apt-get update && sudo apt-get install --only-upgrade -y python3 python3-pip
-  elif command -v dnf >/dev/null 2>&1; then
-    rpm -qf "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by dnf; it was left unchanged. No other Python will be installed.' >&2; return 1; }
-    printf '%s\n' 'Updating the existing dnf-managed Python runtime…'
-    sudo dnf upgrade -y python3
-  elif command -v pacman >/dev/null 2>&1; then
-    pacman -Qo "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by pacman; it was left unchanged. No other Python will be installed.' >&2; return 1; }
-    printf '%s\n' 'Updating the existing pacman-managed Python runtime…'
-    sudo pacman -Syu --needed python python-pip
-  elif command -v zypper >/dev/null 2>&1; then
-    rpm -qf "$existing_python" >/dev/null 2>&1 || { printf '%s\n' 'The installed Python is not managed by zypper; it was left unchanged. No other Python will be installed.' >&2; return 1; }
-    printf '%s\n' 'Updating the existing zypper-managed Python runtime…'
-    sudo zypper refresh && sudo zypper update -y python3
+find_any_python() {
+  local candidate candidate_path
+  local candidates=("${PYTHON:-}" python3 python /usr/bin/python3 /usr/local/bin/python3 /opt/homebrew/bin/python3 /opt/local/bin/python3 /Library/Frameworks/Python.framework/Versions/Current/bin/python3)
+  for candidate in "${candidates[@]}"; do
+    [[ -n "$candidate" ]] || continue
+    if [[ -x "$candidate" ]]; then candidate_path="$candidate"
+    else candidate_path="$(command -v "$candidate" 2>/dev/null)" || continue
+    fi
+    if "$candidate_path" --version >/dev/null 2>&1; then
+      printf '%s\n' "$candidate_path"
+      return 0
+    fi
+  done
+  return 1
+}
+
+ask_install_python() {
+  local answer
+  if [[ "$(uname -s)" == Darwin ]] && command -v osascript >/dev/null 2>&1; then
+    osascript -e 'display dialog "No Python installation was detected. Install Python using the available OS package manager?" buttons {"Cancel", "Install"} default button "Install" with title "MediaForge"' >/dev/null 2>&1
+  elif command -v zenity >/dev/null 2>&1; then
+    zenity --question --title='MediaForge' --text='No Python installation was detected. Install the latest Python available for this OS?'
+  elif command -v kdialog >/dev/null 2>&1; then
+    kdialog --yesno 'No Python installation was detected. Install the latest Python available for this OS?' --title 'MediaForge'
+  elif [[ -t 0 ]]; then
+    read -r -p 'No Python installation was detected. Install Python now? [y/N] ' answer
+    [[ "$answer" =~ ^[Yy]([Ee][Ss])?$ ]]
   else
-    printf '%s\n' 'No supported system package manager was found. The existing Python was left unchanged.' >&2
+    write_error 'No graphical consent dialog or terminal is available; Python installation was not attempted.'
+    printf '%s\n' 'No Python installation was detected. Run this launcher from Terminal to choose whether to install Python.' >&2
+    return 1
+  fi
+}
+
+run_privileged() {
+  if [[ -t 0 && -t 1 ]]; then sudo "$@"
+  elif command -v pkexec >/dev/null 2>&1; then pkexec "$@"
+  elif command -v sudo >/dev/null 2>&1; then sudo -A "$@"
+  else
+    write_error 'No supported privilege prompt is available for the OS package manager.'
+    return 1
+  fi
+}
+
+install_python_if_approved() {
+  local os_name
+  os_name="$(uname -s)"
+  if [[ "$os_name" == Darwin ]]; then
+    if command -v brew >/dev/null 2>&1; then
+      log 'Installing Python through Homebrew after user approval'
+      brew install python
+    else
+      open 'https://www.python.org/downloads/macos/' >/dev/null 2>&1 || true
+      write_error 'Homebrew is unavailable; opened the official Python downloads page for manual installation.'
+      printf '%s\n' 'Homebrew is not installed. The official Python download page was opened; install Python, then run MediaForge again.' >&2
+      return 1
+    fi
+  elif command -v apt-get >/dev/null 2>&1; then
+    log 'Installing the newest repository-supported Python through apt after user approval'
+    run_privileged apt-get update && run_privileged apt-get install -y python3 python3-pip
+  elif command -v dnf >/dev/null 2>&1; then
+    log 'Installing the newest repository-supported Python through dnf after user approval'
+    run_privileged dnf install -y python3 python3-pip
+  elif command -v pacman >/dev/null 2>&1; then
+    log 'Installing the newest repository-supported Python through pacman after user approval'
+    run_privileged pacman -S --needed --noconfirm python python-pip
+  elif command -v zypper >/dev/null 2>&1; then
+    log 'Installing the newest repository-supported Python through zypper after user approval'
+    run_privileged zypper refresh && run_privileged zypper install -y python3 python3-pip
+  else
+    if command -v xdg-open >/dev/null 2>&1; then xdg-open 'https://www.python.org/downloads/' >/dev/null 2>&1 || true; fi
+    write_error 'No supported system package manager was found; opened the official Python downloads page when possible.'
+    printf '%s\n' 'No supported package manager was found. Install Python 3.10+ using your OS method, then run MediaForge again.' >&2
     return 1
   fi
 }
 
 python_info="$(find_python || true)"
-if ((UPDATE_SYSTEM_PYTHON)); then
+if [[ -z "$python_info" ]]; then
+  existing_python="$(find_any_python || true)"
+  if [[ -n "$existing_python" ]]; then
+    write_error "Python was detected at $existing_python, but MediaForge requires Python 3.10 or newer; startup will not offer or install another Python."
+    printf 'Python was detected at %s, but MediaForge requires Python 3.10+. Upgrade that installation manually and run MediaForge again.\n' "$existing_python" >&2
+    exit 1
+  fi
+  if ! ask_install_python; then
+    log 'Python installation offer declined or unavailable; no Python was detected.'
+    exit 0
+  fi
+  install_python_if_approved
+  python_info="$(find_python || true)"
   [[ -n "$python_info" ]] || {
-    write_error 'No compatible system Python was found; runtime installation is disabled'
-    printf '%s\n' 'No compatible system Python 3.10+ was found. MediaForge will not install a separate Python runtime.' >&2
+    write_error 'Python installation completed or was attempted, but no compatible Python 3.10+ was detected.'
+    printf '%s\n' 'No compatible Python 3.10+ was detected after installation. Check the installer, then run MediaForge again.' >&2
     exit 1
   }
-  log 'User requested an update of the existing system Python runtime'
-  update_existing_python "$(sed -n '1p' <<<"$python_info")"
-  python_info="$(find_python || true)"
 fi
-
-[[ -n "$python_info" ]] || {
-  write_error 'No compatible system Python 3.10+ was found; runtime installation is disabled'
-  printf '%s\n' 'No compatible system Python 3.10+ was found. MediaForge uses an existing system Python and will not install its own. Install a system Python with your preferred OS method, then launch MediaForge again.' >&2
-  exit 1
-}
 PYTHON="$(sed -n '1p' <<<"$python_info")"
 PYTHON_VERSION="$(sed -n '2p' <<<"$python_info")"
 

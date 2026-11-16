@@ -1,8 +1,7 @@
-# Windows launcher for MediaForge. Uses an existing system Python; it never installs
-# a Python runtime or creates an app-private environment. Python packages are shared per user.
+# Windows launcher for MediaForge. It offers to install Python only when none is detected;
+# Python packages remain shared per user and no app-private environment is created.
 param(
     [switch]$UpdatePackages,
-    [Alias('InstallLatestPython')][switch]$UpdateSystemPython,
     [int]$WaitForPid = 0,
     [string]$OpenPath = ''
 )
@@ -60,36 +59,33 @@ function Wait-ForParent([int]$pidToWaitFor) {
         catch { break }
     }
 }
-function Update-SystemPython([hashtable]$ExistingPython) {
-    if (-not $ExistingPython) {
-        throw 'No compatible system Python was found. MediaForge will not install a separate Python runtime.'
-    }
+function Install-LatestPython {
     $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
     if (-not $winget) {
-        throw "Python $($ExistingPython.Version) is already installed, but winget is unavailable. It was left unchanged."
+        Start-Process 'https://www.python.org/downloads/windows/' -ErrorAction SilentlyContinue
+        throw 'winget is unavailable. The official Python downloads page was opened; install Python manually, then run MediaForge again.'
     }
-    $packageId = "Python.Python.$($ExistingPython.Version)"
-    $listedPackages = & $winget.Source list --id $packageId --exact --source winget --accept-source-agreements 2>$null | Out-String
-    if ($LASTEXITCODE -ne 0 -or $listedPackages -notmatch [regex]::Escape($packageId)) {
-        throw "Python $($ExistingPython.Version) is installed but is not managed by winget. It was left unchanged; no other Python was installed."
+    Write-StartupLog 'No Python runtime was detected; searching winget for the latest stable Python package.'
+    $searchOutput = @(& $winget.Source search Python --source winget --accept-source-agreements 2>&1 | ForEach-Object { $_.ToString() }) -join "`n"
+    $searchExitCode = $LASTEXITCODE
+    $packages = @{}
+    foreach ($match in [regex]::Matches($searchOutput, '(?i)\b(Python\.Python\.(\d+\.\d+))\b')) {
+        $packageId = $match.Groups[1].Value
+        $versionText = $match.Groups[2].Value
+        try { $packages[$packageId] = [version]$versionText } catch { }
     }
-    Write-StartupLog "Updating existing system Python package $packageId"
-    $upgradeArgs = @('upgrade', '--id', $packageId, '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements')
-    & $winget.Source @upgradeArgs >> $startupLog 2>&1
-    $upgradeExitCode = $LASTEXITCODE
-    $wingetCode = ([BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$upgradeExitCode), 0)).ToString('X8')
-    if ($upgradeExitCode -ne 0 -and $wingetCode -eq '8A15002B') {
-        Write-StartupLog "No newer $packageId version is available; keeping system Python $($ExistingPython.Version)."
-        return $ExistingPython.Version
+    if ($searchExitCode -ne 0 -or $packages.Count -eq 0) {
+        Start-Process 'https://www.python.org/downloads/windows/' -ErrorAction SilentlyContinue
+        throw 'winget could not identify a current Python package. The official Python downloads page was opened; install Python manually and run MediaForge again.'
     }
-    if ($upgradeExitCode -ne 0 -and $wingetCode -eq '8A15010C') {
-        Write-WarningLog "The Python installer was cancelled; keeping existing system Python $($ExistingPython.Version)."
-        return $ExistingPython.Version
-    }
-    if ($upgradeExitCode -ne 0) { throw "winget could not update existing $packageId (exit code $upgradeExitCode). The existing Python was not replaced. See $startupLog" }
-    return $ExistingPython.Version
+    $latest = $packages.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1
+    $packageId = $latest.Key
+    Write-StartupLog "Installing latest winget Python package $packageId after user approval."
+    & $winget.Source install --id $packageId --exact --source winget --accept-package-agreements --accept-source-agreements >> $startupLog 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "winget failed to install $packageId (exit code $LASTEXITCODE). See $startupLog" }
 }
-function Find-BasePython([string]$preferredVersion = '') {
+function Find-BasePython {
+    $script:PythonDetected = $false
     $candidates = [System.Collections.Generic.List[object]]::new()
     $seen = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     $addCandidate = {
@@ -105,7 +101,7 @@ function Find-BasePython([string]$preferredVersion = '') {
     $py = Get-Command 'py.exe' -ErrorAction SilentlyContinue
     if ($py) {
         foreach ($line in @(& $py.Source -0p 2>$null)) {
-            $match = [regex]::Match($line.ToString(), '(?i)([A-Z]:\\.*?python(?:w)?\.exe)\s*$')
+            $match = [regex]::Match($line.ToString(), '(?i)([A-Z]:\.*?python(?:w)?\.exe)\s*$')
             if ($match.Success) { & $addCandidate $match.Groups[1].Value ([string[]]@()) }
         }
     }
@@ -156,7 +152,6 @@ function Find-BasePython([string]$preferredVersion = '') {
         & $addCandidate (Join-Path $root 'python.exe') ([string[]]@())
     }
 
-    $firstCompatiblePython = $null
     foreach ($candidate in $candidates) {
         try {
             # Avoid `python -c`: legacy Windows PowerShell quoting can corrupt
@@ -167,6 +162,7 @@ function Find-BasePython([string]$preferredVersion = '') {
             $probeText = $probeOutput -join "`n"
             $versionMatch = [regex]::Match($probeText, '(?im)\bPython\s+(\d+)\.(\d+)')
             if ($probeExitCode -eq 0 -and $versionMatch.Success) {
+                $script:PythonDetected = $true
                 $version = "$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value)"
                 $major = [int]$versionMatch.Groups[1].Value
                 $minor = [int]$versionMatch.Groups[2].Value
@@ -174,8 +170,7 @@ function Find-BasePython([string]$preferredVersion = '') {
                     $runtimePath = $candidate.File
                     Write-StartupLog "Found compatible system Python $version at $runtimePath"
                     $compatiblePython = @{ File = $runtimePath; Args = @(); Version = $version; Executable = $runtimePath }
-                    if (-not $preferredVersion -or $version -eq $preferredVersion) { return $compatiblePython }
-                    if (-not $firstCompatiblePython) { $firstCompatiblePython = $compatiblePython }
+                    return $compatiblePython
                 }
             }
             Write-StartupLog "Python candidate was not compatible or could not be probed: $($candidate.File) $($candidate.Args -join ' ') (exit $probeExitCode; output: $probeText)"
@@ -183,7 +178,6 @@ function Find-BasePython([string]$preferredVersion = '') {
             Write-StartupLog "Python candidate probe failed: $($candidate.File) $($candidate.Args -join ' ') ($($_.Exception.Message))"
         }
     }
-    if ($firstCompatiblePython) { return $firstCompatiblePython }
     Write-StartupLog "No compatible Python found after checking $($candidates.Count) candidate(s)."
     return $null
 }
@@ -200,17 +194,17 @@ try {
 
     $basePython = Find-BasePython
     if (-not $basePython) {
-        throw 'No compatible system Python 3.10+ was detected. MediaForge will not install its own Python. The launcher checks the Python launcher, registry, PATH, and common user/system install folders. In Command Prompt, run `py -0p` to verify that Python 3.10+ is listed. If it is listed but MediaForge still cannot start, share Logs/launcher.log and Logs/errors.log with support.'
-    }
-    if ($UpdateSystemPython) {
-        if (-not (Ask "Update the existing winget-managed system Python $($basePython.Version)? MediaForge will not install another Python runtime." 'Python runtime')) {
-            Write-StartupLog 'System Python update cancelled by user'
+        if ($script:PythonDetected) {
+            throw 'A Python runtime is installed, but none is compatible (MediaForge needs Python 3.10 or newer). To honor your preference, startup will not offer or install another Python. Upgrade the existing installation manually, then retry.'
+        }
+        if (-not (Ask 'No Python installation was detected. Install the latest stable Python using winget? This happens only when no Python is installed.' 'Install Python for MediaForge')) {
+            Write-StartupLog 'Python installation offer declined; no Python was detected.'
             exit
         }
-        $preferredVersion = Update-SystemPython $basePython
-        $basePython = Find-BasePython $preferredVersion
+        Install-LatestPython
+        $basePython = Find-BasePython
         if (-not $basePython) {
-            throw 'The existing system Python could not be found after the update attempt. No replacement Python was installed.'
+            throw 'Python installation finished, but a compatible Python 3.10+ could not be detected. Check the installation and run MediaForge again.'
         }
     }
 

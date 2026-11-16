@@ -224,7 +224,6 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Kontrollera format, kvalitet och metadataalternativ. Kör ett litet jobb först om du är osäker på resultatet.': 'Check format, quality, and metadata options. Try a small job first if you are unsure about the result.',
  'Följ förloppet och läs aktivitetsloggen. Fel visar ofta ett förslag på nästa steg; avbrutna original ska förbli orörda.': 'Follow progress and read the activity log. Errors often include a suggested next step; source originals should remain untouched.',
  'Kontrollera/installera Python-tillägg…': 'Check/install Python packages…',
- 'Uppdatera systemets Python…': 'Update system Python…',
  'Visa MediaForge i Utforskaren (högerklicksmeny)': 'Add MediaForge to File Explorer (right-click menu)',
  'Registrera MediaForge som bildvisare': 'Register MediaForge as an image viewer',
  'Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.': 'The default app is not changed. Choose MediaForge manually in your operating system settings.',
@@ -1105,7 +1104,6 @@ UI_TRANSLATIONS.update({
  'Kontrollera format, kvalitet och metadataalternativ. Kör ett litet jobb först om du är osäker på resultatet.': 'Check format, quality, and metadata options. Try a small job first if you are unsure about the result.',
  'Följ förloppet och läs aktivitetsloggen. Fel visar ofta ett förslag på nästa steg; avbrutna original ska förbli orörda.': 'Follow progress and read the activity log. Errors often include a suggested next step; source originals should remain untouched.',
  'Kontrollera/installera Python-tillägg…': 'Check/install Python packages…',
- 'Uppdatera systemets Python…': 'Update system Python…',
  'Visa MediaForge i Utforskaren (högerklicksmeny)': 'Add MediaForge to File Explorer (right-click menu)',
  'Registrera MediaForge som bildvisare': 'Register MediaForge as an image viewer',
  'Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.': 'The default app is not changed. Choose MediaForge manually in your operating system settings.',
@@ -4834,9 +4832,6 @@ class Window(QtWidgets.QMainWindow):
         self.deps_action = QtGui.QAction('', self)
         self.deps_action.triggered.connect(self.manage_dependencies)
         self.tools_menu.addAction(self.deps_action)
-        self.python_update_action = QtGui.QAction('', self)
-        self.python_update_action.triggered.connect(self.update_python_runtime)
-        self.tools_menu.addAction(self.python_update_action)
         self.packages_update_action = QtGui.QAction('', self)
         self.packages_update_action.triggered.connect(self.update_all_python_packages)
         self.tools_menu.addAction(self.packages_update_action)
@@ -4930,7 +4925,6 @@ class Window(QtWidgets.QMainWindow):
         self.tab_visibility_menu.setTitle(self.translated('Flikar'))
         self.tools_menu.setTitle(self.translated('Verktyg'))
         self.deps_action.setText(self.translated('Kontrollera/installera Python-tillägg…'))
-        self.python_update_action.setText(self.translated('Uppdatera systemets Python…'))
         self.packages_update_action.setText(self.translated('Uppdatera alla Python-paket (starta om)…'))
         self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         self.autostart_action.setText(self.translated('Starta automatiskt vid inloggning'))
@@ -6991,20 +6985,6 @@ class Window(QtWidgets.QMainWindow):
                 subprocess.Popen(terminal_args, cwd=APP_DIR)
         LOGGER.info('Maintenance task delegated to app-local launcher')
         self.close()
-
-    def update_python_runtime(self):
-        prompt = self.translated('Detta stänger MediaForge och försöker uppdatera befintlig system-Python via systemets pakethanterare. En ny Python installeras inte. Fortsätta?')
-        if QtWidgets.QMessageBox.question(
-            self, self.translated('Python-uppdatering'), prompt,
-            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
-            QtWidgets.QMessageBox.StandardButton.No,
-        ) != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
-        try:
-            self.launch_maintenance_launcher(['-UpdateSystemPython'], ['--update-system-python'])
-        except Exception as exc:
-            LOGGER.exception('Could not start Python runtime update')
-            self.show_message('critical', 'Python-uppdatering', str(exc))
 
     def update_all_python_packages(self):
         prompt = self.translated('Detta stänger MediaForge och uppdaterar paketen i den gemensamma Python-installationen för ditt användarkonto. Andra program som använder samma Python kan också påverkas. Fortsätta?')
