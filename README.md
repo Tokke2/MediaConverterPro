@@ -46,7 +46,7 @@ The launcher uses a system Python 3.10+ directly, without an app-specific virtua
 - **FFmpeg** (including `ffprobe`): required for slideshow export, video conversion, stabilization, audio processing, and codec reports.
 - **xorriso**, **genisoimage**, or **mkisofs**: enables creating an ISO image for the music data-DVD.
 
-These are system programs, not Python packages, and are not installed by MediaForge.
+These are system programs, not Python packages, and are not installed by MediaForge. Their folders can be set under **Tools → External tools…**; otherwise MediaForge finds them via PATH.
 
 ## App-local storage and updates
 

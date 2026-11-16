@@ -413,7 +413,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Stäng andra tunga program eller bearbeta färre filer åt gången och försök igen.': 'Close other resource-intensive programs or process fewer files at a time, then retry.',
 
  'Kontrollera att källfilen fortfarande finns och går att läsa; kör sedan om skanningen eller jobbet.': 'Check that the source file still exists and is readable, then rescan or rerun the job.',
- 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH; öppna sedan appen igen.': 'Check that FFmpeg/ffprobe is installed and available on PATH, then reopen the app.',
+ 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH, eller välj dess mapp under Verktyg → Externa verktyg…': 'Check that FFmpeg/ffprobe is installed and available on PATH, or choose its folder under Tools → External tools…',
  'Kontrollera att filen inte är skadad och att formatet stöds; prova en annan fil eller uppdatera FFmpeg via systemets vanliga metod.': 'Check that the file is not damaged and that its format is supported; try another file or update FFmpeg using your usual system method.',
  'Kontrollera internetanslutningen och försök igen; servern kan också begränsa eller tillfälligt neka hämtningen.': 'Check the internet connection and retry; the server may also be limiting or temporarily rejecting the download.',
  'Kontrollera att källfilens format stöds och att nödvändigt stöd för HEIC/HEIF/AVIF är tillgängligt.': 'Check that the source format is supported and that HEIC/HEIF/AVIF support is available when needed.',
@@ -525,6 +525,16 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Öppna PayPal': 'Open PayPal',
  'Betalsidan kunde inte öppnas.': 'The payment page could not be opened.',
  'Öppna Swish': 'Open Swish',
+ 'Externa verktyg…': 'External tools…',
+ 'Externa verktyg': 'External tools',
+ 'Välj mapp för varje verktyg, eller lämna fältet tomt för att använda PATH. Inställningarna sparas automatiskt.': 'Choose a folder for each tool, or leave the field empty to use PATH. Settings are saved automatically.',
+ 'Mapp': 'Folder',
+ 'Status': 'Status',
+ 'Via PATH': 'Via PATH',
+ 'Hittad: {path}': 'Found: {path}',
+ 'Via PATH: {path}': 'Via PATH: {path}',
+ 'Hittade inte {exe} i den valda mappen.': 'Did not find {exe} in the chosen folder.',
+ 'ISO-verktyg (xorriso/genisoimage/mkisofs)': 'ISO tools (xorriso/genisoimage/mkisofs)',
  'Swish-QR-kod': 'Swish QR code',
  'Swish-länken kunde inte öppnas.': 'The Swish link could not be opened.',
  'Swish-QR-koden kunde inte skapas.': 'The Swish QR code could not be created.',
@@ -1294,7 +1304,7 @@ UI_TRANSLATIONS.update({
 
 UI_TRANSLATIONS.update({
  'Kontrollera att källfilen fortfarande finns och går att läsa; kör sedan om skanningen eller jobbet.': 'Check that the source file still exists and is readable, then rescan or rerun the job.',
- 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH; öppna sedan appen igen.': 'Check that FFmpeg/ffprobe is installed and available on PATH, then reopen the app.',
+ 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH, eller välj dess mapp under Verktyg → Externa verktyg…': 'Check that FFmpeg/ffprobe is installed and available on PATH, or choose its folder under Tools → External tools…',
  'Kontrollera att filen inte är skadad och att formatet stöds; prova en annan fil eller uppdatera FFmpeg via systemets vanliga metod.': 'Check that the file is not damaged and that its format is supported; try another file or update FFmpeg using your usual system method.',
  'Kontrollera internetanslutningen och försök igen; servern kan också begränsa eller tillfälligt neka hämtningen.': 'Check the internet connection and retry; the server may also be limiting or temporarily rejecting the download.',
  'Kontrollera att källfilens format stöds och att nödvändigt stöd för HEIC/HEIF/AVIF är tillgängligt.': 'Check that the source format is supported and that HEIC/HEIF/AVIF support is available when needed.',
@@ -2107,8 +2117,46 @@ UI_TRANSLATIONS.update({
     'Minst en flik måste vara synlig i valt arbetsläge.': 'At least one tab must stay visible in the selected mode.'
 })
 
+def _configured_tool_folder(setting_key):
+    try:
+        settings = QtCore.QSettings(str(SETTINGS_FILE), QtCore.QSettings.Format.IniFormat)
+        value = settings.value(setting_key, '')
+        return str(value).strip() if value else ''
+    except Exception:
+        return ''
+
+
+def _tool_in_folder(folder, names):
+    if not folder:
+        return None
+    suffix = '.exe' if sys.platform == 'win32' else ''
+    base = Path(folder).expanduser()
+    for name in names:
+        candidate = base / (name + suffix)
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def find_ffmpeg():
+    return _tool_in_folder(_configured_tool_folder('ffmpegFolder'), ('ffmpeg',)) or shutil.which('ffmpeg')
+
+
+def find_ffprobe():
+    return _tool_in_folder(_configured_tool_folder('ffmpegFolder'), ('ffprobe',)) or shutil.which('ffprobe')
+
+
+def find_exiftool():
+    return _tool_in_folder(_configured_tool_folder('exiftoolFolder'), ('exiftool',)) or shutil.which('exiftool')
+
+
+def find_iso_tool():
+    names = ('xorriso', 'genisoimage', 'mkisofs')
+    return _tool_in_folder(_configured_tool_folder('isoToolFolder'), names) or next((shutil.which(name) for name in names if shutil.which(name)), None)
+
+
 def exiftool(args, timeout=60):
-    exe = shutil.which('exiftool')
+    exe = find_exiftool()
     if not exe:
         raise RuntimeError('ExifTool saknas. Installera ExifTool för metadata i video, HEIC, PNG m.fl.')
     result = subprocess.run([exe, *args], capture_output=True, text=True, timeout=timeout)
@@ -2133,7 +2181,7 @@ def file_date(path):
 def set_dates(path, dt, write_meta, strip_software, remove_all=False):
     if not write_meta and not strip_software and not remove_all:
         return
-    if shutil.which('exiftool'):
+    if find_exiftool():
         args = ['-overwrite_original', '-P']
         if remove_all:
             args.append('-all=')
@@ -2173,7 +2221,7 @@ def set_fs_date(path, dt):
     os.utime(path, (ts, ts))
     if sys.platform == 'win32':
         # ExifTool kan sätta även Windows skapandedatum.
-        if shutil.which('exiftool'):
+        if find_exiftool():
             exiftool(['-overwrite_original', f'-FileCreateDate={dt.strftime("%Y:%m:%d %H:%M:%S")}', '--', str(path)])
             os.utime(path, (ts, ts))
     elif sys.platform == 'darwin' and shutil.which('SetFile'):
@@ -2882,9 +2930,9 @@ class VideoConvertWorker(QtCore.QThread):
         self.process = None
 
     def run(self):
-        ffmpeg = shutil.which('ffmpeg')
+        ffmpeg = find_ffmpeg()
         if not ffmpeg:
-            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg och se till att kommandot ffmpeg finns i PATH.')
+            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg, lägg till det i PATH eller välj dess mapp under Verktyg → Externa verktyg…')
             self.completed.emit()
             return
         candidates = self.source.rglob('*') if self.recursive else self.source.iterdir()
@@ -2972,9 +3020,9 @@ class SlideshowWorker(QtCore.QThread):
                 pass
 
     def run(self):
-        ffmpeg = shutil.which('ffmpeg')
+        ffmpeg = find_ffmpeg()
         if not ffmpeg:
-            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg och se till att kommandot ffmpeg finns i PATH.')
+            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg, lägg till det i PATH eller välj dess mapp under Verktyg → Externa verktyg…')
             self.completed.emit()
             return
         if not self.images:
@@ -3103,9 +3151,9 @@ class VideoAudioWorker(QtCore.QThread):
         self.process = None
 
     def run(self):
-        ffmpeg = shutil.which('ffmpeg')
+        ffmpeg = find_ffmpeg()
         if not ffmpeg:
-            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg och se till att kommandot ffmpeg finns i PATH.')
+            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg, lägg till det i PATH eller välj dess mapp under Verktyg → Externa verktyg…')
             self.completed.emit()
             return
         candidates = self.source.rglob('*') if self.recursive else self.source.iterdir()
@@ -3262,9 +3310,9 @@ class VideoStabilizeWorker(QtCore.QThread):
         self.process = None
 
     def run(self):
-        ffmpeg = shutil.which('ffmpeg')
+        ffmpeg = find_ffmpeg()
         if not ffmpeg:
-            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg och se till att kommandot ffmpeg finns i PATH.')
+            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg, lägg till det i PATH eller välj dess mapp under Verktyg → Externa verktyg…')
             self.completed.emit()
             return
         candidates = self.source.rglob('*') if self.recursive else self.source.iterdir()
@@ -3351,9 +3399,9 @@ class AudioCleanupWorker(QtCore.QThread):
         self.process = None
 
     def run(self):
-        ffmpeg = shutil.which('ffmpeg')
+        ffmpeg = find_ffmpeg()
         if not ffmpeg:
-            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg och se till att kommandot ffmpeg finns i PATH.')
+            self.message.emit('FEL: FFmpeg saknas. Installera FFmpeg, lägg till det i PATH eller välj dess mapp under Verktyg → Externa verktyg…')
             self.completed.emit()
             return
         candidates = self.source.rglob('*') if self.recursive else self.source.iterdir()
@@ -3449,9 +3497,9 @@ class CodecReportWorker(QtCore.QThread):
             return ''
 
     def run(self):
-        ffprobe = shutil.which('ffprobe')
+        ffprobe = find_ffprobe()
         if not ffprobe:
-            self.message.emit('FEL: ffprobe saknas. Installera FFmpeg/ffprobe och se till att ffprobe finns i PATH.')
+            self.message.emit('FEL: ffprobe saknas. Installera FFmpeg/ffprobe, lägg till det i PATH eller välj dess mapp under Verktyg → Externa verktyg…')
             self.report_ready.emit([])
             return
         candidates = self.source.rglob('*') if self.recursive else self.source.iterdir()
@@ -3817,7 +3865,7 @@ class MusicDVDWorker(QtCore.QThread):
         (package / 'LAS_MIG.txt').write_text(
             'Musik-DVD (data-DVD)\n\nDen här skivan innehåller vanliga musikfiler. Den är redo att brännas som en data-DVD, men är inte DVD-Video och kan därför inte spelas i alla DVD-spelare.\n',
             encoding='utf-8')
-        tool = next((shutil.which(name) for name in ('xorriso', 'genisoimage', 'mkisofs') if shutil.which(name)), None)
+        tool = find_iso_tool()
         if tool and not self.cancelled:
             iso = self.destination / f'{package.name}.iso'
             args = [tool, '-V', 'MUSIK_DVD', '-o', str(iso), '-J', '-R', str(package)]
@@ -5129,6 +5177,9 @@ class Window(QtWidgets.QMainWindow):
         self.auto_update_action.setChecked(self.ui_settings.value('autoUpdateCheck', True, type=bool))
         self.auto_update_action.toggled.connect(self.change_auto_update_check)
         self.tools_menu.addAction(self.auto_update_action)
+        self.tools_action = QtGui.QAction('', self)
+        self.tools_action.triggered.connect(self.show_tools_dialog)
+        self.tools_menu.addAction(self.tools_action)
         self.donate_action = QtGui.QAction('', self)
         self.donate_action.triggered.connect(self.open_donation)
 
@@ -5190,6 +5241,7 @@ class Window(QtWidgets.QMainWindow):
         self.viewer_integration_action.setToolTip(self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
         self.keep_awake_action.setText(self.translated('Håll datorn vaken under jobb'))
         self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
+        self.tools_action.setText(self.translated('Externa verktyg…'))
         self.donate_action.setText(self.translated('Stöd utvecklingen · Donationer'))
         self.license_action.setText(self.translated('Licens och användningsrättigheter'))
         self.help_menu.setTitle(self.translated('Hjälp'))
@@ -6698,7 +6750,7 @@ class Window(QtWidgets.QMainWindow):
             return 'Stäng andra tunga program eller bearbeta färre filer åt gången och försök igen.'
         missing_tool = any(token in message for token in ('not found', 'saknas', 'not recognized as an internal', 'no such file', 'winerror 2', 'cannot find the file specified'))
         if ('ffmpeg' in message or 'ffprobe' in message) and missing_tool:
-            return 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH; öppna sedan appen igen.'
+            return 'Kontrollera att FFmpeg/ffprobe finns installerat och är tillgängligt via PATH, eller välj dess mapp under Verktyg → Externa verktyg…'
         if any(token in message for token in ('no such file', 'file not found', 'winerror 2', 'cannot find the file specified', 'filen hittas inte', 'filen kunde inte hittas', 'filen finns inte', 'filen saknas', 'filen har flyttats', 'filen har tagits bort', 'filen kunde inte öppnas')):
             return 'Kontrollera att källfilen fortfarande finns och går att läsa; kör sedan om skanningen eller jobbet.'
         if any(token in message for token in ('invalid data found', 'unknown encoder', 'unknown decoder', 'codec not found', 'moov atom not found', 'unsupported codec')):
@@ -6815,7 +6867,7 @@ class Window(QtWidgets.QMainWindow):
         if text in exact:
             return exact[text]
         replacements = (
-            ('KONVERTERINGSFEL:', 'CONVERSION ERROR:'), ('Bildspel kunde inte skapas:', 'Could not create slideshow:'), ('Bildspel sparat:', 'Slideshow saved:'), ('Välj minst en bild till bildspelet.', 'Choose at least one image for the slideshow.'), ('FFmpeg saknas. Installera FFmpeg och se till att kommandot ffmpeg finns i PATH.', 'FFmpeg is missing. Install it and ensure the ffmpeg command is on PATH.'), ('Ljudspår borttaget; video kopierad utan omkodning', 'Audio removed; video copied without re-encoding'), ('Ljudspår extraherat', 'Audio track extracted'), ('Flyttad till karantän:', 'Moved to quarantine:'), ('Kunde inte flytta', 'Could not move'), ('Skanningen klar.', 'Scan complete.'), ('dubblettgrupper hittades.', 'duplicate groups found.'), ('Stabiliserad kopia:', 'Stabilized copy:'), ('Normaliserad:', 'Normalized:'), ('Brusreducerad:', 'Noise reduced:'), ('Färgprofilkonvertering avbruten', 'Color profile conversion cancelled'), ('Videostabilisering avbruten', 'Video stabilization cancelled'), ('Ljudbearbetning avbruten', 'Audio processing cancelled'), ('Codec-rapport klar.', 'Codec report complete.'), ('filer analyserades.', 'files analyzed.'), ('ANNONSFEL', 'AD ERROR'), ('BILDFEL', 'IMAGE ERROR'),
+            ('KONVERTERINGSFEL:', 'CONVERSION ERROR:'), ('Bildspel kunde inte skapas:', 'Could not create slideshow:'), ('Bildspel sparat:', 'Slideshow saved:'), ('Välj minst en bild till bildspelet.', 'Choose at least one image for the slideshow.'), ('FFmpeg saknas. Installera FFmpeg, lägg till det i PATH eller välj dess mapp under Verktyg → Externa verktyg…', 'FFmpeg is missing. Install FFmpeg, add it to PATH, or choose its folder under Tools → External tools…'), ('Ljudspår borttaget; video kopierad utan omkodning', 'Audio removed; video copied without re-encoding'), ('Ljudspår extraherat', 'Audio track extracted'), ('Flyttad till karantän:', 'Moved to quarantine:'), ('Kunde inte flytta', 'Could not move'), ('Skanningen klar.', 'Scan complete.'), ('dubblettgrupper hittades.', 'duplicate groups found.'), ('Stabiliserad kopia:', 'Stabilized copy:'), ('Normaliserad:', 'Normalized:'), ('Brusreducerad:', 'Noise reduced:'), ('Färgprofilkonvertering avbruten', 'Color profile conversion cancelled'), ('Videostabilisering avbruten', 'Video stabilization cancelled'), ('Ljudbearbetning avbruten', 'Audio processing cancelled'), ('Codec-rapport klar.', 'Codec report complete.'), ('filer analyserades.', 'files analyzed.'), ('ANNONSFEL', 'AD ERROR'), ('BILDFEL', 'IMAGE ERROR'),
             ('HOPPADES ÖVER:', 'SKIPPED:'), ('KLART:', 'DONE:'), ('KLAR:', 'DONE:'), ('FEL:', 'ERROR:'), ('INFO:', 'INFO:'),
             ('Kopierad:', 'Copied:'), ('Sparad:', 'Saved:'), ('Sparad ', 'Saved '), ('Annons ', 'Ad '),
             (' bilder sparade', ' images saved'), (' hittade ', ' found '), (' unika galleribilder (hämtar samtliga)', ' unique gallery images (downloading all)'),
@@ -7167,6 +7219,82 @@ class Window(QtWidgets.QMainWindow):
             self.show_message('warning', 'Stöd MediaForge', 'Betalsidan kunde inte öppnas.')
             return
         LOGGER.info('Fixed %s donation destination opened', provider)
+
+    def show_tools_dialog(self):
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(self.translated('Externa verktyg'))
+        dialog.setWindowIcon(self.brand)
+        dialog.resize(760, 320)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        intro = QtWidgets.QLabel(self.translated('Välj mapp för varje verktyg, eller lämna fältet tomt för att använda PATH. Inställningarna sparas automatiskt.'))
+        intro.setWordWrap(True)
+        layout.addWidget(intro)
+        table = QtWidgets.QTableWidget(3, 4, dialog)
+        table.setHorizontalHeaderLabels([self.translated('Verktyg'), self.translated('Mapp'), self.translated('Status'), ''])
+        table.verticalHeader().setVisible(False)
+        table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        tools = (
+            ('FFmpeg (ffmpeg + ffprobe)', 'ffmpegFolder', ('ffmpeg', 'ffprobe')),
+            ('ExifTool', 'exiftoolFolder', ('exiftool',)),
+            (self.translated('ISO-verktyg (xorriso/genisoimage/mkisofs)'), 'isoToolFolder', ('xorriso', 'genisoimage', 'mkisofs')),
+        )
+        folder_edits = []
+        status_labels = []
+
+        def refresh_status(row):
+            _name, _key, expected = tools[row]
+            resolved = _tool_in_folder(folder_edits[row].text().strip(), expected)
+            if resolved:
+                status_labels[row].setText(self.translated('Hittad: {path}').format(path=resolved))
+                return
+            path_found = next((shutil.which(n) for n in expected if shutil.which(n)), None)
+            status_labels[row].setText(self.translated('Via PATH: {path}').format(path=path_found) if path_found else self.translated('Saknas'))
+
+        def save_folder(row):
+            _name, key, _expected = tools[row]
+            folder = folder_edits[row].text().strip()
+            self.ui_settings.setValue(key, folder)
+            self.ui_settings.sync()
+            refresh_status(row)
+            LOGGER.info('External tool folder saved: %s = %s', key, folder or '(PATH)')
+
+        for row, (name, key, expected) in enumerate(tools):
+            table.setItem(row, 0, QtWidgets.QTableWidgetItem(name))
+            edit = QtWidgets.QLineEdit(self.ui_settings.value(key, ''))
+            edit.setPlaceholderText(self.translated('Via PATH'))
+            edit.editingFinished.connect(lambda row=row: save_folder(row))
+            table.setCellWidget(row, 1, edit)
+            folder_edits.append(edit)
+            status = QtWidgets.QLabel()
+            status.setWordWrap(True)
+            table.setCellWidget(row, 2, status)
+            status_labels.append(status)
+            browse = QtWidgets.QPushButton(self.translated('Välj mapp…'))
+
+            def choose_folder(row=row, expected=expected):
+                chosen = QtWidgets.QFileDialog.getExistingDirectory(dialog, self.translated('Välj mapp…'), folder_edits[row].text().strip())
+                if not chosen:
+                    return
+                if not _tool_in_folder(chosen, expected):
+                    self.show_message('warning', self.translated('Externa verktyg'), self.translated('Hittade inte {exe} i den valda mappen.').format(exe=expected[0]))
+                    return
+                folder_edits[row].setText(chosen)
+                save_folder(row)
+
+            browse.clicked.connect(choose_folder)
+            table.setCellWidget(row, 3, browse)
+            refresh_status(row)
+        layout.addWidget(table)
+        close_button = QtWidgets.QPushButton(self.translated('Stäng'))
+        close_button.clicked.connect(dialog.accept)
+        layout.addWidget(close_button, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        dialog.exec()
 
     def show_license_dialog(self):
         try:
@@ -8792,8 +8920,8 @@ class Window(QtWidgets.QMainWindow):
             f"{self.translated('Python')}: {platform.python_version()}",
             f"{self.translated('Qt')}: PyQt {pyqt_version} / Qt {QtCore.qVersion()}",
         ]
-        for name, command in (('FFmpeg', 'ffmpeg'), ('ExifTool', 'exiftool')):
-            state = self.translated('Tillgänglig') if shutil.which(command) else self.translated('Saknas')
+        for name, finder in (('FFmpeg', find_ffmpeg), ('ExifTool', find_exiftool)):
+            state = self.translated('Tillgänglig') if finder() else self.translated('Saknas')
             entries.append(f'{name}: {state}')
         return '\n'.join(entries)
 
