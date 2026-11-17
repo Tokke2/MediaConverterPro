@@ -5370,10 +5370,17 @@ class Window(QtWidgets.QMainWindow):
             action.setChecked(font_size == size)
 
     def setup_system_tray(self):
+        """Create the tray icon if the system tray is available.
+
+        Safe to call again later: if the icon already exists it is simply
+        shown again. Returns True when a tray icon exists afterwards.
+        """
+        if getattr(self, 'tray_icon', None) is not None:
+            self.tray_icon.show()
+            return True
         if not QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
-            LOGGER.info('Systemfältsikon är inte tillgänglig i den här skrivbordsmiljön')
             self.tray_icon = None
-            return
+            return False
         self.tray_menu = QtWidgets.QMenu(self)
         self.tray_open_action = self.tray_menu.addAction(self.translated('Öppna MediaForge'))
         self.tray_open_action.triggered.connect(self.show_from_system_tray)
@@ -5389,6 +5396,66 @@ class Window(QtWidgets.QMainWindow):
         self.tray_icon.setContextMenu(self.tray_menu)
         self.tray_icon.activated.connect(self.system_tray_activated)
         self.tray_icon.show()
+        LOGGER.info('Systemfältsikon skapad')
+        return True
+
+    def start_tray_retry(self):
+        """Keep trying to get a visible tray icon until one works.
+
+        At login the tray (Explorer) may not be ready when the app starts,
+        so availability is retried in the background for up to two minutes.
+        As soon as a visible icon exists, a minimized startup window is
+        moved to the tray.
+        """
+        self._tray_retry_attempts = 0
+        self._tray_retry_active = True
+        self._tray_retry_timer = QtCore.QTimer(self)
+        self._tray_retry_timer.setInterval(5000)
+        self._tray_retry_timer.timeout.connect(self.retry_system_tray)
+        self.retry_system_tray()
+        if self._tray_retry_active:
+            self._tray_retry_timer.start()
+
+    def retry_system_tray(self):
+        icon = getattr(self, 'tray_icon', None)
+        if icon is not None and icon.isVisible():
+            self._stop_tray_retry()
+            return
+        self._tray_retry_attempts = getattr(self, '_tray_retry_attempts', 0) + 1
+        if self._tray_retry_attempts > 24:
+            LOGGER.warning('Systemfältsikon blev aldrig synlig; appen fortsätter i aktivitetsfältet')
+            self._stop_tray_retry()
+            return
+        if icon is None:
+            if not self.setup_system_tray():
+                LOGGER.info('Systemfältet är inte tillgängligt ännu (försök %d av 24)', self._tray_retry_attempts)
+                return
+        else:
+            icon.show()
+        QtCore.QTimer.singleShot(500, self._confirm_tray_visible)
+
+    def _confirm_tray_visible(self):
+        icon = getattr(self, 'tray_icon', None)
+        if icon is None or not icon.isVisible():
+            # Safety: never leave the app invisible without a tray icon.
+            if not self.isVisible() and not self.isMinimized():
+                self.showMinimized()
+            return
+        self._stop_tray_retry()
+        LOGGER.info('Systemfältsikon är synlig; startfönstret döljs i systemfältet')
+        action = getattr(self, 'minimize_to_tray_action', None)
+        if action is not None:
+            action.setEnabled(True)
+        # Only move a minimized/hidden startup window to the tray; never
+        # hide a window the user is already using.
+        if self.isMinimized() or not self.isVisible():
+            self.hide_to_system_tray()
+
+    def _stop_tray_retry(self):
+        self._tray_retry_active = False
+        timer = getattr(self, '_tray_retry_timer', None)
+        if timer is not None:
+            timer.stop()
 
     def show_from_system_tray(self):
         self.showNormal()
@@ -9681,24 +9748,16 @@ if __name__ == '__main__':
     # Discard a saved Normal/Maximized flag before starting. restoreGeometry()
     # may restore that native state, and OR-ing WindowMinimized leaves both
     # flags set on some window managers (which can show the window normally).
-    # Always start with a clean state and repeat the minimize after native
-    # window creation so login launch behaves like a manual launch.
-    # When a system tray is available the app starts hidden in the tray;
-    # otherwise it starts minimized to the taskbar.
+    # Always start with a clean state so login launch behaves like a manual
+    # launch. The window starts hidden in the tray when a tray icon already
+    # exists, otherwise minimized to the taskbar; start_tray_retry() then
+    # moves it to the tray as soon as a visible tray icon exists. This also
+    # covers login launches where Explorer/the tray is not ready yet.
     window.setWindowState(QtCore.Qt.WindowState.WindowNoState)
-    if getattr(window, 'tray_icon', None):
+    if getattr(window, 'tray_icon', None) is not None:
         window.hide()
     else:
         window.showMinimized()
-
-    def enforce_startup_minimized():
-        if getattr(window, 'tray_icon', None):
-            window.hide_to_system_tray()
-            LOGGER.info('Startup window hidden to system tray')
-        else:
-            window.setWindowState(QtCore.Qt.WindowState.WindowMinimized)
-            window.showMinimized()
-            LOGGER.info('Startup window minimize requested')
-
-    QtCore.QTimer.singleShot(0, enforce_startup_minimized)
+    window.start_tray_retry()
+    LOGGER.info('Startup window minimized; waiting for system tray')
     sys.exit(app.exec())
