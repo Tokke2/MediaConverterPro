@@ -5041,7 +5041,18 @@ class Window(QtWidgets.QMainWindow):
             scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
-            scroll.setWidget(widget)
+            # Constrain the tab content to a readable width and center it, so
+            # wide windows do not stretch form fields across the whole screen.
+            # Workspace tabs (library, editor) get a wider limit.
+            wide = bool(widget.property('wideContent'))
+            widget.setMaximumWidth(1600 if wide else 980)
+            container = QtWidgets.QWidget()
+            container_layout = QtWidgets.QHBoxLayout(container)
+            container_layout.setContentsMargins(0, 0, 0, 0)
+            container_layout.addStretch(1)
+            container_layout.addWidget(widget)
+            container_layout.addStretch(1)
+            scroll.setWidget(container)
             media_mode = widget.property('mediaMode')
             if media_mode is not None:
                 scroll.setProperty('mediaMode', media_mode)
@@ -8099,6 +8110,7 @@ class Window(QtWidgets.QMainWindow):
     def build_library_tab(self):
         tab = QtWidgets.QWidget()
         tab.setProperty('mediaMode', 'photo')
+        tab.setProperty('wideContent', True)
         self.library_tab = tab
         self.tabs.addTab(tab, 'Bildbibliotek')
         layout = QtWidgets.QVBoxLayout(tab)
@@ -8655,6 +8667,7 @@ class Window(QtWidgets.QMainWindow):
     def build_editor_tab(self):
         tab = QtWidgets.QWidget()
         tab.setProperty('mediaMode', 'photo')
+        tab.setProperty('wideContent', True)
         self.editor_tab = tab
         self.tabs.addTab(tab, 'Fotoredigerare')
         layout = QtWidgets.QVBoxLayout(tab)
