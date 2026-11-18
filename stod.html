@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<!-- MediaForge stödsida: Swish-QR enligt Swish-standard (C-format), Ko-fi- och
+     PayPal-knappar (ingen QR för dem). Öppnas via Hjälp-menyn i MediaForge. -->
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💚 Stöd MediaForge – håll verktyget gratis &amp; reklamfritt</title>
+<meta name="description" content="MediaForge är gratis, reklamfritt och öppen källkod. Din gåva håller utvecklingen vid liv. Valfritt belopp via Swish, PayPal eller Ko-fi.">
+<style>
+  :root {
+    --bg:#0d1117; --card:#161b22; --card2:#1c2330; --text:#e6edf3; --muted:#9aa7b4;
+    --teal:#2dd4bf; --teal2:#14b8a6; --line:#2a3342;
+    --swish:#00c67a; --paypal:#1a8ad6; --kofi:#ff5e5b;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html { scroll-behavior:smooth; }
+  body {
+    font-family:'Segoe UI',system-ui,sans-serif; color:var(--text);
+    background:
+      radial-gradient(circle at 10% 0%, rgba(45,212,191,.10), transparent 36%),
+      radial-gradient(circle at 90% 8%, rgba(26,138,214,.08), transparent 34%),
+      radial-gradient(circle at 50% 100%, rgba(255,94,91,.05), transparent 40%),
+      var(--bg);
+    padding:clamp(14px,3vw,28px); max-width:min(880px,96vw); margin:0 auto;
+  }
+  header {
+    position:relative; overflow:hidden; text-align:center;
+    background:linear-gradient(135deg,#0f2a33 0%,#123a3a 45%,#0d2b2b 100%);
+    border:1px solid var(--line); border-radius:clamp(16px,3vw,24px);
+    padding:clamp(26px,5vw,42px) clamp(16px,4vw,30px);
+    margin-bottom:clamp(14px,2.5vw,22px);
+    box-shadow:0 16px 44px rgba(0,0,0,.45);
+  }
+  header img.logo {
+    width:clamp(64px,12vw,88px); height:clamp(64px,12vw,88px);
+    border-radius:20px; margin-bottom:14px; box-shadow:0 10px 26px rgba(0,0,0,.5);
+  }
+  .eyebrow {
+    display:inline-block; background:rgba(45,212,191,.14); border:1.5px solid rgba(45,212,191,.4);
+    color:var(--teal); border-radius:999px; padding:6px 18px;
+    font-size:clamp(.62rem,1.8vw,.74rem); font-weight:800; letter-spacing:.11em; margin-bottom:14px;
+  }
+  header h1 { font-size:clamp(1.5rem,4.6vw,2.3rem); margin-bottom:10px; line-height:1.15; }
+  header h1 span { color:var(--teal); }
+  header p.sub { color:var(--muted); font-size:clamp(.9rem,2.4vw,1rem); max-width:620px; margin:0 auto; line-height:1.65; }
+  .hstats { display:flex; gap:9px; flex-wrap:wrap; justify-content:center; margin-top:18px; }
+  .hstat { background:rgba(255,255,255,.06); border:1.5px solid var(--line); border-radius:999px; padding:7px 16px; font-size:clamp(.72rem,2vw,.84rem); font-weight:700; color:var(--muted); }
+  .ctas { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:22px; }
+
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:clamp(12px,2.6vw,15px) clamp(18px,3.4vw,26px); border-radius:14px;
+    font-weight:800; font-size:clamp(.88rem,2.3vw,1rem); text-decoration:none; border:none; cursor:pointer;
+    font-family:inherit; transition:transform .13s, box-shadow .15s, filter .15s;
+  }
+  .btn:hover { transform:translateY(-2px); filter:brightness(1.08); }
+  .btn:active { transform:translateY(1px) scale(.99); }
+  .btn-swish  { background:linear-gradient(135deg,#00d68a,#00b06c); color:#fff; box-shadow:0 10px 22px rgba(0,198,122,.30); }
+  .btn-paypal { background:linear-gradient(135deg,#1a8ad6,#0070BA); color:#fff; box-shadow:0 10px 22px rgba(0,112,186,.30); }
+  .btn-kofi   { background:linear-gradient(135deg,#ff7572,#FF5E5B); color:#fff; box-shadow:0 10px 22px rgba(255,94,91,.30); }
+  .btn-ghost  { background:var(--card2); color:var(--text); border:1.5px solid var(--line); }
+
+  .card {
+    background:var(--card); border:1px solid var(--line); border-radius:clamp(14px,2.5vw,18px);
+    padding:clamp(16px,3.4vw,26px); margin-bottom:clamp(12px,2.4vw,18px);
+    box-shadow:0 4px 18px rgba(0,0,0,.35);
+  }
+  .kicker { font-size:clamp(.62rem,1.8vw,.72rem); letter-spacing:.11em; font-weight:800; color:var(--teal); text-transform:uppercase; margin-bottom:7px; }
+  h2 { font-size:clamp(1.05rem,2.8vw,1.3rem); margin-bottom:9px; }
+  .muted { color:var(--muted); font-size:clamp(.84rem,2.2vw,.94rem); line-height:1.65; }
+
+  .beloppsrad { display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin:14px 0 6px; }
+  .bchip {
+    border:2px solid var(--line); background:var(--card2); color:var(--text); border-radius:999px;
+    padding:10px 20px; font-weight:800; font-size:clamp(.88rem,2.4vw,1rem); cursor:pointer; font-family:inherit;
+    transition:transform .12s, border-color .15s, background .15s;
+  }
+  .bchip:hover { transform:translateY(-2px); border-color:var(--teal); }
+  .bchip.vald { background:linear-gradient(135deg,var(--teal),var(--teal2)); color:#04211d; border-color:var(--teal2); }
+  .eget { display:inline-flex; align-items:center; gap:6px; background:var(--card2); border:2px solid var(--line); border-radius:999px; padding:6px 14px 6px 18px; }
+  .eget input { border:none; outline:none; width:76px; font:inherit; font-weight:800; font-size:clamp(.88rem,2.4vw,1rem); color:var(--text); background:transparent; }
+  .eget b { color:var(--muted); font-size:.9rem; }
+  .betalrad { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  #beloppInfo { font-size:clamp(.76rem,2vw,.84rem); color:var(--teal); font-weight:700; margin-top:10px; min-height:1.2em; }
+
+  #qrbox { text-align:center; margin:0 0 16px; padding:clamp(14px,3vw,20px); background:var(--card2); border:2px solid var(--teal); border-radius:16px; }
+  #qrbox img { border-radius:12px; background:#fff; padding:9px; box-shadow:0 6px 18px rgba(0,0,0,.5); max-width:min(240px,70vw); height:auto; }
+
+  .impact { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr)); gap:12px; margin-top:10px; }
+  .impact .item {
+    background:var(--card2); border:1px solid var(--line); border-radius:14px;
+    padding:14px; display:flex; gap:12px; align-items:flex-start; transition:transform .15s;
+  }
+  .impact .item:hover { transform:translateY(-3px); }
+  .impact .ico { width:40px; height:40px; border-radius:12px; display:grid; place-items:center; font-size:1.15rem; flex-shrink:0; background:rgba(45,212,191,.12); }
+  .impact h4 { font-size:clamp(.8rem,2.2vw,.88rem); margin-bottom:3px; }
+  .impact p { color:var(--muted); font-size:clamp(.72rem,2vw,.8rem); line-height:1.5; }
+
+  .trust { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .trust span { display:inline-flex; align-items:center; gap:6px; background:var(--card2); border:1px solid var(--line); padding:7px 13px; border-radius:999px; font-size:clamp(.68rem,1.9vw,.76rem); color:var(--muted); }
+
+  details { background:var(--card2); border:1.5px solid var(--line); border-radius:13px; padding:12px 16px; margin-bottom:10px; }
+  details[open] { border-color:var(--teal); }
+  summary { font-weight:800; cursor:pointer; list-style:none; font-size:clamp(.84rem,2.3vw,.92rem); display:flex; align-items:center; gap:6px; }
+  summary::-webkit-details-marker { display:none; }
+  summary::after { content:'▾'; margin-left:auto; color:var(--teal); transition:transform .2s; }
+  details[open] summary::after { transform:rotate(180deg); }
+  details p { margin-top:9px; color:var(--muted); font-size:clamp(.78rem,2.1vw,.86rem); line-height:1.65; }
+
+  .slutcta { text-align:center; background:linear-gradient(135deg,#0f2a33,#123a3a); }
+  footer { text-align:center; color:var(--muted); font-size:clamp(.7rem,2vw,.78rem); padding:20px 10px; line-height:1.8; }
+  footer a { color:var(--teal); font-weight:700; }
+
+  @media (max-width:640px) {
+    .ctas .btn { flex:1; min-width:126px; }
+    .beloppsrad { gap:7px; }
+    .bchip { flex:1; min-width:72px; text-align:center; padding:10px 8px; }
+    .eget { flex:1 1 100%; justify-content:center; }
+    .betalrad .btn { flex:1 1 100%; }
+  }
+  @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="fotoverktyg_icon.png" alt="MediaForge" onerror="this.style.display='none'">
+  <div><span class="eyebrow">✨ GRATIS • REKLAMFRITT • ÖPPEN KÄLLKOD</span></div>
+  <h1>Stöd <span>MediaForge</span> 💚</h1>
+  <p class="sub"><b>MediaForge</b> är ett komplett verktyg för foto och video – bildförbättring, konvertering,
+  stabilisering, ljudförbättring och mycket mer. Originalen lämnas alltid orörda. Ingen reklam.
+  Inga prenumerationer. Inga låsta funktioner. Din gåva är det som håller utvecklingen vid liv.</p>
+  <div class="hstats">
+    <span class="hstat">🖼️ Foto- &amp; videoverktyg i ett</span>
+    <span class="hstat">🔒 Originalen lämnas orörda</span>
+    <span class="hstat">💚 100% gratis – alltid</span>
+  </div>
+  <div class="ctas">
+    <button class="btn btn-swish" id="swishBtn">💚 Swish</button>
+    <a class="btn btn-paypal" id="paypalBtn" href="https://paypal.me/Rickard3dPrint" target="_blank" rel="noopener">💙 PayPal</a>
+    <a class="btn btn-kofi" href="https://ko-fi.com/tokke2" target="_blank" rel="noopener">☕ Ko-fi</a>
+    <a class="btn btn-ghost" href="#belopp">🎁 Välj belopp ↓</a>
+  </div>
+</header>
+
+<div class="card" id="belopp">
+  <div id="qrbox">
+    <b>📱 Skanna med Swish-appen</b>
+    <div style="margin:12px 0;"><img id="qrimg" width="220" height="220" alt="Swish QR-kod"></div>
+    <div class="muted">Numret visas aldrig i klartext – QR-koden öppnar betalningen direkt i appen.
+    Beloppet är förifyllt men går att ändra fritt. På mobil öppnas Swish automatiskt.</div>
+  </div>
+  <p class="kicker">Valfritt belopp – varje krona värmer</p>
+  <h2>Välj en summa eller skriv en egen 🪙</h2>
+  <p class="muted">Ingen summa är för liten och inget låses upp – MediaForge är och förblir 100% gratis för alla.
+  Beloppet följer med in i Swish och PayPal (och går alltid att ändra där).</p>
+  <div class="beloppsrad" id="beloppsrad">
+    <button class="bchip" data-kr="25">25 kr</button>
+    <button class="bchip vald" data-kr="50">50 kr</button>
+    <button class="bchip" data-kr="100">100 kr</button>
+    <button class="bchip" data-kr="200">200 kr</button>
+    <label class="eget"><input id="egetKr" type="number" min="1" max="99999" inputmode="numeric" placeholder="Eget…"><b>kr</b></label>
+  </div>
+  <div id="beloppInfo">Valt: 50 kr – tack! 💚</div>
+  <div class="betalrad">
+    <button class="btn btn-swish" id="swishBtn2">💚 Swisha beloppet</button>
+    <a class="btn btn-paypal" id="paypalBtn2" href="https://paypal.me/Rickard3dPrint/50SEK" target="_blank" rel="noopener">💙 PayPal – beloppet</a>
+    <a class="btn btn-kofi" href="https://ko-fi.com/tokke2" target="_blank" rel="noopener">☕ Ko-fi – valfritt / månadsvis</a>
+  </div>
+</div>
+
+<div class="card">
+  <p class="kicker">Varför din hjälp gör skillnad</p>
+  <h2>Du stödjer en oberoende utvecklare – inte ett bolag 🧑‍💻</h2>
+  <p class="muted">Varje krona går direkt till det som märks: nya verktyg, buggfixar, bättre prestanda och
+  stöd för fler format. Donationer låser aldrig upp något – de håller bara utvecklingen vid liv.</p>
+  <div class="impact">
+    <div class="item"><div class="ico">🛠️</div><div><h4>Nya verktyg</h4><p>Fler funktioner för foto och video – från färgprofiler till codec-rapporter.</p></div></div>
+    <div class="item"><div class="ico">⚡</div><div><h4>Snabbare &amp; stabilare</h4><p>Prestanda, minneshantering och pålitlighet i varje uppdatering.</p></div></div>
+    <div class="item"><div class="ico">💡</div><div><h4>Dina önskemål</h4><p>Gåvor gör att fler önskade funktioner blir verklighet, snabbare.</p></div></div>
+  </div>
+  <div class="trust">
+    <span>🔒 Swish, PayPal &amp; Ko-fi – krypterat &amp; säkert</span>
+    <span>🧾 Kvitto direkt från betaltjänsten</span>
+    <span>🕊️ Ingen spårning – bara tacksamhet</span>
+    <span>🇸🇪 Svensk utvecklare</span>
+  </div>
+</div>
+
+<div class="card">
+  <p class="kicker">Vanliga frågor – lugnt &amp; tryggt</p>
+  <details open>
+    <summary>💳 Hur betalar jag säkert?</summary>
+    <p>Swish-knappen öppnar appen direkt på mobilen (QR på dator) via Swish officiella format. PayPal- och Ko-fi-knapparna
+    går direkt till <b>paypal.me</b> och <b>ko-fi.com</b> (HTTPS). MediaForge ser aldrig dina betaluppgifter och kvittot kommer från betaltjänsten.</p>
+  </details>
+  <details>
+    <summary>💚 Hur funkar Swish-knappen?</summary>
+    <p>På mobilen öppnas Swish-appen med mottagare och valt belopp förifyllt (ändra fritt!). På datorn visas en QR-kod att
+    skanna. Numret visas aldrig i klartext på sidan – det är en medveten säkerhetsprincip.</p>
+  </details>
+  <details>
+    <summary>🔁 Kan jag ge månadsvis?</summary>
+    <p>Ja! På <b>Ko-fi</b> väljer du månadsstöd med valfritt belopp – avsluta när du vill, ingen bindning.</p>
+  </details>
+  <details>
+    <summary>🎁 Vad får jag som tack?</summary>
+    <p>Evig tacksamhet och ett verktyg som fortsätter växa. Inga låsta funktioner – allt är gratis för alla, alltid.
+    Vill du synas med namn i uppdaterings-notiserna? Skriv det i meddelandet!</p>
+  </details>
+</div>
+
+<div class="card slutcta">
+  <div style="font-size:2.2rem;margin-bottom:8px;">💚</div>
+  <h2>Redo att hålla utvecklingen vid liv?</h2>
+  <p class="muted" style="margin-bottom:14px;">Valfritt belopp, engångs eller månadsvis – allt gör skillnad direkt.</p>
+  <div class="ctas">
+    <button class="btn btn-swish" id="swishBtn3">💚 Swish</button>
+    <a class="btn btn-paypal" href="https://paypal.me/Rickard3dPrint" target="_blank" rel="noopener">💙 PayPal</a>
+    <a class="btn btn-kofi" href="https://ko-fi.com/tokke2" target="_blank" rel="noopener">☕ Ko-fi</a>
+  </div>
+  <div style="margin-top:12px;font-size:.72rem;color:var(--muted);">Säker betalning • Kvitto direkt • MediaForge förblir gratis för alla</div>
+</div>
+
+<footer>
+  Byggd med 💚 för MediaForge · <a href="https://github.com/Tokke2/MediaConverterPro" target="_blank" rel="noopener">Öppen källkod (MIT)</a> · Inga trackers
+</footer>
+
+<script>
+/* MediaForge stödsida – Swish-QR enligt Swish-standard (C-format),
+   Ko-fi- och PayPal-knappar. Numret står aldrig i klartext i gränssnittet. */
+var SWISH_NR = '0721817177'; /* fast mottagare; visas aldrig i UI */
+var QR = {
+  25:  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoCAAAAADObDPFAAACzklEQVR42u3bO3LDMAwFQN3/0kmfRvjSsrLo7JEpatW8AejrR4XqQgAKFChQoEApUKBAgQIFCpQCBQoUKFCgFChQoECBAgVKgQIFCtTroK5iRdeNfp/9/fh+QYECBQoUKFCgilDhYPbn+ujn6n3u1p96PlCgQIECBQoUqC7UXWCLBsGpQLm1X1CgQIECBQoUqKdATTXy7tYHBQoUKFCgQIF6C1S0UVcNkKBAgQIFChQoUN8C1b0++qB3D9Y9iAYKFChQoECBAnUKqnrA/VOfv+6fC6BAgQIFChSo10FN1VbDrjpwTe8fFChQoECBAgWq2bjLfj7V6Muun94nKFCgQIECBQrUcuNuCqI6CO0GW1CgQIECBQoUqO2DZNmBZ3Zgmh1QRgMqKFCgQIECBQrUKajsQDIK1A2e3RcCChQoUKBAgQJ1uh9VDYhTB8ay+6m+aFCgQIECBQoUqC2oqcBZDbJdqGOBExQoUKBAgQIFqtnIm/pd9sVUAUGBAgUKFChQoKagqjeaGkxOHTDLAoECBQoUKFCgQE1BdSG3oT/euAMFChQoUKBAgSoGuemB5dQAdb1xBwoUKFCgQIECNTwA7Q5Esw2+6r5BgQIFChQoUKC2Amd3gFhtEG436ECBAgUKFChQoLagwgslD3plAaoBtRpYQYECBQoUKFCgpgJnN0hmv69CZ19I+DlAgQIFChQoUKCKgXMq2GUDZjRodgMpKFCgQIECBQrUFtRUwMw2ArvXPa7DCQoUKFCgQIH6t1B3ga17EKwL0Q2WoECBAgUKFChQT4HKrhu9TzcAgwIFChQoUKBAPR2qGiijQbUaeB/buAMFChQoUKBAvRaqen21gZdtyEVB1g7kgwIFChQoUKBAJTeahagGwVP3BwUKFChQoECB6kIpUKBAgQIFCpQCBQoUKFCgQClQoECBAgVKgQIFChQoUKAUKFCgQH1p/QJiT+H3n5C2FAAAAABJRU5ErkJggg==',
+  50:  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoCAAAAADObDPFAAAC0lEQVR42u3bQW7DMAwEQP//0+09QGBxSdlxMrwFVWxpclmQ6vGnlupAAAoUKFCgQClQoECBAgUKlAIFChQoUKAUKFCgQIECBUqBAgUK1NdBHWEtb+Bl/er3363btV9QoECBAgUKFKgUaurg7z6n70mhyz8MKFCgQIECBQpUE+ossFU32g2UV+0XFChQoECBAgXqbqhq4Jx+PihQoECBAgUK1FOgugBTsKBAgQIFChQoUHdDTTXc0nVVqNsGoKBAgQIFChQoUM0L7nd9ftx/LoACBQoUKFCgvg5qV3UbcGnAjPcLChQoUKBAgQLVbNxNDTx3gVYbiaBAgQIFChQoULugUsCzRlo1YFYD6PQPCAoUKFCgQIECNRU4q4PHakAsDyib3wMFChQoUKBAgdoVOLsXxlafl/4AU0EXFChQoECBAgVqV+DsDiy7jbfqhfzqOlCgQIECBQoUqKugpjeWDko/bgAKChQoUKBAgfp5qPQgaVC9K8iCAgUKFChQoEDtglodTHbBuu+rPm95P6BAgQIFChQoUMOBc/rCVvd9H9u4AwUKFChQoED9LFR60GqQXAXqPg8UKFCgQIECBWo3VNog6x68G2TTi2igQIECBQoUKFBX349KG27dRly3QQcKFChQoECBArULqtoom7rwVQ2MuwezoECBAgUKFChQaeDsDjyrwbALOjX4BAUKFChQoECB6gbO3cGu+vf0YtnqfkGBAgUKFChQoKYbd+n66gaXDzDcCAQFChQoUKBAgdo9AK0Gvm7jbyoQx/sABQoUKFCgQIG6GGr1ed2AOhWYQYECBQoUKFCgnhI4z54z9f7HN+5AgQIFChQoUI+HStdXQaqNudX3x+cCBQoUKFCgQIEKodJBYxUibeh1gysoUKBAgQIFCtQ0lAIFChQoUKBAKVCgQIECBQqUAgUKFChQoBQoUKBAgQIFSoECBQrUQ+sflnJfpPMNk9YAAAAASUVORK5CYII=',
+  100: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoCAAAAADObDPFAAACwElEQVR42u3bQZKDMAwEQP7/6d0XpLBGsiGp1i1UQuzmMiWZ608t1YUAFChQoECBUqBAgQIFChQoBQoUKFCgQClQoECBAgUKlAIFChSon4O6wrq736f7V/9/93pBgQIFChQoUKC6UMvB7AYi3WgVNl0vKFCgQIECBQrULqjVjey+3+r17npBgQIFChQoUKCehppqqFUDJyhQoECBAgUK1LdCTQXJ6cYhKFCgQIECBQrUaaju96cHl+nGQYECBQoUKFCgTkGlDbenPj92IB8UKFCgQIECBWpzVaG7wbK9XlCgQIECBQoUqGbjrvr5bsPdhtyxRiEoUKBAgQIFClQzcFYbX1MH7tMD+FNgoECBAgUKFChQ04276kJXr8cbqg42QYECBQoUKFCgNkFVg14VJg2SadAFBQoUKFCgQIE6BVVd+NQB+OkAmwZdUKBAgQIFChSobuBMD5BV4aeD6bEBKChQoECBAgUK1DBYdbCZNuimgigoUKBAgQIFCtRuqPRg113w6zYI04ALChQoUKBAgQK1C6o7mDwVGB9v3IECBQoUKFCgQBU3mDb6Vn+XDk6PN+5AgQIFChQoUKDCAeXU9SrgFDQoUKBAgQIFCtSpg2RTATV9QOkAFBQoUKBAgQIFajdUevBrLOgVA24VEhQoUKBAgQIFanfgTKt6AGwKIH2goECBAgUKFChQU1BXWF2w7qB1quEHChQoUKBAgQI13bjrDhqnDpq9LnCCAgUKFChQoEAVA1x10DkFkwZhUKBAgQIFChSot0N1G4HTQTce5IICBQoUKFCgQL0scE43/laDbRUSFChQoECBAgXqqQFoGkDTB1iFBgUKFChQoECB2gW1e9CYBtDuiwCveXMBFChQoECBAvVzUAoUKFCgQIECpUCBAgUKFChQChQoUKBAgVKgQIECBQoUKAUKFChQX1r/26Th96xT0bUAAAAASUVORK5CYII=',
+  200: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoCAAAAADObDPFAAAC0ElEQVR42u3bQW7DQAgF0Nz/0u2+UlU+MI3tPHaJnDHznAWC8etLlOKFABQoUKBAgRKgQIECBQoUKAEKFChQoEAJUKBAgQIFCpQABQoUqMdBvZrx13rp99X7bOcLChQoUKBAgQI1hSoXZj+u737+bSNVqG6+oECBAgUKFChQp6CqG+mu011vO19QoECBAgUKFKirQHUbg39dDwoUKFCgQIEC9VSodMMpNChQoECBAgUK1F2gutd3B5rVQvX2k2JQoECBAgUK1GOhugfc3/X5dm8ugAIFChQoUKAeB3UqUujtBl+cLyhQoECBAgUK1LBxNx14dht56cH86e9AgQIFChQoUKBOQVUTTBtlU6htaFCgQIECBQoUqClUN9EqVLdwTPMFBQoUKFCgQIH6L6huI6x6MH/6AE4/IFCgQIECBQoUqK3GXdogSwed6X26jbtjby6AAgUKFChQoECFCaWJTa+/zQAUFChQoECBAvWxUNXGXAowBdoqcEGBAgUKFChQoE5BpYVidyA5HWx2Qct/FFCgQIECBQoUqOUBaLcRtj3wvEyHExQoUKBAgQIFKoTZHmimA8/LdjhBgQIFChQoUB8LdSqRNOG0Qbd1X1CgQIECBQoUqK2Cs7xwmHD6gKYDUFCgQIECBQoUqHcNQE836KrrTQ+agQIFChQoUKBAnS44u9EF2z6If/xAPihQoECBAgUKVLHgO1bYFdedHmCLG5GgQIECBQoUKFDLjbt00Njd+HSQ+m8FJyhQoECBAgUKVHPA2R2IdmG6hTAoUKBAgQIFCtTVodLv04Za977xIBcUKFCgQIECBepNBee0EZfeZ6vxBwoUKFCgQIECdZUB6HTjWw/g8pNiUKBAgQIFCtRjoLYGjdsFaPX30wYhKFCgQIECBQpUCiVAgQIFChQoUAIUKFCgQIECJUCBAgUKFCgBChQoUKBAgRKgQIECddP4BvDXZFkMa5FtAAAAAElFTkSuQmCC'
+};
+var valtKr = 50;
+function qrFor(kr) {
+  if (QR[kr]) return QR[kr];
+  /* Eget belopp: generera QR via tjänst (C-format). Numret skickas endast hit. */
+  var payload = 'C' + SWISH_NR + ';' + kr + ';MediaForge;6';
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(payload);
+}
+function visaBelopp() {
+  document.getElementById('beloppInfo').textContent = 'Valt: ' + valtKr + ' kr – tack! 💚';
+  document.getElementById('qrimg').src = qrFor(valtKr);
+  var pp = 'https://paypal.me/Rickard3dPrint/' + valtKr + 'SEK';
+  ['paypalBtn2'].forEach(function (id) {
+    var el = document.getElementById(id); if (el) el.href = pp;
+  });
+}
+document.querySelectorAll('.bchip').forEach(function (c) {
+  c.addEventListener('click', function () {
+    document.querySelectorAll('.bchip').forEach(function (x) { x.classList.remove('vald'); });
+    c.classList.add('vald');
+    document.getElementById('egetKr').value = '';
+    valtKr = parseInt(c.getAttribute('data-kr'), 10);
+    visaBelopp();
+  });
+});
+document.getElementById('egetKr').addEventListener('input', function () {
+  var v = parseInt(this.value, 10);
+  if (v > 0 && v < 100000) {
+    document.querySelectorAll('.bchip').forEach(function (x) { x.classList.remove('vald'); });
+    valtKr = v;
+    visaBelopp();
+  }
+});
+function swisha() {
+  if (/android|iphone|ipad/i.test(navigator.userAgent)) {
+    var data = JSON.stringify({
+      version: 1,
+      payee: { value: SWISH_NR, editable: false },
+      amount: { value: valtKr, editable: true },
+      message: { value: 'MediaForge', editable: true }
+    });
+    location.href = 'swish://payment?data=' + encodeURIComponent(data);
+    return;
+  }
+  document.getElementById('qrimg').src = qrFor(valtKr);
+  document.getElementById('qrbox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+document.getElementById('swishBtn').addEventListener('click', swisha);
+document.getElementById('swishBtn2').addEventListener('click', swisha);
+document.getElementById('swishBtn3').addEventListener('click', swisha);
+visaBelopp();
+</script>
+</body>
+</html>

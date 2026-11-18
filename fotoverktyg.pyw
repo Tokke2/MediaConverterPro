@@ -46,7 +46,7 @@ UPDATEABLE_RELEASE_FILES = {
     '.gitignore', 'LICENSE', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
     'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs', 'Uppdatera_Release.ps1',
     'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png', 'fotoverktyg_icon.svg', 'mediaforge_logo.svg', 'mediaforge_logo_print.svg',
-    'start_mediaforge.sh', 'update_release.sh',
+    'start_mediaforge.sh', 'stod.html', 'update_release.sh',
 }
 MAX_RELEASE_ARCHIVE_BYTES = 80 * 1024 * 1024
 MAX_RELEASE_FILE_BYTES = 40 * 1024 * 1024
@@ -517,6 +517,9 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'MediaForge har redan senaste releasen ({tag}).': 'MediaForge already has the latest release ({tag}).',
  'En terminalemulator krävs för att uppdatera Python på Linux. Kör start_mediaforge.sh från en terminal.': 'A terminal emulator is required to update Python on this Linux system. Run start_mediaforge.sh from a terminal.',
  'Stöd utvecklingen · Donationer': 'Support development · Donate',
+ 'Stödsida…': 'Support page…',
+ 'Stödsidan saknas i appmappen.': 'The support page is missing from the app folder.',
+ 'Stödsidan kunde inte öppnas.': 'The support page could not be opened.',
  'Stöd MediaForge': 'Support MediaForge',
  'MediaForge är och förblir gratis att använda — för alla. Ingen reklam, inga prenumerationer och inga låsta funktioner. Vill du hjälpa till att hålla utvecklingen igång kan du skicka en frivillig gåva via Swish, Ko-fi eller PayPal med valfritt belopp. Varje bidrag går direkt till fortsatt utveckling av appen. Tack för ditt stöd!': 'MediaForge is and will remain free to use — for everyone. No ads, no subscriptions, and no locked features. If you want to help keep development going, you can send an optional contribution via Swish, Ko-fi, or PayPal — any amount. Every contribution goes directly to continued development of the app. Thank you for your support!',
  'Skanna QR-koden med Swish-appen, välj valfritt belopp och bekräfta.': 'Scan the QR code with the Swish app, choose any amount, and confirm.',
@@ -5248,6 +5251,9 @@ class Window(QtWidgets.QMainWindow):
         self.error_log_action.triggered.connect(self.open_error_log)
         self.help_menu.addAction(self.error_log_action)
         self.help_menu.addAction(self.donate_action)
+        self.support_page_action = QtGui.QAction('', self)
+        self.support_page_action.triggered.connect(self.open_support_html)
+        self.help_menu.addAction(self.support_page_action)
         self.help_menu.addSeparator()
         self.license_action = QtGui.QAction('', self)
         self.license_action.triggered.connect(self.show_license_dialog)
@@ -5293,6 +5299,7 @@ class Window(QtWidgets.QMainWindow):
         self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
         self.tools_action.setText(self.translated('Externa verktyg…'))
         self.donate_action.setText(self.translated('Stöd utvecklingen · Donationer'))
+        self.support_page_action.setText(self.translated('Stödsida…'))
         self.license_action.setText(self.translated('Licens och användningsrättigheter'))
         self.help_menu.setTitle(self.translated('Hjälp'))
         self.support_action.setText(self.translated('Hjälp och support'))
@@ -7311,6 +7318,16 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(close_button, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
         dialog.exec()
         LOGGER.info('Donation dialog opened (Swish, Ko-fi, PayPal)')
+
+    def open_support_html(self):
+        page = APP_DIR / 'stod.html'
+        if not page.is_file():
+            self.show_message('warning', 'Stöd MediaForge', 'Stödsidan saknas i appmappen.')
+            return
+        if not QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(str(page))):
+            self.show_message('warning', 'Stöd MediaForge', 'Stödsidan kunde inte öppnas.')
+            return
+        LOGGER.info('Support page opened: %s', page)
 
     def open_swish_link(self):
         data = json.dumps({
