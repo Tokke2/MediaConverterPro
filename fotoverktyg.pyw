@@ -258,16 +258,17 @@ def _qr_encode_matrix(payload_bytes):
     return modules
 
 
-def swish_qr_payload():
+def swish_qr_payload(amount=0):
     """Standard Swish QR payload (C-format): number locked, amount and
-    message editable in the Swish app (mask 6), no preset amount."""
-    return f'C{SWISH_NUMBER};;MediaForge;6'
+    message editable in the Swish app (mask 6). Amount 0 = no preset."""
+    amount_text = str(int(amount)) if amount else ''
+    return f'C{SWISH_NUMBER};{amount_text};MediaForge;6'
 
 
-def swish_qr_pixmap(target_px=264):
+def swish_qr_pixmap(amount=0, target_px=264):
     """Render the Swish QR code as a QPixmap, or None on failure."""
     try:
-        matrix = _qr_encode_matrix(swish_qr_payload().encode('utf-8'))
+        matrix = _qr_encode_matrix(swish_qr_payload(amount).encode('utf-8'))
     except Exception:
         LOGGER.exception('Could not create the Swish QR code')
         return None
@@ -520,6 +521,10 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Stöd MediaForge': 'Support MediaForge',
  'MediaForge är och förblir gratis att använda — för alla. Ingen reklam, inga prenumerationer och inga låsta funktioner. Vill du hjälpa till att hålla utvecklingen igång kan du skicka en frivillig gåva via Swish, Ko-fi eller PayPal med valfritt belopp. Varje bidrag går direkt till fortsatt utveckling av appen. Tack för ditt stöd!': 'MediaForge is and will remain free to use — for everyone. No ads, no subscriptions, and no locked features. If you want to help keep development going, you can send an optional contribution via Swish, Ko-fi, or PayPal — any amount. Every contribution goes directly to continued development of the app. Thank you for your support!',
  'Skanna QR-koden med Swish-appen, välj valfritt belopp och bekräfta.': 'Scan the QR code with the Swish app, choose any amount, and confirm.',
+ 'Välj belopp (valfritt)': 'Choose amount (optional)',
+ 'Eget…': 'Custom…',
+ 'Skriv ett eget belopp': 'Enter a custom amount',
+ 'Skanna QR-koden med Swish-appen. Beloppet {amount} kr är förifyllt men går att ändra.': 'Scan the QR code with the Swish app. The amount {amount} SEK is pre-filled but can be changed.',
  'Swish-numret och betalningslänkarna är fast inställda av utvecklaren och kan inte ändras i appen. Swish-numret visas inte i klartext.': 'The Swish number and payment links are fixed by the maintainer and cannot be changed in the app. The Swish number is not shown in plain text.',
  'Öppna Ko-fi': 'Open Ko-fi',
  'Öppna PayPal': 'Open PayPal',
@@ -7274,12 +7279,36 @@ class Window(QtWidgets.QMainWindow):
         card_layout = QtWidgets.QVBoxLayout(card)
         card_layout.setContentsMargins(16, 16, 16, 16)
         card_layout.setSpacing(10)
+        amount_title = QtWidgets.QLabel(self.translated('Välj belopp (valfritt)'))
+        amount_title.setStyleSheet('font-weight:700')
+        amount_title.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        card_layout.addWidget(amount_title)
+        amount_row = QtWidgets.QHBoxLayout()
+        amount_row.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        amount_group = QtWidgets.QButtonGroup(card)
+        amount_group.setExclusive(True)
+        amount_buttons = []
+        for preset in (25, 50, 100, 200):
+            chip = QtWidgets.QPushButton(f'{preset} kr')
+            chip.setCheckable(True)
+            chip.setObjectName('secondary')
+            chip.setProperty('donationAmount', preset)
+            amount_group.addButton(chip)
+            amount_row.addWidget(chip)
+            amount_buttons.append(chip)
+        custom_amount = QtWidgets.QSpinBox()
+        custom_amount.setRange(0, 99999)
+        custom_amount.setSpecialValueText(self.translated('Eget…'))
+        custom_amount.setSuffix(' kr')
+        custom_amount.setToolTip(self.translated('Skriv ett eget belopp'))
+        amount_row.addWidget(custom_amount)
+        card_layout.addLayout(amount_row)
         qr_label = QtWidgets.QLabel()
         qr_label.setPixmap(qr_pixmap)
         qr_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         qr_label.setAccessibleName(self.translated('Swish-QR-kod'))
         card_layout.addWidget(qr_label)
-        prompt = QtWidgets.QLabel(self.translated('Skanna QR-koden med Swish-appen, välj valfritt belopp och bekräfta.'))
+        prompt = QtWidgets.QLabel()
         prompt.setWordWrap(True)
         prompt.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(prompt)
@@ -7298,9 +7327,48 @@ class Window(QtWidgets.QMainWindow):
         pay_layout.addWidget(kofi_button)
         paypal_button = QtWidgets.QPushButton('💙  ' + self.translated('Öppna PayPal'))
         paypal_button.setObjectName('secondary')
-        paypal_button.clicked.connect(lambda: self.open_donation_url(PAYPAL_URL, {'paypal.me'}, 'PayPal'))
+        paypal_button.clicked.connect(lambda: self.open_donation_url(
+            PAYPAL_URL + (f'/{self._donation_amount}SEK' if getattr(self, '_donation_amount', 0) else ''),
+            {'paypal.me'}, 'PayPal'))
         pay_layout.addWidget(paypal_button)
         layout.addWidget(pay_card)
+        self._donation_amount = 0
+
+        def refresh_donation():
+            amount = int(getattr(self, '_donation_amount', 0))
+            pixmap = swish_qr_pixmap(amount)
+            if pixmap is not None:
+                qr_label.setPixmap(pixmap)
+            if amount:
+                prompt.setText(self.translated('Skanna QR-koden med Swish-appen. Beloppet {amount} kr är förifyllt men går att ändra.').format(amount=amount))
+                paypal_button.setText('💙  ' + self.translated('Öppna PayPal') + f' – {amount} kr')
+            else:
+                prompt.setText(self.translated('Skanna QR-koden med Swish-appen, välj valfritt belopp och bekräfta.'))
+                paypal_button.setText('💙  ' + self.translated('Öppna PayPal'))
+
+        def choose_amount(value):
+            self._donation_amount = int(value)
+            refresh_donation()
+
+        def chip_toggled(checked, value):
+            if not checked:
+                return
+            custom_amount.blockSignals(True)
+            custom_amount.setValue(0)
+            custom_amount.blockSignals(False)
+            choose_amount(value)
+
+        for chip in amount_buttons:
+            chip.toggled.connect(lambda checked, value=chip.property('donationAmount'): chip_toggled(checked, value))
+
+        def custom_amount_changed(value):
+            if value:
+                for chip in amount_buttons:
+                    chip.setChecked(False)
+                choose_amount(value)
+
+        custom_amount.valueChanged.connect(custom_amount_changed)
+        refresh_donation()
         fixed_note = QtWidgets.QLabel(self.translated('Swish-numret och betalningslänkarna är fast inställda av utvecklaren och kan inte ändras i appen. Swish-numret visas inte i klartext.'))
         fixed_note.setWordWrap(True)
         fixed_note.setStyleSheet('color:#627487;font-size:11px')
@@ -7316,7 +7384,7 @@ class Window(QtWidgets.QMainWindow):
         data = json.dumps({
             'version': 1,
             'payee': {'value': SWISH_NUMBER, 'editable': False},
-            'amount': {'value': 0, 'editable': True},
+            'amount': {'value': int(getattr(self, '_donation_amount', 0)), 'editable': True},
             'message': {'value': 'MediaForge', 'editable': True},
         }, separators=(',', ':'))
         url = 'swish://payment?data=' + quote(data, safe='')
