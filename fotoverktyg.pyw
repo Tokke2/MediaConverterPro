@@ -586,16 +586,16 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Filer och arkiv (originalen ändras aldrig)': 'Files and archive (originals are never changed)',
  'Källmapp': 'Source folder',
  'Arkivmapp': 'Archive folder',
- 'Välj…': 'Browse…',
+ '📁 Välj…': '📁 Browse…',
  'Undermappar': 'Subfolders',
  'Bevara mappstruktur': 'Preserve folder structure',
  'Skriv över arkivfiler': 'Overwrite archive files',
  'Ljust/mörkt tema': 'Light/dark theme',
  'Exportera logg': 'Export log',
  'Bearbeta kopior': 'Process copies',
- 'Avbryt': 'Cancel',
+ '⏹ Avbryt': '⏹ Cancel',
  'Starta automatiskt vid inloggning': 'Start automatically at sign-in',
- 'Välj mapp…': 'Choose folder…',
+ '📁 Välj mapp…': '📁 Choose folder…',
  'Ta med undermappar': 'Include subfolders',
  'Rensa EXIF/metadata (GPS, kameradata m.m.)': 'Remove EXIF/metadata (GPS, camera data, etc.)',
  'Bildmapp': 'Image folder',
@@ -1106,8 +1106,8 @@ UI_TRANSLATIONS.update({
     'Bildbibliotek': 'Photo library',
     'Öppna en bildmapp och bläddra bland originalen. Redigering och komprimering skapar kopior; flytt till papperskorgen kräver bekräftelse.': 'Browse a folder of originals. Editing and compression create copies; moving an image to trash requires confirmation.',
     'Bildmapp': 'Image folder',
-    'Öppna bildmapp…': 'Open image folder…',
-    'Uppdatera lista': 'Refresh list',
+    '📂 Öppna bildmapp…': '📂 Open image folder…',
+    '🔄 Uppdatera lista': '🔄 Refresh list',
     'Inkludera undermappar': 'Include subfolders',
     'Föregående': 'Previous',
     'Nästa': 'Next',
@@ -1169,7 +1169,7 @@ UI_TRANSLATIONS.update({
     'Välj en ljudfil…': 'Choose an audio file…',
     'Välj musik…': 'Choose music…',
     'Utdatafil (MP4)': 'Output file (MP4)',
-    'Spara som…': 'Save as…',
+    '💾 Spara som…': '💾 Save as…',
     'Spara bildspel': 'Save slideshow',
     'Kräver FFmpeg. HEIC/HEIF/AVIF kräver pillow-heif. Musik loopas vid behov och kapas till videons längd. Exporten kodas som H.264/AAC; originalbilder och musik ändras inte.': 'Requires FFmpeg. HEIC/HEIF/AVIF need pillow-heif. Music loops if needed and is trimmed to the video duration. The export uses H.264/AAC; original images and music are unchanged.',
     'Skapa bildspel': 'Create slideshow',
@@ -1451,16 +1451,16 @@ UI_TRANSLATIONS.update({
  'Filer och arkiv (originalen ändras aldrig)': 'Files and archive (originals are never changed)',
  'Källmapp': 'Source folder',
  'Arkivmapp': 'Archive folder',
- 'Välj…': 'Browse…',
+ '📁 Välj…': '📁 Browse…',
  'Undermappar': 'Subfolders',
  'Bevara mappstruktur': 'Preserve folder structure',
  'Skriv över arkivfiler': 'Overwrite archive files',
  'Ljust/mörkt tema': 'Light/dark theme',
  'Exportera logg': 'Export log',
  'Bearbeta kopior': 'Process copies',
- 'Avbryt': 'Cancel',
+ '⏹ Avbryt': '⏹ Cancel',
  'Starta automatiskt vid inloggning': 'Start automatically at sign-in',
- 'Välj mapp…': 'Choose folder…',
+ '📁 Välj mapp…': '📁 Choose folder…',
  'Ta med undermappar': 'Include subfolders',
  'Rensa EXIF/metadata (GPS, kameradata m.m.)': 'Remove EXIF/metadata (GPS, camera data, etc.)',
  'Bildmapp': 'Image folder',
@@ -1970,8 +1970,8 @@ UI_TRANSLATIONS.update({
     'Bildbibliotek': 'Photo library',
     'Öppna en bildmapp och bläddra bland originalen. Bilder kopieras eller ändras inte.': 'Open a folder and browse the originals. Images are not copied or modified.',
     'Bildmapp': 'Image folder',
-    'Öppna bildmapp…': 'Open image folder…',
-    'Uppdatera lista': 'Refresh list',
+    '📂 Öppna bildmapp…': '📂 Open image folder…',
+    '🔄 Uppdatera lista': '🔄 Refresh list',
     'Inkludera undermappar': 'Include subfolders',
     'Föregående': 'Previous',
     'Nästa': 'Next',
@@ -2033,7 +2033,7 @@ UI_TRANSLATIONS.update({
     'Välj en ljudfil…': 'Choose an audio file…',
     'Välj musik…': 'Choose music…',
     'Utdatafil (MP4)': 'Output file (MP4)',
-    'Spara som…': 'Save as…',
+    '💾 Spara som…': '💾 Save as…',
     'Spara bildspel': 'Save slideshow',
     'Kräver FFmpeg. HEIC/HEIF/AVIF kräver pillow-heif. Musik loopas vid behov och kapas till videons längd. Exporten kodas som H.264/AAC; originalbilder och musik ändras inte.': 'Requires FFmpeg. HEIC/HEIF/AVIF need pillow-heif. Music loops if needed and is trimmed to the video duration. The export uses H.264/AAC; original images and music are unchanged.',
     'Skapa bildspel': 'Create slideshow',
@@ -4965,13 +4965,13 @@ class Window(QtWidgets.QMainWindow):
         self.source.setPlaceholderText('Dra en mapp hit eller välj mapp…')
         form.addWidget(QtWidgets.QLabel('Källmapp'), 0, 0)
         form.addWidget(self.source, 0, 1)
-        browse = QtWidgets.QPushButton('Välj…')
+        browse = QtWidgets.QPushButton('📁 Välj…')
         browse.clicked.connect(self.browse)
         form.addWidget(browse, 0, 2)
         self.archive = QtWidgets.QLineEdit(self.load_output_setting('archiveFolder', OUTPUT_DIR / 'Processed'))
         form.addWidget(QtWidgets.QLabel('Arkivmapp'), 1, 0)
         form.addWidget(self.archive, 1, 1)
-        dest = QtWidgets.QPushButton('Välj…')
+        dest = QtWidgets.QPushButton('📁 Välj…')
         dest.clicked.connect(self.browse_archive)
         form.addWidget(dest, 1, 2)
         self.archive_browse_button = dest
@@ -5023,7 +5023,7 @@ class Window(QtWidgets.QMainWindow):
         self.go = QtWidgets.QPushButton('Bearbeta alla filer i mappen')
         self.go.clicked.connect(lambda: self.start())
         buttons.addWidget(self.go)
-        self.stop = QtWidgets.QPushButton('Avbryt')
+        self.stop = QtWidgets.QPushButton('⏹ Avbryt')
         self.stop.setEnabled(False)
         self.stop.clicked.connect(self.cancel)
         buttons.addWidget(self.stop)
@@ -5050,7 +5050,7 @@ class Window(QtWidgets.QMainWindow):
             # wide windows do not stretch form fields across the whole screen.
             # Workspace tabs (library, editor) get a wider limit.
             wide = bool(widget.property('wideContent'))
-            widget.setMaximumWidth(1600 if wide else 980)
+            widget.setMaximumWidth(1760 if wide else 1080)
             container = QtWidgets.QWidget()
             container_layout = QtWidgets.QHBoxLayout(container)
             container_layout.setContentsMargins(0, 0, 0, 0)
@@ -5558,13 +5558,13 @@ class Window(QtWidgets.QMainWindow):
         self.image_source.setAcceptDrops(True)
         form.addWidget(QtWidgets.QLabel('Bildmapp'), 0, 0)
         form.addWidget(self.image_source, 0, 1)
-        choose_source = QtWidgets.QPushButton('Välj mapp…')
+        choose_source = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_source.clicked.connect(lambda: self.choose_directory(self.image_source, 'Välj bildmapp'))
         form.addWidget(choose_source, 0, 2)
         self.image_destination = QtWidgets.QLineEdit(self.load_output_setting('imageOutputFolder', OUTPUT_DIR / 'Images' / 'Optimized'))
         form.addWidget(QtWidgets.QLabel('Spara kopior i'), 1, 0)
         form.addWidget(self.image_destination, 1, 1)
-        choose_dest = QtWidgets.QPushButton('Välj mapp…')
+        choose_dest = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_dest.clicked.connect(lambda: self.choose_directory(self.image_destination, 'Välj målmapp'))
         form.addWidget(choose_dest, 1, 2)
         self.image_recursive = QtWidgets.QCheckBox('Ta med undermappar')
@@ -5578,7 +5578,7 @@ class Window(QtWidgets.QMainWindow):
         self.image_go = QtWidgets.QPushButton('Optimera bildmapp')
         self.image_go.clicked.connect(self.start_image_optimization)
         row.addWidget(self.image_go)
-        self.image_stop = QtWidgets.QPushButton('Avbryt')
+        self.image_stop = QtWidgets.QPushButton('⏹ Avbryt')
         self.image_stop.setEnabled(False)
         self.image_stop.clicked.connect(self.cancel_image_optimization)
         row.addWidget(self.image_stop)
@@ -5601,7 +5601,7 @@ class Window(QtWidgets.QMainWindow):
         self.duplicate_source.setPlaceholderText('Välj mapp att skanna…')
         form.addWidget(QtWidgets.QLabel('Skanna mapp'), 0, 0)
         form.addWidget(self.duplicate_source, 0, 1)
-        choose_source = QtWidgets.QPushButton('Välj mapp…')
+        choose_source = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_source.clicked.connect(lambda: self.choose_directory(self.duplicate_source, 'Välj skanningsmapp'))
         form.addWidget(choose_source, 0, 2)
         options = QtWidgets.QHBoxLayout()
@@ -6010,13 +6010,13 @@ class Window(QtWidgets.QMainWindow):
         self.video_source.setPlaceholderText('Välj mapp med videor…')
         form.addWidget(QtWidgets.QLabel('Videomapp'), 0, 0)
         form.addWidget(self.video_source, 0, 1)
-        source_button = QtWidgets.QPushButton('Välj mapp…')
+        source_button = QtWidgets.QPushButton('📁 Välj mapp…')
         source_button.clicked.connect(lambda: self.choose_directory(self.video_source, 'Välj videomapp'))
         form.addWidget(source_button, 0, 2)
         self.video_destination = QtWidgets.QLineEdit(self.load_output_setting('videoOutputFolder', OUTPUT_DIR / 'Videos' / 'Converted'))
         form.addWidget(QtWidgets.QLabel('Spara kopior i'), 1, 0)
         form.addWidget(self.video_destination, 1, 1)
-        destination_button = QtWidgets.QPushButton('Välj mapp…')
+        destination_button = QtWidgets.QPushButton('📁 Välj mapp…')
         destination_button.clicked.connect(lambda: self.choose_directory(self.video_destination, 'Välj målmapp'))
         form.addWidget(destination_button, 1, 2)
         self.video_recursive = QtWidgets.QCheckBox('Ta med undermappar')
@@ -6056,7 +6056,7 @@ class Window(QtWidgets.QMainWindow):
         self.video_go = QtWidgets.QPushButton('Konvertera videomapp till MP4')
         self.video_go.clicked.connect(self.start_video_conversion)
         row.addWidget(self.video_go)
-        self.video_stop = QtWidgets.QPushButton('Avbryt')
+        self.video_stop = QtWidgets.QPushButton('⏹ Avbryt')
         self.video_stop.setEnabled(False)
         self.video_stop.clicked.connect(self.cancel_video_conversion)
         row.addWidget(self.video_stop)
@@ -6146,7 +6146,7 @@ class Window(QtWidgets.QMainWindow):
         default_output = OUTPUT_DIR / 'Slideshows' / 'slideshow.mp4'
         self.slideshow_output = QtWidgets.QLineEdit(str(self.ui_settings.value('slideshowOutput', default_output)))
         output_row.addWidget(self.slideshow_output, 1)
-        output_button = QtWidgets.QPushButton('Spara som…')
+        output_button = QtWidgets.QPushButton('💾 Spara som…')
         output_button.clicked.connect(self.choose_slideshow_output)
         output_row.addWidget(output_button)
         layout.addLayout(output_row)
@@ -6156,7 +6156,7 @@ class Window(QtWidgets.QMainWindow):
         self.slideshow_go = QtWidgets.QPushButton('Skapa bildspel')
         self.slideshow_go.clicked.connect(self.start_slideshow)
         action_row.addWidget(self.slideshow_go)
-        self.slideshow_cancel_button = QtWidgets.QPushButton('Avbryt')
+        self.slideshow_cancel_button = QtWidgets.QPushButton('⏹ Avbryt')
         self.slideshow_cancel_button.setEnabled(False)
         self.slideshow_cancel_button.clicked.connect(self.cancel_slideshow)
         action_row.addWidget(self.slideshow_cancel_button)
@@ -6295,13 +6295,13 @@ class Window(QtWidgets.QMainWindow):
         self.audio_source.setPlaceholderText('Välj mapp med videor…')
         form.addWidget(QtWidgets.QLabel('Videomapp'), 0, 0)
         form.addWidget(self.audio_source, 0, 1)
-        source_button = QtWidgets.QPushButton('Välj mapp…')
+        source_button = QtWidgets.QPushButton('📁 Välj mapp…')
         source_button.clicked.connect(lambda: self.choose_directory(self.audio_source, 'Välj videomapp'))
         form.addWidget(source_button, 0, 2)
         self.audio_destination = QtWidgets.QLineEdit(self.load_output_setting('audioOutputFolder', OUTPUT_DIR / 'Videos' / 'AudioTools'))
         form.addWidget(QtWidgets.QLabel('Spara nya filer i'), 1, 0)
         form.addWidget(self.audio_destination, 1, 1)
-        destination_button = QtWidgets.QPushButton('Välj mapp…')
+        destination_button = QtWidgets.QPushButton('📁 Välj mapp…')
         destination_button.clicked.connect(lambda: self.choose_directory(self.audio_destination, 'Välj målmapp'))
         form.addWidget(destination_button, 1, 2)
         self.audio_recursive = QtWidgets.QCheckBox('Ta med undermappar')
@@ -6322,7 +6322,7 @@ class Window(QtWidgets.QMainWindow):
         self.audio_remove_button = QtWidgets.QPushButton('Ta bort ljudspår och spara videokopia')
         self.audio_remove_button.clicked.connect(lambda: self.start_video_audio('remove'))
         row.addWidget(self.audio_remove_button)
-        self.audio_cancel_button = QtWidgets.QPushButton('Avbryt')
+        self.audio_cancel_button = QtWidgets.QPushButton('⏹ Avbryt')
         self.audio_cancel_button.setEnabled(False)
         self.audio_cancel_button.clicked.connect(self.cancel_video_audio)
         row.addWidget(self.audio_cancel_button)
@@ -6409,13 +6409,13 @@ class Window(QtWidgets.QMainWindow):
         self.color_source.setPlaceholderText('Välj mapp med bilder…')
         form.addWidget(QtWidgets.QLabel('Bildmapp'), 0, 0)
         form.addWidget(self.color_source, 0, 1)
-        choose_source = QtWidgets.QPushButton('Välj mapp…')
+        choose_source = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_source.clicked.connect(lambda: self.choose_directory(self.color_source, 'Välj bildmapp'))
         form.addWidget(choose_source, 0, 2)
         self.color_destination = QtWidgets.QLineEdit(self.load_output_setting('colorOutputFolder', OUTPUT_DIR / 'Images' / 'ColorProfiles'))
         form.addWidget(QtWidgets.QLabel('Spara kopior i'), 1, 0)
         form.addWidget(self.color_destination, 1, 1)
-        choose_destination = QtWidgets.QPushButton('Välj mapp…')
+        choose_destination = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_destination.clicked.connect(lambda: self.choose_directory(self.color_destination, 'Välj målmapp'))
         form.addWidget(choose_destination, 1, 2)
         self.color_recursive = QtWidgets.QCheckBox('Ta med undermappar')
@@ -6437,7 +6437,7 @@ class Window(QtWidgets.QMainWindow):
         self.color_go = QtWidgets.QPushButton('Konvertera färgprofiler')
         self.color_go.clicked.connect(self.start_color_conversion)
         buttons.addWidget(self.color_go)
-        self.color_cancel = QtWidgets.QPushButton('Avbryt')
+        self.color_cancel = QtWidgets.QPushButton('⏹ Avbryt')
         self.color_cancel.setEnabled(False)
         self.color_cancel.clicked.connect(self.cancel_color_conversion)
         buttons.addWidget(self.color_cancel)
@@ -6492,13 +6492,13 @@ class Window(QtWidgets.QMainWindow):
         self.stabilize_source.setPlaceholderText('Välj mapp med videor…')
         form.addWidget(QtWidgets.QLabel('Videomapp'), 0, 0)
         form.addWidget(self.stabilize_source, 0, 1)
-        choose_source = QtWidgets.QPushButton('Välj mapp…')
+        choose_source = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_source.clicked.connect(lambda: self.choose_directory(self.stabilize_source, 'Välj videomapp'))
         form.addWidget(choose_source, 0, 2)
         self.stabilize_destination = QtWidgets.QLineEdit(self.load_output_setting('stabilizeOutputFolder', OUTPUT_DIR / 'Videos' / 'Stabilized'))
         form.addWidget(QtWidgets.QLabel('Spara kopior i'), 1, 0)
         form.addWidget(self.stabilize_destination, 1, 1)
-        choose_destination = QtWidgets.QPushButton('Välj mapp…')
+        choose_destination = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_destination.clicked.connect(lambda: self.choose_directory(self.stabilize_destination, 'Välj målmapp'))
         form.addWidget(choose_destination, 1, 2)
         self.stabilize_recursive = QtWidgets.QCheckBox('Ta med undermappar')
@@ -6516,7 +6516,7 @@ class Window(QtWidgets.QMainWindow):
         self.stabilize_go = QtWidgets.QPushButton('Stabilisera videomapp')
         self.stabilize_go.clicked.connect(self.start_video_stabilization)
         row.addWidget(self.stabilize_go)
-        self.stabilize_cancel = QtWidgets.QPushButton('Avbryt')
+        self.stabilize_cancel = QtWidgets.QPushButton('⏹ Avbryt')
         self.stabilize_cancel.setEnabled(False)
         self.stabilize_cancel.clicked.connect(self.cancel_video_stabilization)
         row.addWidget(self.stabilize_cancel)
@@ -6571,13 +6571,13 @@ class Window(QtWidgets.QMainWindow):
         self.cleanup_source.setPlaceholderText('Välj mapp med ljud eller video…')
         form.addWidget(QtWidgets.QLabel('Källmapp'), 0, 0)
         form.addWidget(self.cleanup_source, 0, 1)
-        choose_source = QtWidgets.QPushButton('Välj mapp…')
+        choose_source = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_source.clicked.connect(lambda: self.choose_directory(self.cleanup_source, 'Välj källmapp'))
         form.addWidget(choose_source, 0, 2)
         self.cleanup_destination = QtWidgets.QLineEdit(self.load_output_setting('cleanupOutputFolder', OUTPUT_DIR / 'Audio' / 'Processed'))
         form.addWidget(QtWidgets.QLabel('Spara bearbetade kopior i'), 1, 0)
         form.addWidget(self.cleanup_destination, 1, 1)
-        choose_destination = QtWidgets.QPushButton('Välj mapp…')
+        choose_destination = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_destination.clicked.connect(lambda: self.choose_directory(self.cleanup_destination, 'Välj målmapp'))
         form.addWidget(choose_destination, 1, 2)
         self.cleanup_recursive = QtWidgets.QCheckBox('Ta med undermappar')
@@ -6591,7 +6591,7 @@ class Window(QtWidgets.QMainWindow):
         self.cleanup_denoise = QtWidgets.QPushButton('Minska bakgrundsbrus')
         self.cleanup_denoise.clicked.connect(lambda: self.start_audio_cleanup('denoise'))
         row.addWidget(self.cleanup_denoise)
-        self.cleanup_cancel = QtWidgets.QPushButton('Avbryt')
+        self.cleanup_cancel = QtWidgets.QPushButton('⏹ Avbryt')
         self.cleanup_cancel.setEnabled(False)
         self.cleanup_cancel.clicked.connect(self.cancel_audio_cleanup)
         row.addWidget(self.cleanup_cancel)
@@ -6648,7 +6648,7 @@ class Window(QtWidgets.QMainWindow):
         self.codec_source.setPlaceholderText('Välj mapp med mediafiler…')
         form.addWidget(QtWidgets.QLabel('Källmapp'), 0, 0)
         form.addWidget(self.codec_source, 0, 1)
-        choose_source = QtWidgets.QPushButton('Välj mapp…')
+        choose_source = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_source.clicked.connect(lambda: self.choose_directory(self.codec_source, 'Välj källmapp'))
         form.addWidget(choose_source, 0, 2)
         self.codec_recursive = QtWidgets.QCheckBox('Ta med undermappar')
@@ -6658,7 +6658,7 @@ class Window(QtWidgets.QMainWindow):
         self.codec_scan = QtWidgets.QPushButton('Skapa codec-rapport')
         self.codec_scan.clicked.connect(self.start_codec_report)
         row.addWidget(self.codec_scan)
-        self.codec_cancel = QtWidgets.QPushButton('Avbryt')
+        self.codec_cancel = QtWidgets.QPushButton('⏹ Avbryt')
         self.codec_cancel.setEnabled(False)
         self.codec_cancel.clicked.connect(self.cancel_codec_report)
         row.addWidget(self.codec_cancel)
@@ -6758,13 +6758,13 @@ class Window(QtWidgets.QMainWindow):
         self.music_source.setPlaceholderText('Välj mapp med musik…')
         form.addWidget(QtWidgets.QLabel('Musikmapp'), 0, 0)
         form.addWidget(self.music_source, 0, 1)
-        choose_source = QtWidgets.QPushButton('Välj mapp…')
+        choose_source = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_source.clicked.connect(lambda: self.choose_directory(self.music_source, 'Välj musikmapp'))
         form.addWidget(choose_source, 0, 2)
         self.music_destination = QtWidgets.QLineEdit(self.load_output_setting('musicOutputFolder', OUTPUT_DIR / 'MusicDVD'))
         form.addWidget(QtWidgets.QLabel('Utmatningsmapp'), 1, 0)
         form.addWidget(self.music_destination, 1, 1)
-        choose_dest = QtWidgets.QPushButton('Välj mapp…')
+        choose_dest = QtWidgets.QPushButton('📁 Välj mapp…')
         choose_dest.clicked.connect(lambda: self.choose_directory(self.music_destination, 'Välj utmatningsmapp'))
         form.addWidget(choose_dest, 1, 2)
         self.music_recursive = QtWidgets.QCheckBox('Ta med undermappar (filer samlas i skivans rot)')
@@ -6775,7 +6775,7 @@ class Window(QtWidgets.QMainWindow):
         self.music_go = QtWidgets.QPushButton('Skapa musik-DVD')
         self.music_go.clicked.connect(self.start_music_dvd)
         row.addWidget(self.music_go)
-        self.music_stop = QtWidgets.QPushButton('Avbryt')
+        self.music_stop = QtWidgets.QPushButton('⏹ Avbryt')
         self.music_stop.setEnabled(False)
         self.music_stop.clicked.connect(self.cancel_music_dvd)
         row.addWidget(self.music_stop)
@@ -7901,7 +7901,7 @@ class Window(QtWidgets.QMainWindow):
         row.addWidget(QtWidgets.QLabel('Basmapp:'))
         self.web_destination = QtWidgets.QLineEdit(self.load_output_setting('webOutputFolder', OUTPUT_DIR / 'Downloads' / 'WebImages'))
         row.addWidget(self.web_destination)
-        browse = QtWidgets.QPushButton('Välj mapp…')
+        browse = QtWidgets.QPushButton('📁 Välj mapp…')
         browse.clicked.connect(self.browse_web_destination)
         row.addWidget(browse)
         layout.addWidget(QtWidgets.QLabel('Bilderna sparas som JPEG i undermappen “Direkta bilder” i vald basmapp.'))
@@ -7918,7 +7918,7 @@ class Window(QtWidgets.QMainWindow):
         self.web_go = QtWidgets.QPushButton('Hämta webbbilder som JPEG')
         self.web_go.clicked.connect(self.start_web_download)
         row.addWidget(self.web_go)
-        self.web_stop = QtWidgets.QPushButton('Avbryt')
+        self.web_stop = QtWidgets.QPushButton('⏹ Avbryt')
         self.web_stop.setEnabled(False)
         self.web_stop.clicked.connect(self.cancel_web_download)
         row.addWidget(self.web_stop)
@@ -7992,7 +7992,7 @@ class Window(QtWidgets.QMainWindow):
         self.ad_destination = QtWidgets.QLineEdit(self.load_output_setting('adOutputFolder', OUTPUT_DIR / 'Downloads' / 'Blocket'))
         self.ad_destination.setPlaceholderText('Välj en basmapp; varje annons får en undermapp med sin titel')
         row.addWidget(self.ad_destination)
-        browse = QtWidgets.QPushButton('Välj mapp…')
+        browse = QtWidgets.QPushButton('📁 Välj mapp…')
         browse.clicked.connect(self.browse_ad_destination)
         row.addWidget(browse)
         row = QtWidgets.QHBoxLayout()
@@ -8009,7 +8009,7 @@ class Window(QtWidgets.QMainWindow):
         self.ad_go = QtWidgets.QPushButton('Hämta alla galleribilder som JPEG')
         self.ad_go.clicked.connect(self.start_ad_download)
         row.addWidget(self.ad_go)
-        self.ad_stop = QtWidgets.QPushButton('Avbryt')
+        self.ad_stop = QtWidgets.QPushButton('⏹ Avbryt')
         self.ad_stop.setEnabled(False)
         self.ad_stop.clicked.connect(self.cancel_ad_download)
         row.addWidget(self.ad_stop)
@@ -8100,7 +8100,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addLayout(row)
         self.conversion_destination = QtWidgets.QLineEdit(self.load_output_setting('conversionOutputFolder', OUTPUT_DIR / 'Images' / 'JPEG'))
         row.addWidget(self.conversion_destination)
-        browse = QtWidgets.QPushButton('Välj mapp…')
+        browse = QtWidgets.QPushButton('📁 Välj mapp…')
         browse.clicked.connect(self.browse_conversion_destination)
         row.addWidget(browse)
         quality_row = QtWidgets.QHBoxLayout()
@@ -8190,10 +8190,10 @@ class Window(QtWidgets.QMainWindow):
         self.library_source.setPlaceholderText('Bildmapp')
         location.addWidget(QtWidgets.QLabel('Bildmapp'), 0, 0)
         location.addWidget(self.library_source, 0, 1)
-        self.library_open_button = QtWidgets.QPushButton('Öppna bildmapp…')
+        self.library_open_button = QtWidgets.QPushButton('📂 Öppna bildmapp…')
         self.library_open_button.clicked.connect(self.choose_image_library)
         location.addWidget(self.library_open_button, 0, 2)
-        self.library_refresh_button = QtWidgets.QPushButton('Uppdatera lista')
+        self.library_refresh_button = QtWidgets.QPushButton('🔄 Uppdatera lista')
         self.library_refresh_button.clicked.connect(self.scan_image_library)
         location.addWidget(self.library_refresh_button, 0, 3)
         self.library_recursive = QtWidgets.QCheckBox('Inkludera undermappar')
@@ -8934,31 +8934,50 @@ class Window(QtWidgets.QMainWindow):
 
     def apply_theme(self):
         if self.dark:
-            c = dict(bg='#101726', panel='#192439', field='#243147', border='#394b65', text='#f2f6fd', muted='#a3b5ce', accent='#3b82f6', hover='#2563eb')
+            c = dict(bg='#0d1424', panel='#16213a', field='#1c2a47', border='#2c3f61', text='#edf2fa', muted='#9db1cc', accent='#14b8a6', hover='#0d9488', accent_soft='rgba(20,184,166,0.16)')
         else:
-            c = dict(bg='#f1f5fb', panel='#ffffff', field='#f8fafc', border='#cbd5e1', text='#182437', muted='#52637d', accent='#2563eb', hover='#1d4ed8')
+            c = dict(bg='#edf1f8', panel='#ffffff', field='#f5f8fd', border='#c3d0e2', text='#152238', muted='#4c5f7d', accent='#0d9488', hover='#0f766e', accent_soft='rgba(13,148,136,0.10)')
         c['font_size'] = self.ui_font_size
         c['hero_size'] = self.ui_font_size + 8
         c['subtitle_size'] = max(10, self.ui_font_size - 2)
         self.setStyleSheet('''
-            QMainWindow, QWidget {background:%(bg)s; color:%(text)s; font-family:"Segoe UI",Arial,sans-serif; font-size:%(font_size)spx}
-            QLabel#heroTitle {font-size:%(hero_size)spx; font-weight:800; color:%(text)s}
+            QMainWindow, QWidget {background:%(bg)s; color:%(text)s; font-family:"Segoe UI Variable","Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:%(font_size)spx}
+            QLabel#heroTitle {font-size:%(hero_size)spx; font-weight:800; letter-spacing:0.4px; color:%(text)s}
             QLabel#subtitle {font-size:%(subtitle_size)spx; color:%(muted)s}
-            QTabWidget::pane, QGroupBox {border:1px solid %(border)s; border-radius:10px; background:%(panel)s}
-            QFrame#toolbarPanel {background:%(panel)s; border:1px solid %(border)s; border-radius:10px}
-            QGroupBox {font-weight:700; margin-top:10px; padding:10px}
-            QGroupBox::title {subcontrol-origin:margin; left:13px; padding:0 5px}
-            QTabBar::tab {background:%(panel)s; color:%(muted)s; border:1px solid %(border)s; padding:9px 12px; margin-right:3px; border-top-left-radius:8px; border-top-right-radius:8px}
-            QTabBar::tab:hover:!selected {border-color:%(accent)s; color:%(text)s}
-            QTabBar::tab:selected {background:%(accent)s; color:white; font-weight:700; border-bottom:3px solid #20c6c4}
-            QLineEdit,QPlainTextEdit,QListWidget,QDateTimeEdit,QSpinBox,QComboBox {background:%(field)s; color:%(text)s; border:1px solid %(border)s; border-radius:6px; padding:6px; selection-background-color:%(accent)s}
-            QLineEdit:focus,QPlainTextEdit:focus {border:2px solid %(accent)s}
-            QPushButton {background:%(accent)s; color:white; border:0; border-radius:7px; padding:7px 11px; font-weight:600; min-height:20px}
+            QTabWidget::pane {border:1px solid %(border)s; border-radius:12px; background:%(panel)s}
+            QGroupBox {border:1px solid %(border)s; border-radius:12px; background:%(panel)s; font-weight:700; margin-top:12px; padding:12px}
+            QGroupBox::title {subcontrol-origin:margin; left:14px; padding:0 6px; color:%(text)s}
+            QFrame#toolbarPanel {background:%(panel)s; border:1px solid %(border)s; border-radius:12px}
+            QTabBar::tab {background:%(panel)s; color:%(muted)s; border:1px solid %(border)s; border-bottom:0; padding:10px 14px; margin-right:4px; border-top-left-radius:10px; border-top-right-radius:10px; font-weight:600}
+            QTabBar::tab:hover:!selected {border-color:%(accent)s; color:%(text)s; background:%(accent_soft)s}
+            QTabBar::tab:selected {background:%(accent)s; color:white; font-weight:700; border-color:%(accent)s}
+            QTabBar::tab:!selected {margin-top:6px}
+            QLineEdit,QPlainTextEdit,QListWidget,QDateTimeEdit,QSpinBox,QComboBox {background:%(field)s; color:%(text)s; border:1px solid %(border)s; border-radius:8px; padding:7px 9px; selection-background-color:%(accent)s; selection-color:white}
+            QLineEdit:focus,QPlainTextEdit:focus,QComboBox:focus,QSpinBox:focus {border:2px solid %(accent)s; padding:6px 8px}
+            QLineEdit:disabled,QPlainTextEdit:disabled {color:%(muted)s}
+            QPushButton {background:%(accent)s; color:white; border:0; border-radius:9px; padding:8px 14px; font-weight:600; min-height:22px}
             QPushButton:hover {background:%(hover)s}
+            QPushButton:pressed {padding:9px 13px 7px 15px}
             QPushButton:disabled {background:%(border)s; color:%(muted)s}
-            QProgressBar {background:%(field)s; border:1px solid %(border)s; border-radius:5px; text-align:center; min-height:15px}
-            QProgressBar::chunk {background:%(accent)s; border-radius:4px}
+            QPushButton:focus {outline:2px solid %(accent)s; outline-offset:1px}
+            QProgressBar {background:%(field)s; border:1px solid %(border)s; border-radius:6px; text-align:center; min-height:16px}
+            QProgressBar::chunk {background:%(accent)s; border-radius:5px}
             QCheckBox {spacing:8px}
+            QCheckBox::indicator {width:16px; height:16px; border-radius:4px; border:1px solid %(border)s; background:%(field)s}
+            QCheckBox::indicator:checked {background:%(accent)s; border:1px solid %(accent)s}
+            QScrollBar:vertical {background:transparent; width:12px; margin:0}
+            QScrollBar::handle:vertical {background:%(border)s; border-radius:6px; min-height:28px}
+            QScrollBar::handle:vertical:hover {background:%(muted)s}
+            QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical {height:0}
+            QScrollBar:horizontal {background:transparent; height:12px; margin:0}
+            QScrollBar::handle:horizontal {background:%(border)s; border-radius:6px; min-width:28px}
+            QScrollBar::handle:horizontal:hover {background:%(muted)s}
+            QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal {width:0}
+            QMenu {background:%(panel)s; color:%(text)s; border:1px solid %(border)s; border-radius:10px; padding:6px}
+            QMenu::item {padding:7px 26px 7px 22px; border-radius:6px}
+            QMenu::item:selected {background:%(accent)s; color:white}
+            QMenu::separator {height:1px; background:%(border)s; margin:5px 10px}
+            QToolTip {background:%(panel)s; color:%(text)s; border:1px solid %(border)s; border-radius:6px; padding:5px 8px}
         ''' % c)
         if hasattr(self, 'theme_action'):
             self.theme_action.setChecked(self.dark)
