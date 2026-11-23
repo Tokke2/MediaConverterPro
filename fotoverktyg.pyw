@@ -426,7 +426,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Datum & EXIF': 'Date & EXIF',
  'Bildoptimering': 'Image optimization',
  'Videokonvertering': 'Video conversion',
- 'Skapa musik-DVD': 'Create music DVD',
+ '💿 Skapa musik-DVD': '💿 Create music DVD',
  'Aktivitetslogg': 'Activity log',
  'Webbbilder → JPEG': 'Web images → JPEG',
  'Blocket → JPEG': 'Blocket → JPEG',
@@ -581,7 +581,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Alla stödda bild- och videofiler i källmappen bearbetas. Originalen lämnas orörda; kopior sparas i arkivmappen.': 'All supported image and video files in the source folder are processed. Originals are untouched; copies are saved in the archive folder.',
  'Alla stödda bild- och videofiler i källmappen bearbetas. Rensade kopior sparas bredvid källfilerna med suffixet _rensad.': 'All supported image and video files in the source folder are processed. Cleaned copies are saved beside the sources with the _rensad suffix.',
  'Alla stödda bild- och videofiler i källmappen bearbetas. Original ersätts först när en tillfällig kopia har rensats klart.': 'All supported image and video files in the source folder are processed. Originals are replaced only after a temporary copy has been cleaned successfully.',
- 'Bearbeta alla filer i mappen': 'Process all files in folder',
+ '⚙️ Bearbeta alla filer i mappen': '⚙️ Process all files in folder',
  'Rensa metadata och skriv över alla filer…': 'Clean metadata and overwrite all files…',
  'Filer och arkiv (originalen ändras aldrig)': 'Files and archive (originals are never changed)',
  'Källmapp': 'Source folder',
@@ -642,7 +642,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
                                                                                                                                                                     'through '
                                                                                                                                                                     'lossless '
                                                                                                                                                                     'optimization.',
- 'Optimera bildmapp': 'Optimize image folder',
+ '⚡ Optimera bildmapp': '⚡ Optimize image folder',
  'Konvertera en mapp med videor till MP4/H.264 med FFmpeg. Källfilerna lämnas orörda.': 'Convert a folder of '
                                                                                         'videos to MP4/H.264 '
                                                                                         'with FFmpeg. Source '
@@ -666,7 +666,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
                                                                                                                                'may '
                                                                                                                                'reduce '
                                                                                                                                'quality.',
- 'Konvertera videomapp till MP4': 'Convert video folder to MP4',
+ '🔄 Konvertera videomapp till MP4': '🔄 Convert video folder to MP4',
  'Samla musikfiler i en DVD-5-kompatibel mapp och skapa en ISO-avbildning om ett ISO-verktyg finns installerat.': 'Collect '
                                                                                                                   'music '
                                                                                                                   'files '
@@ -782,7 +782,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Hämta alla galleribilder som JPEG': 'Download all gallery images as JPEG',
  'Lägg till bilder…': 'Add images…',
  'Rensa listan': 'Clear list',
- 'Konvertera till JPEG': 'Convert to JPEG',
+ '🖼️ Konvertera till JPEG': '🖼️ Convert to JPEG',
  'Avbryt konvertering': 'Cancel conversion',
  'Konvertera AVIF, HEIC och HEIF till JPEG. Originalfilerna sparas oförändrade.': 'Convert AVIF, HEIC and '
                                                                                   'HEIF to JPEG. Original '
@@ -1006,7 +1006,7 @@ UI_TRANSLATIONS.update({
     'Välj skanningsmapp': 'Choose scan folder',
     'Likhetströskel (0–20; lägre = striktare)': 'Similarity threshold (0–20; lower is stricter)',
     'Välj minst en fil att behålla i varje grupp. Omarkerade kopior flyttas till appens karantänmapp; inget raderas permanent.': 'Choose at least one file to keep in each group. Unchecked copies are moved to the app quarantine; nothing is permanently deleted.',
- 'Skanna efter dubbletter': 'Scan for duplicates',
+ '🔍 Skanna efter dubbletter': '🔍 Scan for duplicates',
  'Skanna datorn efter bild-/videodubbletter…': 'Scan the computer for image/video duplicates…',
  'INFO: Letar efter bild- och videofiler i de valda diskarna…': 'INFO: Searching selected drives for image and video files…',
  'Skanna alla tillgängliga diskar efter bild- och videofiler? Stora diskar kan ta lång tid. Skanningen läser filer men ändrar ingenting.': 'Scan all available drives for image and video files? Large drives may take a long time. Scanning reads files but changes nothing.',
@@ -1050,7 +1050,7 @@ UI_TRANSLATIONS.update({
     'Antagen profil för bilder utan inbäddad profil': 'Assumed profile for images without an embedded profile',
     'Konvertera till': 'Convert to',
     'Bilder sparas i samma filformat. Qt måste ha stöd för bildformatet. Konvertering kan ändra pixelvärden och metadata kanske inte följer med; originalfilerna behålls.': 'Images are saved in the same file format. Qt must support that image format. Pixel values may change and metadata might not be retained; originals are preserved.',
-    'Konvertera färgprofiler': 'Convert color profiles',
+    '🎨 Konvertera färgprofiler': '🎨 Convert color profiles',
     'Välj en giltig bildmapp.': 'Choose a valid image folder.',
     'Välj en giltig bildmapp och en målmapp som är skild från källmappen.': 'Choose a valid image folder and a destination separate from the source folder.',
     'Videostabilisering': 'Video stabilization',
@@ -1059,20 +1059,20 @@ UI_TRANSLATIONS.update({
     'Mild': 'Mild',
     'Normal': 'Normal',
     'Stark': 'Strong',
-    'Stabilisera videomapp': 'Stabilize video folder',
+    '🎥 Stabilisera videomapp': '🎥 Stabilize video folder',
     'Ljudförbättring': 'Audio enhancement',
     'Normalisera ljudstyrka med EBU-loudness-normalisering eller minska konstant bakgrundsbrus. Ljud bearbetas med FFmpeg; videospåret kopieras utan omkodning.': 'Normalize loudness with EBU loudness normalization or reduce steady background noise. Audio is processed with FFmpeg; video streams are copied without re-encoding.',
     'Välj mapp med ljud eller video…': 'Choose an audio or video folder…',
     'Spara bearbetade kopior i': 'Save processed copies to',
     'Brusreducering kan påverka ljudkvaliteten. Resultat sparas som nya filer; originalen lämnas orörda.': 'Noise reduction can affect audio quality. Results are saved as new files; originals are left untouched.',
-    'Normalisera ljudvolym': 'Normalize audio loudness',
+    '🔊 Normalisera ljudvolym': '🔊 Normalize audio loudness',
     'Minska bakgrundsbrus': 'Reduce background noise',
     'Välj en giltig ljud- eller videomapp.': 'Choose a valid audio or video folder.',
     'Välj en giltig källmapp och en separat målmapp.': 'Choose a valid source folder and a separate destination folder.',
     'Codec-rapport': 'Codec report',
     'Läs teknisk information om ljud- och videofiler med ffprobe (installeras tillsammans med FFmpeg).': 'Inspect technical details of audio and video files using ffprobe (installed with FFmpeg).',
     'Välj mapp med mediafiler…': 'Choose a folder with media files…',
-    'Skapa codec-rapport': 'Create codec report',
+    '📊 Skapa codec-rapport': '📊 Create codec report',
     'Exportera CSV…': 'Export CSV…',
     'Exportera codec-rapport': 'Export codec report',
     'Export klar': 'Export complete',
@@ -1172,7 +1172,7 @@ UI_TRANSLATIONS.update({
     '💾 Spara som…': '💾 Save as…',
     'Spara bildspel': 'Save slideshow',
     'Kräver FFmpeg. HEIC/HEIF/AVIF kräver pillow-heif. Musik loopas vid behov och kapas till videons längd. Exporten kodas som H.264/AAC; originalbilder och musik ändras inte.': 'Requires FFmpeg. HEIC/HEIF/AVIF need pillow-heif. Music loops if needed and is trimmed to the video duration. The export uses H.264/AAC; original images and music are unchanged.',
-    'Skapa bildspel': 'Create slideshow',
+    '🎞️ Skapa bildspel': '🎞️ Create slideshow',
     'Inga bilder valda': 'No images selected',
     'Välj minst en bild till bildspelet.': 'Choose at least one image for the slideshow.',
     'Ogiltig bildfil': 'Invalid image file',
@@ -1321,7 +1321,7 @@ UI_TRANSLATIONS.update({
  'Datum & EXIF': 'Date & EXIF',
  'Bildoptimering': 'Image optimization',
  'Videokonvertering': 'Video conversion',
- 'Skapa musik-DVD': 'Create music DVD',
+ '💿 Skapa musik-DVD': '💿 Create music DVD',
  'Aktivitetslogg': 'Activity log',
  'Webbbilder → JPEG': 'Web images → JPEG',
  'Blocket → JPEG': 'Blocket → JPEG',
@@ -1446,7 +1446,7 @@ UI_TRANSLATIONS.update({
  'Alla stödda bild- och videofiler i källmappen bearbetas. Originalen lämnas orörda; kopior sparas i arkivmappen.': 'All supported image and video files in the source folder are processed. Originals are untouched; copies are saved in the archive folder.',
  'Alla stödda bild- och videofiler i källmappen bearbetas. Rensade kopior sparas bredvid källfilerna med suffixet _rensad.': 'All supported image and video files in the source folder are processed. Cleaned copies are saved beside the sources with the _rensad suffix.',
  'Alla stödda bild- och videofiler i källmappen bearbetas. Original ersätts först när en tillfällig kopia har rensats klart.': 'All supported image and video files in the source folder are processed. Originals are replaced only after a temporary copy has been cleaned successfully.',
- 'Bearbeta alla filer i mappen': 'Process all files in folder',
+ '⚙️ Bearbeta alla filer i mappen': '⚙️ Process all files in folder',
  'Rensa metadata och skriv över alla filer…': 'Clean metadata and overwrite all files…',
  'Filer och arkiv (originalen ändras aldrig)': 'Files and archive (originals are never changed)',
  'Källmapp': 'Source folder',
@@ -1507,7 +1507,7 @@ UI_TRANSLATIONS.update({
                                                                                                                                                                     'through '
                                                                                                                                                                     'lossless '
                                                                                                                                                                     'optimization.',
- 'Optimera bildmapp': 'Optimize image folder',
+ '⚡ Optimera bildmapp': '⚡ Optimize image folder',
  'Konvertera en mapp med videor till MP4/H.264 med FFmpeg. Källfilerna lämnas orörda.': 'Convert a folder of '
                                                                                         'videos to MP4/H.264 '
                                                                                         'with FFmpeg. Source '
@@ -1531,7 +1531,7 @@ UI_TRANSLATIONS.update({
                                                                                                                                'may '
                                                                                                                                'reduce '
                                                                                                                                'quality.',
- 'Konvertera videomapp till MP4': 'Convert video folder to MP4',
+ '🔄 Konvertera videomapp till MP4': '🔄 Convert video folder to MP4',
  'Samla musikfiler i en DVD-5-kompatibel mapp och skapa en ISO-avbildning om ett ISO-verktyg finns installerat.': 'Collect '
                                                                                                                   'music '
                                                                                                                   'files '
@@ -1647,7 +1647,7 @@ UI_TRANSLATIONS.update({
  'Hämta alla galleribilder som JPEG': 'Download all gallery images as JPEG',
  'Lägg till bilder…': 'Add images…',
  'Rensa listan': 'Clear list',
- 'Konvertera till JPEG': 'Convert to JPEG',
+ '🖼️ Konvertera till JPEG': '🖼️ Convert to JPEG',
  'Avbryt konvertering': 'Cancel conversion',
  'Konvertera AVIF, HEIC och HEIF till JPEG. Originalfilerna sparas oförändrade.': 'Convert AVIF, HEIC and '
                                                                                   'HEIF to JPEG. Original '
@@ -1870,7 +1870,7 @@ UI_TRANSLATIONS.update({
     'Välj skanningsmapp': 'Choose scan folder',
     'Likhetströskel (0–20; lägre = striktare)': 'Similarity threshold (0–20; lower is stricter)',
     'Välj minst en fil att behålla i varje grupp. Omarkerade kopior flyttas till appens karantänmapp; inget raderas permanent.': 'Choose at least one file to keep in each group. Unchecked copies are moved to the app quarantine; nothing is permanently deleted.',
- 'Skanna efter dubbletter': 'Scan for duplicates',
+ '🔍 Skanna efter dubbletter': '🔍 Scan for duplicates',
  'Skanna datorn efter bild-/videodubbletter…': 'Scan the computer for image/video duplicates…',
  'INFO: Letar efter bild- och videofiler i de valda diskarna…': 'INFO: Searching selected drives for image and video files…',
  'Skanna alla tillgängliga diskar efter bild- och videofiler? Stora diskar kan ta lång tid. Skanningen läser filer men ändrar ingenting.': 'Scan all available drives for image and video files? Large drives may take a long time. Scanning reads files but changes nothing.',
@@ -1914,7 +1914,7 @@ UI_TRANSLATIONS.update({
     'Antagen profil för bilder utan inbäddad profil': 'Assumed profile for images without an embedded profile',
     'Konvertera till': 'Convert to',
     'Bilder sparas i samma filformat. Qt måste ha stöd för bildformatet. Konvertering kan ändra pixelvärden och metadata kanske inte följer med; originalfilerna behålls.': 'Images are saved in the same file format. Qt must support that image format. Pixel values may change and metadata might not be retained; originals are preserved.',
-    'Konvertera färgprofiler': 'Convert color profiles',
+    '🎨 Konvertera färgprofiler': '🎨 Convert color profiles',
     'Välj en giltig bildmapp.': 'Choose a valid image folder.',
     'Välj en giltig bildmapp och en målmapp som är skild från källmappen.': 'Choose a valid image folder and a destination separate from the source folder.',
     'Videostabilisering': 'Video stabilization',
@@ -1923,20 +1923,20 @@ UI_TRANSLATIONS.update({
     'Mild': 'Mild',
     'Normal': 'Normal',
     'Stark': 'Strong',
-    'Stabilisera videomapp': 'Stabilize video folder',
+    '🎥 Stabilisera videomapp': '🎥 Stabilize video folder',
     'Ljudförbättring': 'Audio enhancement',
     'Normalisera ljudstyrka med EBU-loudness-normalisering eller minska konstant bakgrundsbrus. Ljud bearbetas med FFmpeg; videospåret kopieras utan omkodning.': 'Normalize loudness with EBU loudness normalization or reduce steady background noise. Audio is processed with FFmpeg; video streams are copied without re-encoding.',
     'Välj mapp med ljud eller video…': 'Choose an audio or video folder…',
     'Spara bearbetade kopior i': 'Save processed copies to',
     'Brusreducering kan påverka ljudkvaliteten. Resultat sparas som nya filer; originalen lämnas orörda.': 'Noise reduction can affect audio quality. Results are saved as new files; originals are left untouched.',
-    'Normalisera ljudvolym': 'Normalize audio loudness',
+    '🔊 Normalisera ljudvolym': '🔊 Normalize audio loudness',
     'Minska bakgrundsbrus': 'Reduce background noise',
     'Välj en giltig ljud- eller videomapp.': 'Choose a valid audio or video folder.',
     'Välj en giltig källmapp och en separat målmapp.': 'Choose a valid source folder and a separate destination folder.',
     'Codec-rapport': 'Codec report',
     'Läs teknisk information om ljud- och videofiler med ffprobe (installeras tillsammans med FFmpeg).': 'Inspect technical details of audio and video files using ffprobe (installed with FFmpeg).',
     'Välj mapp med mediafiler…': 'Choose a folder with media files…',
-    'Skapa codec-rapport': 'Create codec report',
+    '📊 Skapa codec-rapport': '📊 Create codec report',
     'Exportera CSV…': 'Export CSV…',
     'Exportera codec-rapport': 'Export codec report',
     'Export klar': 'Export complete',
@@ -2036,7 +2036,7 @@ UI_TRANSLATIONS.update({
     '💾 Spara som…': '💾 Save as…',
     'Spara bildspel': 'Save slideshow',
     'Kräver FFmpeg. HEIC/HEIF/AVIF kräver pillow-heif. Musik loopas vid behov och kapas till videons längd. Exporten kodas som H.264/AAC; originalbilder och musik ändras inte.': 'Requires FFmpeg. HEIC/HEIF/AVIF need pillow-heif. Music loops if needed and is trimmed to the video duration. The export uses H.264/AAC; original images and music are unchanged.',
-    'Skapa bildspel': 'Create slideshow',
+    '🎞️ Skapa bildspel': '🎞️ Create slideshow',
     'Inga bilder valda': 'No images selected',
     'Välj minst en bild till bildspelet.': 'Choose at least one image for the slideshow.',
     'Ogiltig bildfil': 'Invalid image file',
@@ -2259,15 +2259,20 @@ def enhance(source, target, factor, sharp, color, clarity, keep_exif, quality=95
             white_background.paste(rgb, mask=alpha)
             rgb = white_background
         if clarity:
-            rgb = ImageOps.autocontrast(rgb, cutoff=min(.8, clarity / 180))
-            rgb = ImageEnhance.Contrast(rgb).enhance(1 + clarity / 500)
+            # Gentle autocontrast: a high cutoff washes out shadows and adds
+            # haze, so keep it low and lean on contrast + sharpening instead.
+            rgb = ImageOps.autocontrast(rgb, cutoff=min(.35, clarity / 250))
+            rgb = ImageEnhance.Contrast(rgb).enhance(1 + clarity / 450)
         if color:
             rgb = ImageEnhance.Color(rgb).enhance(1 + color / 250)
         rgb = rgb.resize((w * factor, h * factor), Image.Resampling.LANCZOS)
         if sharp:
+            # Two-pass unsharp mask on luminance: a broad radius for local
+            # contrast plus a fine radius for edge detail. Low thresholds
+            # keep fine detail crisp instead of hazy.
             y, cb, cr = rgb.convert('YCbCr').split()
-            y = y.filter(ImageFilter.UnsharpMask(radius=1.8, percent=int(sharp * 1.25), threshold=4))
-            y = y.filter(ImageFilter.UnsharpMask(radius=.65, percent=int(sharp * 1.75), threshold=2))
+            y = y.filter(ImageFilter.UnsharpMask(radius=2.4, percent=int(sharp * 1.8), threshold=1))
+            y = y.filter(ImageFilter.UnsharpMask(radius=0.8, percent=int(sharp * 2.6), threshold=1))
             rgb = Image.merge('YCbCr', (y, cb, cr)).convert('RGB')
         if alpha is not None and target.suffix.lower() != '.jpg':
             rgb.putalpha(alpha.resize(rgb.size, Image.Resampling.LANCZOS))
@@ -4719,7 +4724,15 @@ class Window(QtWidgets.QMainWindow):
         LOGGER.addHandler(self.qt_log_handler)
         self.brand = brand_icon()
         self.setWindowIcon(self.brand)
-        self.resize(1100, 850)
+        # Default size adapts to the screen so the window fits small displays
+        # and uses large ones well; saved geometry still wins afterwards.
+        screen = QtWidgets.QApplication.primaryScreen()
+        if screen is not None:
+            available = screen.availableGeometry()
+            self.resize(min(1180, max(760, int(available.width() * 0.86))),
+                        min(880, max(560, int(available.height() * 0.86))))
+        else:
+            self.resize(1100, 850)
         self.setMinimumSize(760, 560)
         self.worker = None
         self.dark = False
@@ -5020,7 +5033,7 @@ class Window(QtWidgets.QMainWindow):
         self.estimate_button.clicked.connect(self.estimate_batch)
         self.estimate_button.setAccessibleName(self.translated('Beräkna tid och diskutrymme'))
         buttons.addWidget(self.estimate_button)
-        self.go = QtWidgets.QPushButton('Bearbeta alla filer i mappen')
+        self.go = QtWidgets.QPushButton('⚙️ Bearbeta alla filer i mappen')
         self.go.clicked.connect(lambda: self.start())
         buttons.addWidget(self.go)
         self.stop = QtWidgets.QPushButton('⏹ Avbryt')
@@ -5575,7 +5588,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(self.image_strip)
         layout.addWidget(QtWidgets.QLabel('OBS: För JPG bevaras den ursprungliga bildströmmen, så storleken minskar främst genom att metadata rensas. PNG/TIFF kan bli mindre genom förlustfri optimering.'))
         row = QtWidgets.QHBoxLayout()
-        self.image_go = QtWidgets.QPushButton('Optimera bildmapp')
+        self.image_go = QtWidgets.QPushButton('⚡ Optimera bildmapp')
         self.image_go.clicked.connect(self.start_image_optimization)
         row.addWidget(self.image_go)
         self.image_stop = QtWidgets.QPushButton('⏹ Avbryt')
@@ -5617,7 +5630,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addLayout(options)
         layout.addWidget(QtWidgets.QLabel('Välj minst en fil att behålla i varje grupp. Omarkerade kopior flyttas till appens karantänmapp; inget raderas permanent.'))
         row = QtWidgets.QHBoxLayout()
-        self.duplicate_scan_button = QtWidgets.QPushButton('Skanna efter dubbletter')
+        self.duplicate_scan_button = QtWidgets.QPushButton('🔍 Skanna efter dubbletter')
         self.duplicate_scan_button.clicked.connect(lambda: self.start_duplicate_scan())
         row.addWidget(self.duplicate_scan_button)
         self.duplicate_computer_scan_button = QtWidgets.QPushButton('Skanna datorn efter bild-/videodubbletter…')
@@ -6053,7 +6066,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addLayout(options)
         layout.addWidget(QtWidgets.QLabel('Kräver FFmpeg i PATH. Kodning använder H.264/AAC och kan minska filstorlek, men är en omkodning med viss kvalitetsförlust.'))
         row = QtWidgets.QHBoxLayout()
-        self.video_go = QtWidgets.QPushButton('Konvertera videomapp till MP4')
+        self.video_go = QtWidgets.QPushButton('🔄 Konvertera videomapp till MP4')
         self.video_go.clicked.connect(self.start_video_conversion)
         row.addWidget(self.video_go)
         self.video_stop = QtWidgets.QPushButton('⏹ Avbryt')
@@ -6153,7 +6166,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(QtWidgets.QLabel('Kräver FFmpeg. HEIC/HEIF/AVIF kräver pillow-heif. Musik loopas vid behov och kapas till videons längd. Exporten kodas som H.264/AAC; originalbilder och musik ändras inte.'))
 
         action_row = QtWidgets.QHBoxLayout()
-        self.slideshow_go = QtWidgets.QPushButton('Skapa bildspel')
+        self.slideshow_go = QtWidgets.QPushButton('🎞️ Skapa bildspel')
         self.slideshow_go.clicked.connect(self.start_slideshow)
         action_row.addWidget(self.slideshow_go)
         self.slideshow_cancel_button = QtWidgets.QPushButton('⏹ Avbryt')
@@ -6434,7 +6447,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addLayout(options)
         layout.addWidget(QtWidgets.QLabel('Bilder sparas i samma filformat. Qt måste ha stöd för bildformatet. Konvertering kan ändra pixelvärden och metadata kanske inte följer med; originalfilerna behålls.'))
         buttons = QtWidgets.QHBoxLayout()
-        self.color_go = QtWidgets.QPushButton('Konvertera färgprofiler')
+        self.color_go = QtWidgets.QPushButton('🎨 Konvertera färgprofiler')
         self.color_go.clicked.connect(self.start_color_conversion)
         buttons.addWidget(self.color_go)
         self.color_cancel = QtWidgets.QPushButton('⏹ Avbryt')
@@ -6513,7 +6526,7 @@ class Window(QtWidgets.QMainWindow):
         options.addStretch()
         layout.addLayout(options)
         row = QtWidgets.QHBoxLayout()
-        self.stabilize_go = QtWidgets.QPushButton('Stabilisera videomapp')
+        self.stabilize_go = QtWidgets.QPushButton('🎥 Stabilisera videomapp')
         self.stabilize_go.clicked.connect(self.start_video_stabilization)
         row.addWidget(self.stabilize_go)
         self.stabilize_cancel = QtWidgets.QPushButton('⏹ Avbryt')
@@ -6585,7 +6598,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(self.cleanup_recursive)
         layout.addWidget(QtWidgets.QLabel('Brusreducering kan påverka ljudkvaliteten. Resultat sparas som nya filer; originalen lämnas orörda.'))
         row = QtWidgets.QHBoxLayout()
-        self.cleanup_normalize = QtWidgets.QPushButton('Normalisera ljudvolym')
+        self.cleanup_normalize = QtWidgets.QPushButton('🔊 Normalisera ljudvolym')
         self.cleanup_normalize.clicked.connect(lambda: self.start_audio_cleanup('normalize'))
         row.addWidget(self.cleanup_normalize)
         self.cleanup_denoise = QtWidgets.QPushButton('Minska bakgrundsbrus')
@@ -6655,7 +6668,7 @@ class Window(QtWidgets.QMainWindow):
         self.codec_recursive.setChecked(True)
         layout.addWidget(self.codec_recursive)
         row = QtWidgets.QHBoxLayout()
-        self.codec_scan = QtWidgets.QPushButton('Skapa codec-rapport')
+        self.codec_scan = QtWidgets.QPushButton('📊 Skapa codec-rapport')
         self.codec_scan.clicked.connect(self.start_codec_report)
         row.addWidget(self.codec_scan)
         self.codec_cancel = QtWidgets.QPushButton('⏹ Avbryt')
@@ -6772,7 +6785,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(self.music_recursive)
         layout.addWidget(QtWidgets.QLabel('Stödjer MP3, WAV, FLAC, M4A, AAC, OGG, OPUS, WMA och AIFF. DVD-5 rymmer cirka 4,7 GB.'))
         row = QtWidgets.QHBoxLayout()
-        self.music_go = QtWidgets.QPushButton('Skapa musik-DVD')
+        self.music_go = QtWidgets.QPushButton('💿 Skapa musik-DVD')
         self.music_go.clicked.connect(self.start_music_dvd)
         row.addWidget(self.music_go)
         self.music_stop = QtWidgets.QPushButton('⏹ Avbryt')
@@ -8116,7 +8129,7 @@ class Window(QtWidgets.QMainWindow):
         layout.addWidget(QtWidgets.QLabel('Genomskinliga områden får vit bakgrund. Samma filnamn får automatiskt nytt löpnummer.'))
         row = QtWidgets.QHBoxLayout()
         layout.addLayout(row)
-        self.convert_button = QtWidgets.QPushButton('Konvertera till JPEG')
+        self.convert_button = QtWidgets.QPushButton('🖼️ Konvertera till JPEG')
         self.convert_button.clicked.connect(self.start_conversion)
         row.addWidget(self.convert_button)
         self.cancel_conversion_button = QtWidgets.QPushButton('Avbryt konvertering')
