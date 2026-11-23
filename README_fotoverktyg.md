@@ -32,6 +32,12 @@ Appen öppnas i **Visa → Enkelt läge** med vanliga verktyg synliga; stäng av
 
 **Bildspel → MP4:** välj **Välj bilder…** för att lägga till foton och dra sedan raderna till önskad ordning. Ställ in visningstid och övergång (ingen, tona, svep eller skjut), välj Full HD/HD/kvadrat och lägg eventuellt till en musikfil. Välj en MP4-utdatafil under appmappen och klicka **Skapa bildspel**. Musik loopas om den är kortare än videon. Bilderna skalas så att hela bilden ryms; svarta kanter fyller ut bildformat som inte matchar videon. FFmpeg krävs; HEIC/HEIF/AVIF kräver även `pillow-heif`. Originalbilder och musikfil lämnas orörda.
 
+**Tangentbordsgenvägar:** alla genvägar listas under **Hjälp → Tangentbordsgenvägar…** (Ctrl+?). Dialogen visar genväg och åtgärd i en tabell.
+
+**Vattenstämpel:** på **Bildförbättring** kan du kryssa i **Lägg till vattenstämpel** och ställa in text, placering (nere höger/vänster, upp höger/vänster, mitt) och opacitet. Vattenstämpeln läggs till på förbättrade bilder i arkivläget.
+
+**Före/efter-jämförelse:** i **Bildbibliotek** visar **Före/efter…** originalet och en förbättrad version (med standardinställningarna för bildförbättring) sida vid sida.
+
 **Bildbibliotek:** välj **Öppna bildmapp…** och bläddra bland miniatyrerna i mappen. Välj en bild för stor förhandsvisning, använd **Föregående/Nästa** eller öppna **Helskärm** (piltangenter, Esc för att stänga), och klicka **Skriv ut…** för att välja skrivare och utskriftsinställningar. **Beskär/redigera…**, **Skärpa upp…** och **Minska filstorlek…** erbjuder vart och ett valet att spara en ny kopia eller skriva över originalet; överskrivning kräver en separat bekräftelse. Bearbetningen sker till en temporär fil, och en källfil som ändrats under bearbetningen skrivs inte över. Komprimering skapar JPEG eller WebP; EXIF bevaras endast om du markerar alternativet (det kan innehålla platsdata). Överskrivning vid komprimering erbjuds endast om valt format matchar originalets JPEG/WebP-format, och görs endast om resultatet blir mindre. **Flytta till papperskorgen…** kräver bekräftelse och flyttar filen till systempapperskorgen så att den kan återställas. Markera **Inkludera undermappar** vid behov. Mappen läses på plats. SVG visas med QtSvg; HEIC/HEIF/AVIF kräver `pillow-heif`. Välj **Verktyg → Registrera MediaForge som bildvisare** för att lägga till appen som ett **Öppna med**-alternativ utan att ändra standardappen.
 
 1. Välj källmapp och resultatmapp. Dra och släpp en mapp på fältet om du vill. **Inkludera undermappar** är på som standard.

@@ -384,6 +384,15 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Beräknad återstående tid: {duration}': 'Estimated time remaining: {duration}',
  'Jobbet är klart': 'Job complete',
  'Tangentbordsgenvägar': 'Keyboard shortcuts',
+ 'Tangentbordsgenvägar…': 'Keyboard shortcuts…',
+ 'Dessa genvägar fungerar i hela appen.': 'These shortcuts work throughout the app.',
+ 'Genväg': 'Shortcut',
+ 'Åtgärd': 'Action',
+ 'Välj arkivmapp': 'Choose archive folder',
+ 'Starta mappjobbet': 'Start the folder job',
+ 'Växla flik': 'Switch tab',
+ 'Välj en av de första nio synliga flikarna': 'Select one of the first nine visible tabs',
+ 'Visa denna lista': 'Show this list',
  '{modifier}+O väljer källmapp; {modifier}+Shift+O väljer arkivmapp; {modifier}+Enter startar mappjobbet; F1 öppnar hjälp; {modifier}+Q avslutar. Ctrl+Tab och Ctrl+Shift+Tab växlar flik. {modifier}+1–9 väljer en av de första nio synliga flikarna.': '{modifier}+O selects the source folder; {modifier}+Shift+O selects the archive folder; {modifier}+Enter starts the folder job; F1 opens help; {modifier}+Q exits. Ctrl+Tab and Ctrl+Shift+Tab switch tabs. {modifier}+1–9 selects one of the first nine visible tabs.',
  'Välj flik': 'Select tab',
  'Flik {index}': 'Tab {index}',
@@ -559,6 +568,20 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Klarhet/kontrast': 'Clarity/contrast',
  'Behåll befintlig EXIF vid export (kan innehålla GPS/programnamn)': 'Keep existing EXIF on export (may '
                                                                      'include GPS/software name)',
+ 'Lägg till vattenstämpel': 'Add watermark',
+ 'Före/efter…': 'Before/after…',
+ 'Före/efter-jämförelse': 'Before/after comparison',
+ 'Före (original)': 'Before (original)',
+ 'Efter (förbättrad)': 'After (enhanced)',
+ 'Kunde inte skapa förbättrad version': 'Could not create enhanced version',
+ 'Text': 'Text',
+ 'Placering': 'Position',
+ 'Nere höger': 'Bottom right',
+ 'Nere vänster': 'Bottom left',
+ 'Upp höger': 'Top right',
+ 'Upp vänster': 'Top left',
+ 'Mitt': 'Center',
+ 'Opacitet': 'Opacity',
  'Sätt samma datum på alla filer': 'Set the same date for all files',
  'Flytta varje fils befintliga datum': 'Shift each file’s existing date',
  'Ändra EXIF/video-datum': 'Change EXIF/video date',
@@ -1424,6 +1447,20 @@ UI_TRANSLATIONS.update({
  'Klarhet/kontrast': 'Clarity/contrast',
  'Behåll befintlig EXIF vid export (kan innehålla GPS/programnamn)': 'Keep existing EXIF on export (may '
                                                                      'include GPS/software name)',
+ 'Lägg till vattenstämpel': 'Add watermark',
+ 'Före/efter…': 'Before/after…',
+ 'Före/efter-jämförelse': 'Before/after comparison',
+ 'Före (original)': 'Before (original)',
+ 'Efter (förbättrad)': 'After (enhanced)',
+ 'Kunde inte skapa förbättrad version': 'Could not create enhanced version',
+ 'Text': 'Text',
+ 'Placering': 'Position',
+ 'Nere höger': 'Bottom right',
+ 'Nere vänster': 'Bottom left',
+ 'Upp höger': 'Top right',
+ 'Upp vänster': 'Top left',
+ 'Mitt': 'Center',
+ 'Opacitet': 'Opacity',
  'Sätt samma datum på alla filer': 'Set the same date for all files',
  'Flytta varje fils befintliga datum': 'Shift each file’s existing date',
  'Ändra EXIF/video-datum': 'Change EXIF/video date',
@@ -2242,7 +2279,7 @@ def folder_pipeline_relative_path(source, root, preserve_structure, pipeline):
     return relative
 
 
-def enhance(source, target, factor, sharp, color, clarity, keep_exif, quality=95):
+def enhance(source, target, factor, sharp, color, clarity, keep_exif, quality=95, watermark=False, watermark_text='', watermark_position=0, watermark_opacity=55):
     with Image.open(source) as original:
         image = ImageOps.exif_transpose(original)
         w, h = image.size
@@ -2274,6 +2311,30 @@ def enhance(source, target, factor, sharp, color, clarity, keep_exif, quality=95
             y = y.filter(ImageFilter.UnsharpMask(radius=2.4, percent=int(sharp * 1.8), threshold=1))
             y = y.filter(ImageFilter.UnsharpMask(radius=0.8, percent=int(sharp * 2.6), threshold=1))
             rgb = Image.merge('YCbCr', (y, cb, cr)).convert('RGB')
+        if watermark and watermark_text.strip():
+            from PIL import ImageDraw, ImageFont
+            overlay = Image.new('RGBA', rgb.size, (0, 0, 0, 0))
+            draw = ImageDraw.Draw(overlay)
+            font_size = max(12, min(rgb.size) // 28)
+            try:
+                font = ImageFont.truetype('DejaVuSans.ttf', font_size)
+            except Exception:
+                font = ImageFont.load_default()
+            text = watermark_text.strip()
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            margin = max(10, min(rgb.size) // 40)
+            positions = {
+                0: (rgb.size[0] - text_w - margin, rgb.size[1] - text_h - margin),
+                1: (margin, rgb.size[1] - text_h - margin),
+                2: (rgb.size[0] - text_w - margin, margin),
+                3: (margin, margin),
+                4: ((rgb.size[0] - text_w) // 2, (rgb.size[1] - text_h) // 2),
+            }
+            x, y = positions.get(watermark_position, positions[0])
+            alpha_value = int(255 * max(0, min(100, watermark_opacity)) / 100)
+            draw.text((x - bbox[0], y - bbox[1]), text, font=font, fill=(255, 255, 255, alpha_value))
+            rgb = Image.alpha_composite(rgb.convert('RGBA'), overlay).convert('RGB')
         if alpha is not None and target.suffix.lower() != '.jpg':
             rgb.putalpha(alpha.resize(rgb.size, Image.Resampling.LANCZOS))
         kwargs = {}
@@ -2343,7 +2404,7 @@ class Worker(QtCore.QThread):
                         if target.exists() and not s['overwrite']:
                             self.message.emit(f'HOPPADES ÖVER: {target.name} finns redan')
                             continue
-                        enhance(source, target, s['factor'], s['sharp'], s['color'], s['clarity'], s['keep_exif'])
+                        enhance(source, target, s['factor'], s['sharp'], s['color'], s['clarity'], s['keep_exif'], watermark=s.get('watermark', False), watermark_text=s.get('watermark_text', ''), watermark_position=s.get('watermark_position', 0), watermark_opacity=s.get('watermark_opacity', 55))
                     else:
                         shutil.copy2(source, target)
                 errors = []
@@ -4912,6 +4973,24 @@ class Window(QtWidgets.QMainWindow):
             self.sliders[label] = slider
         self.keep_exif = QtWidgets.QCheckBox('Behåll befintlig EXIF vid export (kan innehålla GPS/programnamn)')
         iv.addWidget(self.keep_exif)
+        self.watermark_box = QtWidgets.QCheckBox('Lägg till vattenstämpel')
+        iv.addWidget(self.watermark_box)
+        watermark_row = QtWidgets.QHBoxLayout()
+        watermark_row.addWidget(QtWidgets.QLabel('Text'))
+        self.watermark_text = QtWidgets.QLineEdit('© MediaForge')
+        watermark_row.addWidget(self.watermark_text)
+        iv.addLayout(watermark_row)
+        watermark_row2 = QtWidgets.QHBoxLayout()
+        watermark_row2.addWidget(QtWidgets.QLabel('Placering'))
+        self.watermark_position = QtWidgets.QComboBox()
+        self.watermark_position.addItems(['Nere höger', 'Nere vänster', 'Upp höger', 'Upp vänster', 'Mitt'])
+        watermark_row2.addWidget(self.watermark_position)
+        watermark_row2.addWidget(QtWidgets.QLabel('Opacitet'))
+        self.watermark_opacity = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.watermark_opacity.setRange(5, 100)
+        self.watermark_opacity.setValue(55)
+        watermark_row2.addWidget(self.watermark_opacity)
+        iv.addLayout(watermark_row2)
         self._applying_image_preset = False
         self.enhance_box.toggled.connect(self.mark_image_preset_manual)
         self.factor.currentIndexChanged.connect(self.mark_image_preset_manual)
@@ -5259,6 +5338,10 @@ class Window(QtWidgets.QMainWindow):
         self.tutorial_action = QtGui.QAction('', self)
         self.tutorial_action.triggered.connect(self.show_guided_tutorial)
         self.help_menu.addAction(self.tutorial_action)
+        self.shortcuts_action = QtGui.QAction('', self)
+        self.shortcuts_action.setShortcut(QtGui.QKeySequence('Ctrl+?'))
+        self.shortcuts_action.triggered.connect(self.show_shortcuts_dialog)
+        self.help_menu.addAction(self.shortcuts_action)
         self.release_update_action = QtGui.QAction('', self)
         self.release_update_action.triggered.connect(self.check_release_update)
         self.help_menu.addAction(self.release_update_action)
@@ -5315,6 +5398,7 @@ class Window(QtWidgets.QMainWindow):
         self.help_menu.setTitle(self.translated('Hjälp'))
         self.support_action.setText(self.translated('Hjälp och support'))
         self.tutorial_action.setText(self.translated('Interaktiv guide…'))
+        self.shortcuts_action.setText(self.translated('Tangentbordsgenvägar…'))
         self.error_log_action.setText(self.translated('Öppna fellogg'))
         self.refresh_tab_visibility_menu()
 
@@ -8249,6 +8333,10 @@ class Window(QtWidgets.QMainWindow):
         self.library_print_button = QtWidgets.QPushButton('Skriv ut…')
         self.library_print_button.clicked.connect(self.print_library_image)
         controls.addWidget(self.library_print_button)
+        self.library_compare_button = QtWidgets.QPushButton('Före/efter…')
+        self.library_compare_button.setToolTip('Visa originalet och en förbättrad version sida vid sida.')
+        self.library_compare_button.clicked.connect(self.show_library_compare)
+        controls.addWidget(self.library_compare_button)
         preview_layout.addLayout(controls)
         edit_controls = QtWidgets.QHBoxLayout()
         self.library_crop_button = QtWidgets.QPushButton('Beskär/redigera…')
@@ -8707,6 +8795,53 @@ class Window(QtWidgets.QMainWindow):
         row = self.library_grid.currentRow()
         if 0 <= row < len(self.library_paths):
             FullScreenImageViewer(self.library_paths, row, self).exec()
+
+    def show_library_compare(self):
+        row = self.library_grid.currentRow()
+        if not 0 <= row < len(self.library_paths):
+            self.show_message('information', 'Välj en bild', 'Välj en bild först.')
+            return
+        path = self.library_paths[row]
+        try:
+            original_qimage, _ = image_file_to_qimage(path)
+        except Exception as exc:
+            self.show_message('warning', 'Fel', str(exc))
+            return
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(self.translated('Före/efter-jämförelse'))
+        dialog.setMinimumSize(900, 600)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        before_label = FitImageLabel()
+        before_label.setText(self.translated('Före (original)'))
+        before_label.setStyleSheet('background: #0b1220; border-radius: 8px;')
+        before_label.set_image(original_qimage)
+        splitter.addWidget(before_label)
+        after_label = FitImageLabel()
+        after_label.setText(self.translated('Efter (förbättrad)'))
+        after_label.setStyleSheet('background: #0b1220; border-radius: 8px;')
+        splitter.addWidget(after_label)
+        layout.addWidget(splitter, 1)
+        info = QtWidgets.QLabel(path.name)
+        info.setWordWrap(True)
+        layout.addWidget(info)
+        close_button = QtWidgets.QPushButton(self.translated('Stäng'))
+        close_button.clicked.connect(dialog.accept)
+        layout.addWidget(close_button)
+        dialog.exec()
+        # Generate enhanced version in background
+        try:
+            import tempfile
+            from PIL import Image
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                tmp_path = Path(tmp.name)
+            enhance(path, tmp_path, 1, 65, 55, 45, False)
+            enhanced_qimage, _ = image_file_to_qimage(tmp_path)
+            after_label.set_image(enhanced_qimage)
+            tmp_path.unlink(missing_ok=True)
+        except Exception as exc:
+            after_label.setText(f'{self.translated("Kunde inte skapa förbättrad version")}: {exc}')
+            LOGGER.warning('Compare dialog failed to enhance image: %s', exc)
 
     def print_library_image(self):
         row = self.library_grid.currentRow()
@@ -9181,6 +9316,50 @@ class Window(QtWidgets.QMainWindow):
         wizard.setButtonText(QtWidgets.QWizard.WizardButton.FinishButton, self.translated('Stäng guiden'))
         wizard.exec()
 
+    def show_shortcuts_dialog(self):
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(self.translated('Tangentbordsgenvägar'))
+        dialog.setWindowIcon(self.brand)
+        dialog.setMinimumSize(480, 380)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        layout.setContentsMargins(18, 18, 18, 16)
+        heading = QtWidgets.QLabel(self.translated('Tangentbordsgenvägar'))
+        heading.setStyleSheet('font-size:17px;font-weight:700')
+        layout.addWidget(heading)
+        intro = QtWidgets.QLabel(self.translated('Dessa genvägar fungerar i hela appen.'))
+        intro.setStyleSheet('color:#627487')
+        layout.addWidget(intro)
+        table = QtWidgets.QTableWidget(0, 2)
+        table.setHorizontalHeaderLabels([self.translated('Genväg'), self.translated('Åtgärd')])
+        table.horizontalHeader().setStretchLastSection(True)
+        table.verticalHeader().setVisible(False)
+        table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        mod = '⌘' if sys.platform == 'darwin' else 'Ctrl'
+        rows = [
+            (f'{mod}+O', self.translated('Välj källmapp')),
+            (f'{mod}+Shift+O', self.translated('Välj arkivmapp')),
+            (f'{mod}+Enter', self.translated('Starta mappjobbet')),
+            (f'{mod}+Q', self.translated('Avsluta MediaForge')),
+            ('Ctrl+Tab / Ctrl+Shift+Tab', self.translated('Växla flik')),
+            (f'{mod}+1–9', self.translated('Välj en av de första nio synliga flikarna')),
+            ('F1', self.translated('Hjälp och support')),
+            ('Ctrl+?', self.translated('Visa denna lista')),
+        ]
+        table.setRowCount(len(rows))
+        for index, (shortcut, action) in enumerate(rows):
+            key_item = QtWidgets.QTableWidgetItem(shortcut)
+            key_item.setFont(QtGui.QFont('Segoe UI', 10, QtGui.QFont.Weight.Bold))
+            table.setItem(index, 0, key_item)
+            table.setItem(index, 1, QtWidgets.QTableWidgetItem(action))
+        table.resizeColumnsToContents()
+        layout.addWidget(table, 1)
+        close_button = QtWidgets.QPushButton(self.translated('Stäng'))
+        close_button.clicked.connect(dialog.accept)
+        layout.addWidget(close_button, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+        dialog.exec()
+        LOGGER.info('Keyboard shortcuts dialog opened')
+
     def open_support_page(self):
         dialog = QtWidgets.QDialog(self)
         dialog.setWindowTitle(self.translated('Hjälp och support'))
@@ -9517,7 +9696,7 @@ class Window(QtWidgets.QMainWindow):
         if self.sign.currentIndex():
             delta = -delta
         output_location = archive if mode == 'archive' else root
-        settings = dict(root=root, archive=output_location, output_mode=mode, folder_pipeline=self.folder_pipeline.currentData(), structure=self.structure.isChecked(), overwrite=self.overwrite.isChecked(), enhance=self.enhance_box.isChecked() and mode == 'archive', factor=self.factor.currentIndex()+1, sharp=self.sliders['Skärpa'].value(), color=self.sliders['Färgstyrka'].value(), clarity=self.sliders['Klarhet/kontrast'].value(), keep_exif=self.keep_exif.isChecked(), offset=self.offset.isChecked(), delta=delta, date=self.date_edit.dateTime().toPyDateTime(), metadata=self.meta.isChecked(), filesystem=self.fs.isChecked(), strip=self.strip.isChecked(), remove_all=self.remove_all.isChecked())
+        settings = dict(root=root, archive=output_location, output_mode=mode, folder_pipeline=self.folder_pipeline.currentData(), structure=self.structure.isChecked(), overwrite=self.overwrite.isChecked(), enhance=self.enhance_box.isChecked() and mode == 'archive', factor=self.factor.currentIndex()+1, sharp=self.sliders['Skärpa'].value(), color=self.sliders['Färgstyrka'].value(), clarity=self.sliders['Klarhet/kontrast'].value(), keep_exif=self.keep_exif.isChecked(), watermark=self.watermark_box.isChecked(), watermark_text=self.watermark_text.text(), watermark_position=self.watermark_position.currentIndex(), watermark_opacity=self.watermark_opacity.value(), offset=self.offset.isChecked(), delta=delta, date=self.date_edit.dateTime().toPyDateTime(), metadata=self.meta.isChecked(), filesystem=self.fs.isChecked(), strip=self.strip.isChecked(), remove_all=self.remove_all.isChecked())
         self.worker = Worker(items, settings)
         self.worker.message.connect(self.append_batch_message)
         self.worker.message.connect(self.record)
