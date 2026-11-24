@@ -174,3 +174,5 @@ I huvudfönstrets mappjobb visar **Beräkna tid och diskutrymme** antal filer, t
 ## Säkerhet och begränsningar
 
 MediaForge lämnar källfiler orörda i kopierings- och exportflöden. Dubblettrensning flyttar omarkerade filer till en lokal karantän i stället för att radera dem permanent. Full metadatarensning kan ta bort GPS, kamerainställningar, färgprofiler och annan information. Testa alltid med kopior. Förlustfri optimering garanterar inte mindre filer. Videokonvertering är en omkodning med kvalitetsförlust. Musik-DVD-funktionen skapar en data-DVD, inte en DVD-Video.
+
+**Skärm och prestanda:** Qt hanterar operativsystemets DPI-skalning. Bildförhandsvisningar och miniatyrer renderas för skärmens pixeltäthet, och fönstret samt jämförelsedialogen anpassas till tillgängligt skärmutrymme. JPEG-miniatyrer kan avkodas i lägre upplösning för att minska minnesåtgång och arbete; vanliga exporter behåller full upplösning. Skärpan arbetar på ljushetskanalen med en finare radie för att minska färgkanter och breda glorior. Resultatet beror på original och valda reglage.

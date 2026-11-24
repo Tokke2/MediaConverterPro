@@ -572,6 +572,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Före/efter…': 'Before/after…',
  'Före/efter-jämförelse': 'Before/after comparison',
  'Före (original)': 'Before (original)',
+ 'Förhandsvisning med aktuell skärpa, färg och klarhet; export kan skilja sig i full storlek.': 'Preview using current sharpness, colour and clarity; the full-size export may differ.',
  'Efter (förbättrad)': 'After (enhanced)',
  'Kunde inte skapa förbättrad version': 'Could not create enhanced version',
  'Text': 'Text',
@@ -2302,14 +2303,13 @@ def enhance(source, target, factor, sharp, color, clarity, keep_exif, quality=95
             rgb = ImageEnhance.Contrast(rgb).enhance(1 + clarity / 450)
         if color:
             rgb = ImageEnhance.Color(rgb).enhance(1 + color / 250)
-        rgb = rgb.resize((w * factor, h * factor), Image.Resampling.LANCZOS)
+        if factor != 1:
+            rgb = rgb.resize((w * factor, h * factor), Image.Resampling.LANCZOS)
         if sharp:
-            # Two-pass unsharp mask on luminance: a broad radius for local
-            # contrast plus a fine radius for edge detail. Low thresholds
-            # keep fine detail crisp instead of hazy.
+            # Sharpen fine luminance detail without the broad halos and colour
+            # fringes that multiple aggressive unsharp passes can produce.
             y, cb, cr = rgb.convert('YCbCr').split()
-            y = y.filter(ImageFilter.UnsharpMask(radius=2.4, percent=int(sharp * 1.8), threshold=1))
-            y = y.filter(ImageFilter.UnsharpMask(radius=0.8, percent=int(sharp * 2.6), threshold=1))
+            y = y.filter(ImageFilter.UnsharpMask(radius=1.0, percent=int(sharp * 3), threshold=2))
             rgb = Image.merge('YCbCr', (y, cb, cr)).convert('RGB')
         if watermark and watermark_text.strip():
             from PIL import ImageDraw, ImageFont
@@ -2335,7 +2335,7 @@ def enhance(source, target, factor, sharp, color, clarity, keep_exif, quality=95
             alpha_value = int(255 * max(0, min(100, watermark_opacity)) / 100)
             draw.text((x - bbox[0], y - bbox[1]), text, font=font, fill=(255, 255, 255, alpha_value))
             rgb = Image.alpha_composite(rgb.convert('RGBA'), overlay).convert('RGB')
-        if alpha is not None and target.suffix.lower() != '.jpg':
+        if alpha is not None and target.suffix.lower() not in {'.jpg', '.jpeg'}:
             rgb.putalpha(alpha.resize(rgb.size, Image.Resampling.LANCZOS))
         kwargs = {}
         if target.suffix.lower() in {'.jpg', '.jpeg'}:
@@ -2518,11 +2518,16 @@ def image_file_to_qimage(path, maximum_size=None):
         painter.end()
         return qimage, dimensions
     with Image.open(path) as source:
+        orientation = source.getexif().get(274, 1)
+        dimensions = source.size[::-1] if orientation in (5, 6, 7, 8) else source.size
+        # JPEG decoders can downsample while decoding, avoiding a full-size
+        # image allocation. Preserve original oriented dimensions for metadata.
+        if maximum_size and source.format == 'JPEG':
+            draft_size = maximum_size[::-1] if orientation in (5, 6, 7, 8) else maximum_size
+            source.draft('RGB', draft_size)
         image = ImageOps.exif_transpose(source)
-        image.load()
-        dimensions = image.size
         if maximum_size:
-            image.thumbnail(maximum_size, Image.Resampling.LANCZOS)
+            image.thumbnail(maximum_size, Image.Resampling.LANCZOS, reducing_gap=3.0)
         has_alpha = 'A' in image.getbands() or image.info.get('transparency') is not None
         if has_alpha:
             image = image.convert('RGBA')
@@ -2892,7 +2897,13 @@ class FitImageLabel(QtWidgets.QLabel):
         if self.source_image is None or self.source_image.isNull():
             self.setPixmap(QtGui.QPixmap())
             return
-        pixmap = QtGui.QPixmap.fromImage(self.source_image).scaled(self.contentsRect().size(), QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
+        # Render at physical-pixel resolution on high-DPI displays, while
+        # reporting the pixmap size in Qt's logical pixels for the layout.
+        dpr = self.devicePixelRatioF()
+        size = self.contentsRect().size()
+        physical_size = QtCore.QSize(max(1, round(size.width() * dpr)), max(1, round(size.height() * dpr)))
+        pixmap = QtGui.QPixmap.fromImage(self.source_image).scaled(physical_size, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
+        pixmap.setDevicePixelRatio(dpr)
         self.setPixmap(pixmap)
 
     def resizeEvent(self, event):
@@ -4775,6 +4786,32 @@ class QtLogHandler(logging.Handler):
         self.bridge.entry.emit(self.format(record))
 
 
+class ComparePreviewWorker(QtCore.QThread):
+    original_ready = QtCore.pyqtSignal(QtGui.QImage)
+    enhanced_ready = QtCore.pyqtSignal(QtGui.QImage)
+    failed = QtCore.pyqtSignal(str)
+
+    def __init__(self, path, maximum_size, sharp, color, clarity, parent=None):
+        super().__init__(parent)
+        self.path, self.maximum_size = path, maximum_size
+        self.sharp, self.color, self.clarity = sharp, color, clarity
+
+    def run(self):
+        try:
+            original, _ = image_file_to_qimage(self.path, self.maximum_size)
+            self.original_ready.emit(original)
+            with tempfile.TemporaryDirectory(prefix='mediaforge-compare-') as folder:
+                source, output = Path(folder) / 'source.png', Path(folder) / 'preview.png'
+                if not original.save(str(source), 'PNG'):
+                    raise RuntimeError('Could not prepare image preview')
+                enhance(source, output, 1, self.sharp, self.color, self.clarity, False)
+                enhanced, _ = image_file_to_qimage(output, self.maximum_size)
+                self.enhanced_ready.emit(enhanced)
+        except Exception as exc:
+            LOGGER.warning('Compare preview failed: %s', exc)
+            self.failed.emit(str(exc))
+
+
 class Window(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -4794,7 +4831,12 @@ class Window(QtWidgets.QMainWindow):
                         min(880, max(560, int(available.height() * 0.86))))
         else:
             self.resize(1100, 850)
-        self.setMinimumSize(760, 560)
+        # Qt uses logical pixels and scales them for each screen automatically.
+        # Permit the window to fit smaller desktops; tab areas remain scrollable.
+        if screen is not None:
+            self.setMinimumSize(min(640, available.width()), min(480, available.height()))
+        else:
+            self.setMinimumSize(640, 480)
         self.worker = None
         self.dark = False
         central = QtWidgets.QWidget()
@@ -4815,6 +4857,7 @@ class Window(QtWidgets.QMainWindow):
         brand_text.addWidget(title)
         subtitle = QtWidgets.QLabel('Photo & Video Toolkit · Ett komplett arbetsflöde för foto och video – originalen förblir orörda.')
         subtitle.setObjectName('subtitle')
+        subtitle.setWordWrap(True)
         brand_text.addWidget(subtitle)
         brand_header.addLayout(brand_text, 1)
         main.addLayout(brand_header)
@@ -4851,10 +4894,10 @@ class Window(QtWidgets.QMainWindow):
             except (TypeError, RuntimeError):
                 LOGGER.warning('A sparad fönsterlayout kunde inte återställas')
         try:
-            screen = QtWidgets.QApplication.primaryScreen()
+            frame = self.frameGeometry()
+            screen = QtWidgets.QApplication.screenAt(frame.center()) or QtWidgets.QApplication.primaryScreen()
             if screen is not None:
                 available = screen.availableGeometry()
-                frame = self.frameGeometry()
                 width = min(frame.width(), available.width())
                 height = min(frame.height(), available.height())
                 x = min(max(frame.x(), available.x()), available.x() + available.width() - width)
@@ -6773,6 +6816,8 @@ class Window(QtWidgets.QMainWindow):
         headers = ('Fil', 'Container', 'Längd', 'Video-codec', 'Upplösning', 'Bildfrekvens', 'Video-bitrate', 'Ljud-codec', 'Ljudformat', 'Ljud-bitrate', 'Fel')
         self.codec_table = QtWidgets.QTableWidget(0, len(headers))
         self.codec_table.setHorizontalHeaderLabels([self.translated(header) for header in headers])
+        self.codec_table.setAlternatingRowColors(True)
+        self.codec_table.horizontalHeader().setMinimumSectionSize(95)
         self.codec_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.codec_table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.codec_table, 1)
@@ -8322,9 +8367,11 @@ class Window(QtWidgets.QMainWindow):
         preview_layout.addWidget(self.library_image_info)
         controls = QtWidgets.QHBoxLayout()
         self.library_previous_button = QtWidgets.QPushButton('Föregående')
+        self.library_previous_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ArrowBack))
         self.library_previous_button.clicked.connect(lambda: self.step_library_image(-1))
         controls.addWidget(self.library_previous_button)
         self.library_next_button = QtWidgets.QPushButton('Nästa')
+        self.library_next_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ArrowForward))
         self.library_next_button.clicked.connect(lambda: self.step_library_image(1))
         controls.addWidget(self.library_next_button)
         self.library_fullscreen_button = QtWidgets.QPushButton('Helskärm')
@@ -8350,6 +8397,7 @@ class Window(QtWidgets.QMainWindow):
         self.library_compress_button.clicked.connect(self.compress_library_image)
         edit_controls.addWidget(self.library_compress_button)
         self.library_delete_button = QtWidgets.QPushButton('Flytta till papperskorgen…')
+        self.library_delete_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_TrashIcon))
         self.library_delete_button.clicked.connect(self.trash_library_image)
         edit_controls.addWidget(self.library_delete_button)
         preview_layout.addLayout(edit_controls)
@@ -8502,8 +8550,11 @@ class Window(QtWidgets.QMainWindow):
                 continue
             path = self.library_paths[index]
             try:
-                qimage, _ = image_file_to_qimage(path, (144, 108))
-                item.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(qimage)))
+                dpr = self.library_grid.devicePixelRatioF()
+                qimage, _ = image_file_to_qimage(path, (round(144 * dpr), round(108 * dpr)))
+                pixmap = QtGui.QPixmap.fromImage(qimage)
+                pixmap.setDevicePixelRatio(dpr)
+                item.setIcon(QtGui.QIcon(pixmap))
                 item.setData(thumbnail_role, True)
                 self.library_thumbnail_indices.append(index)
             except Exception as exc:
@@ -8511,8 +8562,10 @@ class Window(QtWidgets.QMainWindow):
                 item.setData(thumbnail_role, True)
             processed += 1
 
+        # Keep a similar pixel-memory budget on high-DPI screens.
+        thumbnail_limit = max(50, int(300 / max(1.0, self.library_grid.devicePixelRatioF()) ** 2))
         for _ in range(len(self.library_thumbnail_indices)):
-            if len(self.library_thumbnail_indices) <= 300:
+            if len(self.library_thumbnail_indices) <= thumbnail_limit:
                 break
             old_index = self.library_thumbnail_indices.pop(0)
             if start <= old_index < stop or old_index == self.library_grid.currentRow():
@@ -8802,46 +8855,51 @@ class Window(QtWidgets.QMainWindow):
             self.show_message('information', 'Välj en bild', 'Välj en bild först.')
             return
         path = self.library_paths[row]
-        try:
-            original_qimage, _ = image_file_to_qimage(path)
-        except Exception as exc:
-            self.show_message('warning', 'Fel', str(exc))
-            return
         dialog = QtWidgets.QDialog(self)
+        dialog.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         dialog.setWindowTitle(self.translated('Före/efter-jämförelse'))
-        dialog.setMinimumSize(900, 600)
+        screen = dialog.screen() or QtWidgets.QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else QtCore.QRect(0, 0, 1280, 800)
+        dialog.resize(min(1000, available.width()), min(700, available.height()))
         layout = QtWidgets.QVBoxLayout(dialog)
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
-        before_label = FitImageLabel()
-        before_label.setText(self.translated('Före (original)'))
-        before_label.setStyleSheet('background: #0b1220; border-radius: 8px;')
-        before_label.set_image(original_qimage)
-        splitter.addWidget(before_label)
-        after_label = FitImageLabel()
-        after_label.setText(self.translated('Efter (förbättrad)'))
-        after_label.setStyleSheet('background: #0b1220; border-radius: 8px;')
-        splitter.addWidget(after_label)
+        def comparison_panel(title):
+            panel = QtWidgets.QWidget()
+            panel_layout = QtWidgets.QVBoxLayout(panel)
+            panel_layout.setContentsMargins(0, 0, 0, 0)
+            heading = QtWidgets.QLabel(self.translated(title))
+            heading.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            panel_layout.addWidget(heading)
+            image_label = FitImageLabel()
+            image_label.setStyleSheet('background: #0b1220; border-radius: 8px;')
+            panel_layout.addWidget(image_label, 1)
+            splitter.addWidget(panel)
+            return image_label
+        before_label = comparison_panel('Före (original)')
+        after_label = comparison_panel('Efter (förbättrad)')
         layout.addWidget(splitter, 1)
-        info = QtWidgets.QLabel(path.name)
+        info = QtWidgets.QLabel(path.name + '\n' + self.translated('Förhandsvisning med aktuell skärpa, färg och klarhet; export kan skilja sig i full storlek.'))
         info.setWordWrap(True)
         layout.addWidget(info)
         close_button = QtWidgets.QPushButton(self.translated('Stäng'))
         close_button.clicked.connect(dialog.accept)
         layout.addWidget(close_button)
+        # Bounded previews are processed in a worker; closing the dialog never
+        # cancels or destroys a running thread, and its signals disconnect when
+        # the labels are deleted. The real export is still full resolution.
+        dpr = screen.devicePixelRatio() if screen else 1.0
+        limit = (min(2400, max(1, round(available.width() * dpr))),
+                 min(1800, max(1, round(available.height() * dpr))))
+        worker = ComparePreviewWorker(path, limit, self.sliders['Skärpa'].value(),
+                                      self.sliders['Färgstyrka'].value(),
+                                      self.sliders['Klarhet/kontrast'].value(), QtWidgets.QApplication.instance())
+        QtWidgets.QApplication.instance().aboutToQuit.connect(worker.wait)
+        worker.original_ready.connect(before_label.set_image)
+        worker.enhanced_ready.connect(after_label.set_image)
+        worker.failed.connect(after_label.setText)
+        worker.finished.connect(worker.deleteLater)
+        worker.start()
         dialog.exec()
-        # Generate enhanced version in background
-        try:
-            import tempfile
-            from PIL import Image
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-                tmp_path = Path(tmp.name)
-            enhance(path, tmp_path, 1, 65, 55, 45, False)
-            enhanced_qimage, _ = image_file_to_qimage(tmp_path)
-            after_label.set_image(enhanced_qimage)
-            tmp_path.unlink(missing_ok=True)
-        except Exception as exc:
-            after_label.setText(f'{self.translated("Kunde inte skapa förbättrad version")}: {exc}')
-            LOGGER.warning('Compare dialog failed to enhance image: %s', exc)
 
     def print_library_image(self):
         row = self.library_grid.currentRow()
@@ -9100,6 +9158,8 @@ class Window(QtWidgets.QMainWindow):
             QTabBar::tab:hover:!selected {border-color:%(accent)s; color:%(text)s; background:%(accent_soft)s}
             QTabBar::tab:selected {background:%(accent)s; color:white; font-weight:700; border-color:%(accent)s}
             QTabBar::tab:!selected {margin-top:6px}
+            QHeaderView::section {background:%(panel)s; color:%(text)s; padding:7px; border:0; border-right:1px solid %(border)s; border-bottom:1px solid %(border)s; font-weight:700}
+            QTableWidget, QTreeView {background:%(field)s; color:%(text)s; alternate-background-color:%(panel)s; gridline-color:%(border)s; selection-background-color:%(accent)s; selection-color:white}
             QLineEdit,QPlainTextEdit,QListWidget,QDateTimeEdit,QSpinBox,QComboBox {background:%(field)s; color:%(text)s; border:1px solid %(border)s; border-radius:8px; padding:7px 9px; selection-background-color:%(accent)s; selection-color:white}
             QLineEdit:focus,QPlainTextEdit:focus,QComboBox:focus,QSpinBox:focus {border:2px solid %(accent)s; padding:6px 8px}
             QLineEdit:disabled,QPlainTextEdit:disabled {color:%(muted)s}
