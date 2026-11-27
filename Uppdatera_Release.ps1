@@ -5,16 +5,14 @@
 #
 # Usage:  .\Uppdatera_Release.ps1 [-NotesFile <path-to-notes.md>]
 # If no notes file is given, the existing release notes are kept and only
-# the tag is moved.
-$ErrorActionPreference = 'Stop'
-
-$Tag = '0.0.2'
-$Remote = 'origin'
-$Branch = 'arena/1411f22a-mediaconverterpro'
-
+# the tag is moved and the release is marked Latest.
 param(
     [string]$NotesFile = ''
 )
+
+$ErrorActionPreference = 'Stop'
+$Tag = '0.0.2'
+$Remote = 'origin'
 
 function Fail([string]$Message) {
     Write-Host "Fel: $Message" -ForegroundColor Red
@@ -28,6 +26,9 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 $root = git rev-parse --show-toplevel
 if (-not $root) { Fail 'Kunde inte hitta Git-repot.' }
 Set-Location $root
+$Branch = git symbolic-ref --quiet --short HEAD
+if ($LASTEXITCODE -ne 0 -or -not $Branch) { Fail 'Frikopplad HEAD stöds inte.' }
+if ($Branch -in @('main', 'master')) { Fail 'Release från main/master är spärrad.' }
 
 $status = git status --porcelain
 if ($status) { Fail 'Arbetskopian har ocommitade ändringar. Committa eller stash:a först.' }
@@ -52,14 +53,15 @@ if ($oldTag -eq $head) {
     Write-Host "Taggen $Tag flyttad till $head"
 }
 
-if ($NotesFile) {
-    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-        Fail 'gh saknas i PATH; releaseanteckningar uppdaterades inte.'
-    }
-    if (-not (Test-Path $NotesFile)) { Fail "Anteckningsfilen hittas inte: $NotesFile" }
-    gh release edit $Tag --notes-file $NotesFile
-    if ($LASTEXITCODE -ne 0) { Fail 'Kunde inte uppdatera releaseanteckningarna.' }
-    Write-Host 'Releaseanteckningar uppdaterade.'
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    Fail 'gh saknas i PATH; releasen kunde inte uppdateras.'
 }
+if ($NotesFile) {
+    if (-not (Test-Path $NotesFile)) { Fail "Anteckningsfilen hittas inte: $NotesFile" }
+    gh release edit $Tag --latest --notes-file $NotesFile
+} else {
+    gh release edit $Tag --latest
+}
+if ($LASTEXITCODE -ne 0) { Fail 'Kunde inte uppdatera releasen.' }
 
 Write-Host 'Klart. GitHub-releasen är nu uppdaterad.'

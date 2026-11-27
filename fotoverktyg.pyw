@@ -3,6 +3,7 @@
 """MediaForge: photo and video tools for editing, conversion, and metadata."""
 # Copyright © 2026 Rickard Längkvist
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -43,7 +44,7 @@ KOFI_URL = 'https://ko-fi.com/tokke2'  # Fixed maintainer-configured destination
 PAYPAL_URL = 'https://paypal.me/Rickard3dPrint'  # Fixed maintainer-configured destination; never user-editable.
 LICENSE_FILE = APP_DIR / 'LICENSE'
 UPDATEABLE_RELEASE_FILES = {
-    '.gitignore', 'LICENSE', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
+    '.gitignore', 'AGENTS.md', 'LICENSE', 'README.md', 'README_fotoverktyg.md', 'SUPPORT.md',
     'Starta_Fotoverktyg.ps1', 'Starta_Fotoverktyg.vbs', 'Uppdatera_Release.ps1',
     'fotoverktyg.pyw', 'fotoverktyg_icon.ico', 'fotoverktyg_icon.png', 'fotoverktyg_icon.svg', 'mediaforge_logo.svg', 'mediaforge_logo_print.svg',
     'start_mediaforge.sh', 'update_release.sh',
@@ -297,6 +298,26 @@ def is_app_owned_path(path):
         return bool(relative.parts)
     except (OSError, ValueError, TypeError):
         return False
+def prune_archived_logs(directory, now=None):
+    """Remove only our own archived application logs older than seven days."""
+    cutoff = (time.time() if now is None else now) - 7 * 24 * 60 * 60
+    for path in Path(directory).glob('mediaforge-*.log'):
+        if not re.fullmatch(r'mediaforge-\d{4}-\d{2}-\d{2}(?:-\d+)?\.log', path.name):
+            continue
+        try:
+            if not path.is_symlink() and path.is_file() and path.stat().st_mtime < cutoff:
+                path.unlink()
+        except OSError:
+            # Logging must remain usable if an old archive is locked.
+            pass
+
+
+class DailyAppLogHandler(TimedRotatingFileHandler):
+    def doRollover(self):
+        super().doRollover()
+        prune_archived_logs(LOG_ARCHIVE_DIR)
+
+
 LOGGER = logging.getLogger('fotoverktyg')
 LOGGER.setLevel(logging.INFO)
 try:
@@ -311,7 +332,8 @@ try:
     except OSError:
         pass
     formatter = logging.Formatter('%(asctime)s | %(levelname)-7s | %(threadName)s | %(message)s')
-    handler = TimedRotatingFileHandler(LOG_FILE, when='midnight', interval=1, backupCount=0, encoding='utf-8')
+    prune_archived_logs(LOG_ARCHIVE_DIR)
+    handler = DailyAppLogHandler(LOG_FILE, when='midnight', interval=1, backupCount=0, encoding='utf-8')
     def archived_log_name(default_name):
         date_suffix = Path(default_name).name.rsplit('.', 1)[-1]
         archived_path = LOG_ARCHIVE_DIR / f'mediaforge-{date_suffix}.log'
@@ -345,7 +367,12 @@ VIEWER_MIME_TYPES = (
 SIMPLE_TAB_KEYS = {'Bildförbättring', 'Fotoredigerare', 'Bildbibliotek', 'Videokonvertering', 'Dubblettfinnare', 'Aktivitetslogg'}
 AUDIO_FILE_EXTENSIONS = {'.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg', '.opus', '.wma', '.aiff', '.aif'}
 IMAGE_COLOR_PROFILES = {'sRGB': 'SRgb', 'Display P3': 'DisplayP3', 'Adobe RGB (1998)': 'AdobeRgb'}
-UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
+UI_TRANSLATIONS = {'Rensa åtgärdade fel…': 'Clear resolved errors…',
+ 'Rensa felloggen': 'Clear error log',
+ 'Har alla fel i felloggen åtgärdats? Hela felloggen rensas.': 'Have all errors in the error log been resolved? The entire error log will be cleared.',
+ 'Automatisk uppdatering kl. 00:00': 'Automatic update at 00:00',
+ 'Uppdatering är spärrad på main, master och frikopplade arbetskopior.': 'Updates are blocked on main, master and detached working copies.',
+ 'MEDIAFORGE': 'MEDIAFORGE',
  'Photo & Video Toolkit · Ett komplett arbetsflöde för foto och video – originalen förblir orörda.': 'Photo '
                                                                                                      '& '
                                                                                                      'Video '
@@ -508,7 +535,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
     'Uppdateringen misslyckades. MediaForge startas inte om.': 'The update failed. MediaForge will not restart.',
     'Uppdateringskontrollen kunde inte genomföras.': 'The update check could not be completed.',
  'Uppdatering kräver en ren Git-kopia av MediaForge.': 'Updating requires a clean Git checkout of MediaForge.',
- 'Den lokala grenen skiljer sig från releasen. Uppdateringen växlar arbetskopian till releasetaggen i frikopplat läge. Din nuvarande gren och dess commits behålls.': 'This branch differs from the release. Updating switches this working copy to the release tag in detached-HEAD mode. Your current branch and its commits are preserved.',
+ 'Den lokala grenen skiljer sig från releasen. Uppdateringen kan inte installeras säkert.': 'This branch differs from the release. Updating switches this working copy to the release tag in detached-HEAD mode. Your current branch and its commits are preserved.',
  'Detta stänger MediaForge och uppdaterar paketen i den gemensamma Python-installationen för ditt användarkonto. Andra program som använder samma Python kan också påverkas. Fortsätta?': 'This closes MediaForge and updates packages in the shared Python installation for your user account. Other programs using the same Python may also be affected. Continue?',
  'Sök efter uppdatering…': 'Check for updates…',
  'Detta stänger MediaForge och försöker uppdatera befintlig system-Python via systemets pakethanterare. En ny Python installeras inte. Fortsätta?': 'This will close MediaForge and try to update the existing system Python through its system package manager. No new Python runtime will be installed. Continue?',
@@ -520,7 +547,7 @@ UI_TRANSLATIONS = {'MEDIAFORGE': 'MEDIAFORGE',
  'Uppdateringen är klar. Starta om MediaForge för att använda den nya versionen.': 'Update complete. Restart MediaForge to use the updated code.',
  'GitHub-uppdateringen misslyckades:': 'GitHub release update failed:',
  'Git saknas i PATH och uppdateraren kan därför inte verifiera arbetskopian. Installera Git eller använd en källkodsinstallation utan .git-mapp.': 'Git is not available in PATH, so the updater cannot verify this checkout. Install Git or use a source-archive installation without a .git folder.',
- 'Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En säkerhetskopia sparas i MediaForge_Data/Backups.': 'Git is not installed in this copy. Only application files will be replaced; settings and user data are kept. A backup is saved in MediaForge_Data/Backups.',
+ 'Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En tillfällig säkerhetskopia tas bort efter verifierad uppdatering.': 'Git is not installed in this copy. Only application files will be replaced; settings and user data are kept. A temporary backup is removed after the update is verified.',
  'Python-uppdatering' : 'Python update',
  'GitHub-uppdatering': 'GitHub update',
     'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
@@ -1418,7 +1445,7 @@ UI_TRANSLATIONS.update({
     'Uppdateringen misslyckades. MediaForge startas inte om.': 'The update failed. MediaForge will not restart.',
     'Uppdateringskontrollen kunde inte genomföras.': 'The update check could not be completed.',
  'Uppdatering kräver en ren Git-kopia av MediaForge.': 'Updating requires a clean Git checkout of MediaForge.',
- 'Den lokala grenen skiljer sig från releasen. Uppdateringen växlar arbetskopian till releasetaggen i frikopplat läge. Din nuvarande gren och dess commits behålls.': 'This branch differs from the release. Updating switches this working copy to the release tag in detached-HEAD mode. Your current branch and its commits are preserved.',
+ 'Den lokala grenen skiljer sig från releasen. Uppdateringen kan inte installeras säkert.': 'This branch differs from the release. Updating switches this working copy to the release tag in detached-HEAD mode. Your current branch and its commits are preserved.',
  'Detta stänger MediaForge och uppdaterar paketen i den gemensamma Python-installationen för ditt användarkonto. Andra program som använder samma Python kan också påverkas. Fortsätta?': 'This closes MediaForge and updates packages in the shared Python installation for your user account. Other programs using the same Python may also be affected. Continue?',
  'Sök efter uppdatering…': 'Check for updates…',
  'Detta stänger MediaForge och försöker uppdatera befintlig system-Python via systemets pakethanterare. En ny Python installeras inte. Fortsätta?': 'This will close MediaForge and try to update the existing system Python through its system package manager. No new Python runtime will be installed. Continue?',
@@ -1430,7 +1457,7 @@ UI_TRANSLATIONS.update({
  'Uppdateringen är klar. Starta om MediaForge för att använda den nya versionen.': 'Update complete. Restart MediaForge to use the updated code.',
  'GitHub-uppdateringen misslyckades:': 'GitHub release update failed:',
  'Git saknas i PATH och uppdateraren kan därför inte verifiera arbetskopian. Installera Git eller använd en källkodsinstallation utan .git-mapp.': 'Git is not available in PATH, so the updater cannot verify this checkout. Install Git or use a source-archive installation without a .git folder.',
- 'Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En säkerhetskopia sparas i MediaForge_Data/Backups.': 'Git is not installed in this copy. Only application files will be replaced; settings and user data are kept. A backup is saved in MediaForge_Data/Backups.',
+ 'Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En tillfällig säkerhetskopia tas bort efter verifierad uppdatering.': 'Git is not installed in this copy. Only application files will be replaced; settings and user data are kept. A temporary backup is removed after the update is verified.',
  'Python-uppdatering' : 'Python update',
  'GitHub-uppdatering': 'GitHub update',
     'Den här kopian är redan nyare än senaste releasen ({tag}).': 'This checkout is already newer than the latest release ({tag}).',
@@ -2783,6 +2810,9 @@ class ReleaseUpdateWorker(QtCore.QThread):
                 for name in changed:
                     os.replace(staging / name, APP_DIR / name)
                     replaced.append(name)
+                for name in changed:
+                    if (APP_DIR / name).read_bytes() != files[name]:
+                        raise IOError(f'Installed file verification failed: {name}')
             except Exception:
                 backup_by_name = dict(backups_created)
                 for name in reversed(replaced):
@@ -2793,7 +2823,13 @@ class ReleaseUpdateWorker(QtCore.QThread):
                     elif destination.exists():
                         destination.unlink()
                 raise
-        LOGGER.info('Release %s files installed: %s; backups: %s', tag, ', '.join(changed), backup_root)
+        # Only the backup for this update is removed, after verification.
+        try:
+            if backup_root.exists():
+                shutil.rmtree(backup_root)
+        except OSError:
+            LOGGER.warning('Could not remove completed update backup: %s', backup_root, exc_info=True)
+        LOGGER.info('Release %s files installed and verified: %s', tag, ', '.join(changed))
 
     def run_archive_update(self, tag):
         files, modes = self.download_release_files(tag)
@@ -2827,6 +2863,10 @@ class ReleaseUpdateWorker(QtCore.QThread):
             local, reason = self.check_worktree()
             if reason:
                 self.result_ready.emit({'status': 'skipped', 'reason': reason})
+                return
+            branch = self.git('symbolic-ref', '--short', 'HEAD', allow_failure=True)
+            if branch.returncode or branch.stdout in {'main', 'master'}:
+                self.result_ready.emit({'status': 'skipped', 'reason': 'protected_branch'})
                 return
             tag = self.latest_release_tag()
             if self.git('check-ref-format', f'refs/tags/{tag}', allow_failure=True).returncode:
@@ -2863,19 +2903,22 @@ class ReleaseUpdateWorker(QtCore.QThread):
                     self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'tag': tag,
                                             'changed_files': changed_files, 'method': 'git-fast-forward'})
                     return
-                self.git('merge', '--ff-only', 'FETCH_HEAD')
+                # Never merge or leave the current branch. Require the release
+                # commit to be contained in its identically named origin branch.
+                branch_ref = 'refs/heads/' + branch.stdout
+                self.git('fetch', '--quiet', '--no-tags', UPDATE_REMOTE_URL, branch_ref, timeout=90)
+                if self.git('merge-base', '--is-ancestor', remote, 'FETCH_HEAD', allow_failure=True).returncode:
+                    self.result_ready.emit({'status': 'skipped', 'reason': 'not_fast_forward', 'tag': tag})
+                    return
+                latest_local, reason = self.check_worktree()
+                if reason or latest_local != local or self.git('symbolic-ref', '--short', 'HEAD', allow_failure=True).stdout != branch.stdout:
+                    self.result_ready.emit({'status': 'skipped', 'reason': reason or 'dirty_worktree', 'tag': tag})
+                    return
+                self.git('reset', '--keep', remote)
                 self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote, 'tag': tag,
                                         'method': 'git-fast-forward'})
                 return
-            if not self.apply_update:
-                self.result_ready.emit({'status': 'available', 'local': local, 'remote': remote, 'tag': tag,
-                                        'changed_files': changed_files, 'method': 'git-detach'})
-                return
-            # A clean but diverged branch must not be merged or rewritten. Move only
-            # this working copy to the release commit; the user's branch ref survives.
-            self.git('checkout', '--detach', 'FETCH_HEAD')
-            self.result_ready.emit({'status': 'updated', 'local': local, 'remote': remote, 'tag': tag,
-                                    'method': 'git-detach'})
+            self.result_ready.emit({'status': 'skipped', 'reason': 'not_fast_forward', 'tag': tag})
         except InterruptedError:
             self.result_ready.emit({'status': 'cancelled'})
         except Exception as exc:
@@ -4828,7 +4871,7 @@ class Window(QtWidgets.QMainWindow):
         if screen is not None:
             available = screen.availableGeometry()
             self.resize(min(1180, max(760, int(available.width() * 0.86))),
-                        min(880, max(560, int(available.height() * 0.86))))
+                        available.height())
         else:
             self.resize(1100, 850)
         # Qt uses logical pixels and scales them for each screen automatically.
@@ -4899,9 +4942,9 @@ class Window(QtWidgets.QMainWindow):
             if screen is not None:
                 available = screen.availableGeometry()
                 width = min(frame.width(), available.width())
-                height = min(frame.height(), available.height())
+                height = available.height()
                 x = min(max(frame.x(), available.x()), available.x() + available.width() - width)
-                y = min(max(frame.y(), available.y()), available.y() + available.height() - height)
+                y = available.y()
                 self.setGeometry(x, y, width, height)
         except (AttributeError, RuntimeError):
             pass
@@ -5434,7 +5477,7 @@ class Window(QtWidgets.QMainWindow):
         self.viewer_integration_action.setText(self.translated('Registrera MediaForge som bildvisare'))
         self.viewer_integration_action.setToolTip(self.translated('Standardprogram ändras inte. Välj MediaForge manuellt i operativsystemets inställningar.'))
         self.keep_awake_action.setText(self.translated('Håll datorn vaken under jobb'))
-        self.auto_update_action.setText(self.translated('Sök tyst efter nya versioner (2 ggr/dygn)'))
+        self.auto_update_action.setText(self.translated('Automatisk uppdatering kl. 00:00'))
         self.tools_action.setText(self.translated('Externa verktyg…'))
         self.donate_action.setText(self.translated('Stöd utvecklingen · Donationer'))
         self.license_action.setText(self.translated('Licens och användningsrättigheter'))
@@ -5790,6 +5833,7 @@ class Window(QtWidgets.QMainWindow):
         self.duplicate_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.duplicate_table.currentCellChanged.connect(self.duplicate_selection_changed)
         self.duplicate_table.itemDoubleClicked.connect(lambda _item: self.show_duplicate_comparison())
+        self.duplicate_table.horizontalHeader().setSectionsMovable(True)
         self.duplicate_table.horizontalHeader().setStretchLastSection(True)
         self.duplicate_table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.duplicate_table, 1)
@@ -6816,6 +6860,7 @@ class Window(QtWidgets.QMainWindow):
         headers = ('Fil', 'Container', 'Längd', 'Video-codec', 'Upplösning', 'Bildfrekvens', 'Video-bitrate', 'Ljud-codec', 'Ljudformat', 'Ljud-bitrate', 'Fel')
         self.codec_table = QtWidgets.QTableWidget(0, len(headers))
         self.codec_table.setHorizontalHeaderLabels([self.translated(header) for header in headers])
+        self.codec_table.horizontalHeader().setSectionsMovable(True)
         self.codec_table.setAlternatingRowColors(True)
         self.codec_table.horizontalHeader().setMinimumSectionSize(95)
         self.codec_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -6832,6 +6877,7 @@ class Window(QtWidgets.QMainWindow):
             self.show_message('warning', 'Ogiltig mapp', 'Välj en giltig mapp att skanna.')
             return
         self.codec_rows = []
+        self.codec_table.setSortingEnabled(False)
         self.codec_table.setRowCount(0)
         self.codec_export.setEnabled(False)
         self.codec_scan.setEnabled(False)
@@ -6854,6 +6900,7 @@ class Window(QtWidgets.QMainWindow):
         self.codec_rows = rows
         self.codec_scan.setEnabled(True)
         self.codec_cancel.setEnabled(False)
+        self.codec_table.setSortingEnabled(False)
         self.codec_table.setRowCount(len(rows))
         headers = ('Fil', 'Container', 'Längd', 'Video-codec', 'Upplösning', 'Bildfrekvens', 'Video-bitrate', 'Ljud-codec', 'Ljudformat', 'Ljud-bitrate', 'Fel')
         for row_index, row in enumerate(rows):
@@ -6861,6 +6908,7 @@ class Window(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(row.get(key, ''))
                 item.setToolTip(row.get(key, ''))
                 self.codec_table.setItem(row_index, column, item)
+        self.codec_table.setSortingEnabled(True)
         self.codec_export.setEnabled(bool(rows))
 
     def export_codec_report(self):
@@ -6996,9 +7044,41 @@ class Window(QtWidgets.QMainWindow):
         open_errors = QtWidgets.QPushButton('Öppna fellogg')
         open_errors.clicked.connect(self.open_error_log)
         layout.addWidget(open_errors)
+        clear_errors = QtWidgets.QPushButton(self.translated('Rensa åtgärdade fel…'))
+        clear_errors.clicked.connect(self.clear_resolved_errors)
+        layout.addWidget(clear_errors)
         export = QtWidgets.QPushButton('Exportera hela loggen…')
         export.clicked.connect(self.export_log)
         layout.addWidget(export)
+
+    def clear_resolved_errors(self):
+        answer = QtWidgets.QMessageBox.question(
+            self, self.translated('Rensa felloggen'),
+            self.translated('Har alla fel i felloggen åtgärdats? Hela felloggen rensas.'),
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No)
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        # Serialize with the error handler so newly arriving records are not
+        # interleaved with truncation. The user explicitly confirms ALL errors.
+        file_handler = next((handler for handler in LOGGER.handlers
+                             if isinstance(handler, logging.FileHandler)
+                             and Path(handler.baseFilename) == ERROR_LOG_FILE), None)
+        if file_handler is None:
+            self.show_message('warning', 'Fel', 'Felloggen är inte tillgänglig.')
+            return
+        try:
+            file_handler.acquire()
+            try:
+                file_handler.flush()
+                with ERROR_LOG_FILE.open('w', encoding='utf-8'):
+                    pass
+            finally:
+                file_handler.release()
+            LOGGER.info('Felloggen rensades efter användarens bekräftelse')
+        except OSError as exc:
+            LOGGER.warning('Felloggen kunde inte rensas: %s', exc)
+            self.show_message('warning', 'Fel', str(exc))
 
     def append_activity_log(self, text):
         if hasattr(self, 'activity_log'):
@@ -7829,7 +7909,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui_settings.sync()
         if enabled:
             self.schedule_auto_update_check(initial=True)
-            LOGGER.info('Tyst versionssökning aktiverad (högst två gånger per dygn)')
+            LOGGER.info('Automatisk uppdatering kl. 00:00 aktiverad')
         else:
             if hasattr(self, 'auto_update_timer'):
                 self.auto_update_timer.stop()
@@ -7844,20 +7924,23 @@ class Window(QtWidgets.QMainWindow):
             last_check = float(self.ui_settings.value('lastAutoUpdateCheck', 0))
         except (TypeError, ValueError):
             last_check = 0
-        interval = 12 * 60 * 60
-        seconds_until_due = interval - (time.time() - last_check)
-        delay_ms = 30_000 if last_check <= 0 or seconds_until_due <= 0 else int(seconds_until_due * 1000)
+        now = datetime.now()
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        due = initial and last_check < midnight.timestamp()
+        next_midnight = midnight + timedelta(days=1)
+        delay_ms = 30_000 if due else int((next_midnight.timestamp() - time.time()) * 1000)
         self.auto_update_timer.start(max(1000, delay_ms))
 
     def run_scheduled_update_check(self):
         if not self.auto_update_action.isChecked():
             return
+        if self._git_update_worker_active or self._has_active_job_worker():
+            LOGGER.info('Automatisk uppdatering skjuts upp: ett jobb pågår')
+            self.auto_update_timer.start(5 * 60 * 1000)
+            return
         self.ui_settings.setValue('lastAutoUpdateCheck', time.time())
         self.ui_settings.sync()
         self.schedule_auto_update_check()
-        if self._git_update_worker_active:
-            LOGGER.info('Tyst versionssökning hoppas över eftersom en Git-kontroll redan körs')
-            return
         self.start_release_update_check(silent=True)
 
     def start_release_update_check(self, silent):
@@ -7909,14 +7992,19 @@ class Window(QtWidgets.QMainWindow):
                 self.show_message('information', 'GitHub-uppdatering', message)
             return
         if status == 'available':
+            if silent:
+                if self._has_active_job_worker():
+                    LOGGER.info('Automatisk uppdatering skjuts upp: ett jobb pågår')
+                    self.auto_update_timer.start(5 * 60 * 1000)
+                else:
+                    self.apply_release_update()
+                return
             local, remote = result['local'], result['remote']
             changed_files = result.get('changed_files', [])
             LOGGER.info('Ny GitHub-release %s upptäckt: %s -> %s (%d ändrade filer)', tag, local, remote, len(changed_files))
             prompt = self.translated('Ny GitHub-release {tag} finns tillgänglig ({local} → {remote}). Uppdatera nu? Appen startas om automatiskt efteråt.').format(tag=tag, local=local[:10], remote=remote[:10])
             if result.get('method') == 'archive':
-                prompt += '\n\n' + self.translated('Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En säkerhetskopia sparas i MediaForge_Data/Backups.')
-            elif result.get('method') == 'git-detach':
-                prompt += '\n\n' + self.translated('Den lokala grenen skiljer sig från releasen. Uppdateringen växlar arbetskopian till releasetaggen i frikopplat läge. Din nuvarande gren och dess commits behålls.')
+                prompt += '\n\n' + self.translated('Git saknas i den här installationen. Endast appfiler ersätts; inställningar och användardata lämnas kvar. En tillfällig säkerhetskopia tas bort efter verifierad uppdatering.')
             if changed_files:
                 shown_files = changed_files[:8]
                 file_list = '\n'.join('• ' + path for path in shown_files)
@@ -7941,6 +8029,8 @@ class Window(QtWidgets.QMainWindow):
                 message = self.translated('Uppdatering kräver en ren Git-kopia av MediaForge.')
             elif reason == 'dirty_worktree':
                 message = self.translated('Git-arbetskopian innehåller ändringar. Spara, stash:a eller återställ dem innan uppdatering.')
+            elif reason == 'protected_branch':
+                message = self.translated('Uppdatering är spärrad på main, master och frikopplade arbetskopior.')
             elif reason == 'not_fast_forward':
                 message = self.translated('Kan inte uppdatera säkert eftersom den lokala grenen inte kan snabbspolas till releasen.')
             elif reason == 'git_unavailable':
@@ -7964,6 +8054,7 @@ class Window(QtWidgets.QMainWindow):
             return
         self._git_update_worker_active = True
         self.release_update_action.setEnabled(False)
+        self.tabs.setEnabled(False)
         self.release_update_action.setText(self.translated('Installerar release…'))
         self.git_update_worker = ReleaseUpdateWorker(apply_update=True)
         self._git_update_worker_mode = ('apply', False)
@@ -7973,6 +8064,7 @@ class Window(QtWidgets.QMainWindow):
         self.git_update_worker.start()
 
     def finish_release_update(self, result):
+        self.tabs.setEnabled(True)
         self.release_update_action.setEnabled(True)
         self.release_update_action.setText(self.translated('Sök efter uppdatering…'))
         if result.get('status') == 'updated':
@@ -7991,10 +8083,37 @@ class Window(QtWidgets.QMainWindow):
     def restart_after_release_update(self):
         try:
             command = [sys.executable, str(APP_DIR / 'fotoverktyg.pyw'), *sys.argv[1:]]
-            subprocess.Popen(command, cwd=APP_DIR, env=os.environ.copy(), close_fds=True)
+            helper = """import os, sys, time, subprocess
+pid = int(sys.argv[1])
+if os.name == 'nt':
+    import ctypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.OpenProcess.restype = ctypes.c_void_p
+    kernel.OpenProcess.argtypes = (ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong)
+    kernel.WaitForSingleObject.argtypes = (ctypes.c_void_p, ctypes.c_ulong)
+    kernel.CloseHandle.argtypes = (ctypes.c_void_p,)
+    handle = kernel.OpenProcess(0x00100000, False, pid)
+    if handle:
+        kernel.WaitForSingleObject(handle, 0xffffffff)
+        kernel.CloseHandle(handle)
+else:
+    while True:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.2)
+subprocess.Popen(sys.argv[2:], cwd=os.path.dirname(sys.argv[3]),
+                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+"""
+            subprocess.Popen([sys.executable, '-c', helper, str(os.getpid()), *command],
+                             cwd=APP_DIR, env=os.environ.copy(), close_fds=True,
+                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
             self._git_update_restart_pending = True
+            self._force_close = True
             LOGGER.info('MediaForge startas om tyst efter GitHub-uppdatering')
-            self.close()
+            if self.close():
+                QtWidgets.QApplication.quit()
         except Exception as exc:
             LOGGER.exception('Kunde inte starta om MediaForge efter uppdatering')
             self.show_message('warning', 'GitHub-uppdatering', self.translated('Uppdateringen misslyckades. MediaForge startas inte om.') + '\n' + str(exc))

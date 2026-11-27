@@ -6,12 +6,11 @@
 #
 # Usage: ./update_release.sh [--notes-file path/to/notes.md]
 # If no notes file is given, the existing release notes are kept and only
-# the tag is moved.
+# the tag is moved and the release is marked Latest.
 set -euo pipefail
 
 TAG='0.0.2'
 REMOTE='origin'
-BRANCH='arena/1411f22a-mediaconverterpro'
 NOTES_FILE=''
 
 while [ $# -gt 0 ]; do
@@ -36,6 +35,8 @@ command -v git >/dev/null 2>&1 || fail 'git saknas i PATH.'
 
 ROOT="$(git rev-parse --show-toplevel)" || fail 'Kunde inte hitta Git-repot.'
 cd "$ROOT"
+BRANCH="$(git symbolic-ref --quiet --short HEAD)" || fail 'Frikopplad HEAD stöds inte.'
+[ "$BRANCH" != main ] && [ "$BRANCH" != master ] || fail 'Release från main/master är spärrad.'
 
 [ -z "$(git status --porcelain)" ] || fail 'Arbetskopian har ocommitade ändringar. Committa eller stash:a först.'
 
@@ -54,11 +55,12 @@ else
     echo "Taggen $TAG flyttad till $HEAD"
 fi
 
+command -v gh >/dev/null 2>&1 || fail 'gh saknas i PATH; release kunde inte uppdateras.'
 if [ -n "$NOTES_FILE" ]; then
-    command -v gh >/dev/null 2>&1 || fail 'gh saknas i PATH; releaseanteckningar uppdaterades inte.'
     [ -f "$NOTES_FILE" ] || fail "Anteckningsfilen hittas inte: $NOTES_FILE"
-    gh release edit "$TAG" --notes-file "$NOTES_FILE"
-    echo 'Releaseanteckningar uppdaterade.'
+    gh release edit "$TAG" --latest --notes-file "$NOTES_FILE"
+else
+    gh release edit "$TAG" --latest
 fi
 
 echo 'Klart. GitHub-releasen är nu uppdaterad.'
